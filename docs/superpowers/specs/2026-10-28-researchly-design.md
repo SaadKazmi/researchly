@@ -48,7 +48,7 @@ It has long-term memory. It runs on the user's own machine, and the user brings 
 | D6 | Orchestration: LangChain **Deep Agents** on **LangGraph**, pinned exact version behind a thin factory | Durable checkpoints, HITL, subagents, skills, virtual filesystem, Postgres persistence |
 | D7 | Single **PostgreSQL 18** for relational, vector (pgvector), BM25, graph tables, jobs, cache, checkpoints | Fewest moving parts; strong enough at target scale |
 | D8 | Memory: winner of a **Mem0 vs Hindsight** bake-off, run in build step 6 | Both on Postgres. Mem0's top scores are platform-reported; Hindsight reports OSS scores |
-| D9 | No LiteLLM dependency | PyPI/Docker supply-chain compromises in 2026 (1.82.7/8, 1.107.0) |
+| D9 | **LiteLLM** (Python SDK, in-process; no proxy server) is the multi-provider layer, with hardened pinning (§19.7) | User decision. Broadest provider coverage plus built-in cost tracking. Mitigates the 2026 PyPI compromises (1.82.7/8, 1.107.0) by pinning |
 | D10 | Dev-only **ai-provider** (Claude Code via Agent SDK) stands in for a user's API key. All LLM traffic recordable and replayable | User decision. CI needs no keys |
 | D11 | **user-simulator** agent drives the real UI via Playwright with personas and edge cases | User decision |
 | D12 | Opus wherever Fable would be used | User has no Fable access |
@@ -151,7 +151,7 @@ Each feature has an ID. `docs/features.json` mirrors these IDs, and each carries
 - **F9.5** Data directory, backup schedule, theme and language.
 
 ### F10 Platform
-- **F10.1** CLI: `researchly install | onboard | start | stop | status | update | logs | backup | restore | doctor | uninstall`.
+- **F10.1** CLI: `researchly install | onboard | start | stop | status | update | logs | backup | restore | migrate-runtime | db shell | doctor | uninstall`.
 - **F10.2** Usage dashboard: tokens and cost by run, agent, model and day; cache-hit rate.
 - **F10.3** Offline mode: Ollama for the LLM and embeddings; the cache serves previously fetched papers.
 - **F10.4** MCP server: exposes library search, paper lookup and evidence search to external MCP clients (stdio + Streamable HTTP, current spec 2026-07-28).
@@ -185,7 +185,7 @@ Each feature has an ID. `docs/features.json` mirrors these IDs, and each carries
 ### 4.1 Runtime modes
 | Component | Docker mode | Native mode |
 |---|---|---|
-| Postgres | `pgvector/pgvector:pg18` + pg_textsearch image | Portable Postgres 18 binaries + pgvector. If pg_textsearch is unavailable, keyword search falls back to `tsvector`/`ts_rank` |
+| Postgres | Custom image `ghcr.io/saadkazmi/researchly-postgres` (from `pgvector/pgvector:pg18` + pg_textsearch + pg_trgm) | Embedded Postgres + pgvector installed by uv as a Python wheel (candidates: `pgserver`, `pg0-embedded`; conda-forge `postgresql`+`pgvector` as fallback; chosen by the step-1 spike). Keyword search uses `tsvector`/`ts_rank` because pg_textsearch has no Windows/macOS builds. **Both modes run the same Postgres major version** (see §16.1) |
 | App | Container | `uv`-managed venv, process supervised by the CLI |
 | SearXNG | Container | Python process (uv) |
 | Kernel sandbox | Container: no network, read-only root, CPU/mem/pid limits, non-root user, gVisor if present | Separate restricted subprocess. The UI shows a lower-isolation warning |
@@ -313,12 +313,13 @@ Every step is a LangGraph checkpoint boundary. Nodes with side effects (DB write
 ## 7. LLM layer
 
 ### 7.1 Providers
-- Implemented with the LangChain provider packages: `langchain-anthropic`, `langchain-openai` (also used for OpenRouter and any OpenAI-compatible endpoint), `langchain-google-genai` and `langchain-ollama`, via `init_chat_model`.
+- Implemented with the **LiteLLM Python SDK**, wrapped as a LangChain chat model (`langchain-litellm` `ChatLiteLLM`) so Deep Agents and LangGraph consume it unchanged. This covers Anthropic, OpenAI, Gemini, OpenRouter, Ollama and any OpenAI-compatible endpoint. The LiteLLM proxy server is not used.
+- Provider-specific features pass through LiteLLM: Anthropic `cache_control` and context-management params, OpenAI prompt-cache keys, reasoning/effort settings. If a feature does not survive LiteLLM, that provider may use its native LangChain package (`langchain-anthropic` etc.) behind the same registry interface. This exception is recorded in an ADR.
 - `llm/registry.py` maps `provider:model` to a configured chat model. API keys are fetched from the keychain at call time only (§19.2).
 
 ### 7.2 Capability table
 `llm/capabilities.yaml` records, per model: `tools`, `json_schema`, `vision`, `prompt_cache` (type + min tokens), `context_window`, `max_output`, `server_compaction`, `context_editing`, and prices (input / cached / output per MTok).
-- Prices come from a vendored, pinned copy of LiteLLM's `model_prices_and_context_window.json` (data file only). It is refreshed by a script and reviewed by PR.
+- Prices and context windows come from LiteLLM's model cost map (`litellm.model_cost`, `litellm.completion_cost`), with `capabilities.yaml` overriding where needed. Cost-map auto-fetch over the network is disabled (`LITELLM_LOCAL_MODEL_COST_MAP=True`), so prices change only when the pinned LiteLLM version is upgraded.
 - Agents degrade gracefully when a capability is missing. For example, without `json_schema` the agent falls back to tool-call JSON with validation.
 
 ### 7.3 Role routing
@@ -617,6 +618,37 @@ setting(key, value jsonb) ; capability(key, value jsonb) ; provider_config(id, p
 ```
 Migrations use Alembic. Every migration has an upgrade → downgrade → upgrade test.
 
+### 16.1 Postgres operations
+- **One database** (`researchly`) with two roles:
+  - `researchly_app`: owns the schema and runs migrations.
+  - `researchly_ro`: read-only. Used by the MCP server tools and by dev tooling (`psql`, postgres-mcp).
+- **Credentials:** random passwords generated at `onboard` and stored in the OS keychain (§19.2). They are never written to compose files; the CLI injects them as environment variables at start.
+- **Network:**
+  - Docker: the DB is on the internal compose network only, with no host port published. `researchly start --expose-db` publishes it on `127.0.0.1` for power users.
+  - Native: it binds to `127.0.0.1` on a free port (default 54329), with Unix sockets on macOS/Linux.
+- **Data location:** `<data_dir>/pg` (`~/.researchly` by default; configurable at onboard). Docker uses a bind mount there, so both modes keep data in the same visible place.
+- **Same major version in both modes:** the step-1 spike picks a native distribution available for Windows, macOS and Linux. The Docker image is pinned to the **same major version**, PG 18 if the native candidate offers it, otherwise the newest major the native candidate supports, with a minimum of PG 16. This keeps `pg_dump` portable across modes. The schema and SQL must not rely on features newer than that major.
+- **Extensions:**
+  - `vector` and `pg_trgm` are always present. `pg_textsearch` is present in Docker mode only.
+  - The Alembic baseline creates the extensions that are available and records the BM25 engine in `capability`.
+  - Search code goes through one `KeywordIndex` interface with two implementations (pg_textsearch and tsvector), and both are tested.
+- **Migrations on start:** `researchly start` takes an automatic pre-migration backup, runs `alembic upgrade head`, then starts the app. If a migration fails, start aborts and shows how to restore the backup. `doctor` reports the migration state.
+- **Tuning:** at onboard the CLI sets a memory-aware `postgresql.conf` override:
+  - `shared_buffers` 25% of RAM, capped at 4 GB;
+  - `maintenance_work_mem` 1 GB for HNSW builds;
+  - `work_mem` 32 MB;
+  - `max_connections` 40;
+  - `wal_compression` on.
+- **Backups:**
+  - `researchly backup`: `pg_dump -Fc` plus a tarball of `<data_dir>/files` (PDFs, exports). Daily automatic backups, keeping 7.
+  - `researchly restore <file>` verifies the dump before replacing.
+  - Backup and restore are covered by E2E tests in both modes.
+- **Upgrades:**
+  - Minor Postgres versions come with the image or wheel update in `researchly update`.
+  - A major version change triggers an automatic dump → new cluster → restore, keeping the old data directory until the user confirms.
+- **Switching modes** (Docker ↔ native): `researchly migrate-runtime` does a backup, then a restore into the other runtime, then re-detects capabilities. This works because both modes share a major version.
+- **Developer access:** `researchly db shell` opens `psql` as `researchly_ro` (add `--rw` for the app role in dev builds only). Tests use testcontainers with the same image as Docker mode, plus the native-mode CI matrix.
+
 ---
 
 ## 17. API & streaming
@@ -701,7 +733,12 @@ See §15.3: writes come only from user turns, memories carry provenance, behavio
 - **JS:** `pnpm install --frozen-lockfile` with `minimumReleaseAge` set to 7 days.
 - **GitHub Actions:** pinned by commit SHA, minimal `permissions`, Dependabot/Renovate with a cooldown.
 - **Releases:** a CycloneDX SBOM per release, images signed with cosign (keyless), and the installer verifies image digests and checksums of release assets.
-- **No LiteLLM** (D9).
+- **LiteLLM hardening** (D9):
+  - Pin an exact version with hashes in `uv.lock`. Choose a release that is ≥14 days old and not listed in any advisory (OSV/GHSA/PyPI yanks); explicitly exclude 1.82.7, 1.82.8 and 1.107.0.
+  - Upgrade only through a dedicated PR that checks advisories and diffs the wheel for new `.pth`/`sitecustomize` files.
+  - Never use LiteLLM Docker images or `latest` tags.
+  - Disable LiteLLM telemetry and the remote cost-map fetch.
+  - LiteLLM is imported only in `llm/registry.py`.
 
 ---
 
@@ -905,7 +942,8 @@ There is a single release; the steps below are dependency order only. Each step 
 ## 26. Risks & spikes
 | Risk | Mitigation | When |
 |---|---|---|
-| Native Postgres + extensions on Windows/macOS | Spike in step 1. Fallback: tsvector BM25; pgvector Windows builds; if blocked, native mode uses a bundled Postgres from a vetted distribution, with an ADR | Step 1 |
+| Native Postgres + extensions on Windows/macOS | Step-1 spike compares `pgserver`, `pg0-embedded` and conda-forge `postgresql`+`pgvector` on all 3 OSes. Criteria: Postgres major version, pgvector ≥0.8, pg_trgm, start time, maintenance and license. The result is an ADR that also fixes the shared major version (§16.1) | Step 1 |
+| LiteLLM supply chain | Exact pin with hashes, ≥14-day-old non-advisory release, upgrade PR checklist, no Docker image, telemetry off (§19.7) | Ongoing |
 | Mem0 vs Hindsight quality | Bake-off with an ADR | Step 6 |
 | Deep Agents churn | Pinned version, single factory module, upgrade ADR + full suite | Ongoing |
 | Scholarly API limits/quotas | Caching, quotas surfaced in UI, multiple sources, user keys | Step 2 |
