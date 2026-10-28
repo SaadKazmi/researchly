@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "autoCompactWindow": 300000,
+  "env": {
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet"
+  },
+  "permissions": {
+    "deny": [
+      "Edit(.env*)",
+      "Write(.env*)",
+      "Edit(**/uv.lock)",
+      "Write(**/uv.lock)",
+      "Edit(**/pnpm-lock.yaml)",
+      "Write(**/pnpm-lock.yaml)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "uv run --no-project --python 3.12 \"$CLAUDE_PROJECT_DIR/.claude/hooks/protect.py\"", "timeout": 30 }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "uv run --no-project --python 3.12 \"$CLAUDE_PROJECT_DIR/.claude/hooks/format.py\"", "timeout": 60 }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "uv run --no-project --python 3.12 \"$CLAUDE_PROJECT_DIR/.claude/hooks/typecheck.py\"", "timeout": 300 }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact|resume",
+        "hooks": [
+          { "type": "command", "command": "uv run --no-project --python 3.12 \"$CLAUDE_PROJECT_DIR/.claude/hooks/session_context.py\"", "timeout": 30 }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "uv run --no-project --python 3.12 \"$CLAUDE_PROJECT_DIR/.claude/statusline.py\""
+  }
+}
