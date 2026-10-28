@@ -154,3 +154,22 @@ def test_non_object_existing_features_asks(tmp_path):
     p = write(tmp_path, "docs/features.json", "[]")
     decision = protect.decide(payload("Write", p, content=json.dumps(features())), tmp_path)
     assert decision is not None and decision[0] == "ask"
+
+
+CONTROL_PLANE_REASON = "Harness control-plane file (executed by Claude Code): confirm this edit with the user."
+
+
+def test_control_plane_files_ask(tmp_path):
+    for tool, rel in [
+        ("Write", ".claude/settings.json"),
+        ("Write", ".claude/settings.local.json"),
+        ("Edit", ".claude/hooks/format.py"),
+        ("Write", ".claude/hooks/tests/test_protect.py"),
+        ("Write", ".claude/statusline.py"),
+        ("Write", ".mcp.json"),
+    ]:
+        assert protect.decide(payload(tool, tmp_path / rel, content="x"), tmp_path) == ("ask", CONTROL_PLANE_REASON), rel
+
+
+def test_agent_prompts_not_control_plane(tmp_path):
+    assert protect.decide(payload("Write", tmp_path / ".claude/agents/architect.md", content="x"), tmp_path) is None

@@ -1,5 +1,6 @@
 """PreToolUse hook: ask/deny rules for sensitive files.
 
+- Harness control plane (.claude/settings*.json, .claude/hooks/, statusline, .mcp.json): ask.
 - .github/workflows/*: ask (CI changes need the user's eye).
 - Existing Alembic revisions: ask (add a new revision instead).
 - docs/features.json: deny invalid content; ask for anything beyond flipping `passes`.
@@ -18,7 +19,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
 from _common import project_root, read_payload, rel_path  # noqa: E402
 from repo_checks import check_features  # noqa: E402
 
-_MIGRATION_RE = re.compile(r"^backend/src/researchly/db/migrations/versions/.+\.py$")
+_CONTROL_PLANE = {".claude/settings.json", ".claude/settings.local.json", ".claude/statusline.py", ".mcp.json"}
+_MIGRATION_RE =re.compile(r"^backend/src/researchly/db/migrations/versions/.+\.py$")
 
 
 def proposed_content(tool_name: str, tool_input: dict, path: Path) -> str:
@@ -62,6 +64,8 @@ def decide(payload: dict, root: Path) -> tuple[str, str] | None:
     rel = rel_path(file_path, root)
     if rel is None:
         return None
+    if rel in _CONTROL_PLANE or rel.startswith(".claude/hooks/"):
+        return ("ask", "Harness control-plane file (executed by Claude Code): confirm this edit with the user.")
     if rel.startswith(".github/workflows/"):
         return ("ask", "CI workflow change: confirm with the user before editing.")
     if _MIGRATION_RE.match(rel) and (root / rel).exists():

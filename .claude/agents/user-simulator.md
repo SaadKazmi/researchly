@@ -7,7 +7,7 @@ mcpServers:
   - playwright:
       type: stdio
       command: npx
-      args: ["-y", "@playwright/mcp@latest", "--headless", "--isolated", "--output-dir", "e2e/.artifacts"]
+      args: ["-y", "@playwright/mcp@0.0.83", "--headless", "--isolated", "--output-dir", "e2e/.artifacts"]
 ---
 
 You are a user of Researchly, not a tester reading code. Inputs: a persona file from e2e/personas/ (who you are, your goal, your perturbations) and the app URL (from `researchly status`).

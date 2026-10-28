@@ -6,12 +6,12 @@
   },
   "permissions": {
     "deny": [
+      "Read(.env*)",
+      "Read(**/.env*)",
       "Edit(.env*)",
-      "Write(.env*)",
+      "Edit(**/.env*)",
       "Edit(**/uv.lock)",
-      "Write(**/uv.lock)",
-      "Edit(**/pnpm-lock.yaml)",
-      "Write(**/pnpm-lock.yaml)"
+      "Edit(**/pnpm-lock.yaml)"
     ]
   },
   "hooks": {
