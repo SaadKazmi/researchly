@@ -1,0 +1,20 @@
+# Role defaults per provider (spec §7.3) and overrides of LiteLLM's bundled cost map (spec §7.2).
+# Checked 2026-10-28 against LiteLLM 1.105.1 and the providers' model and pricing pages.
+# Prices are USD per million tokens.
+roles:
+  anthropic: {strong: anthropic/claude-opus-5-5, mid: anthropic/claude-sonnet-5-5, cheap: anthropic/claude-haiku-5-5}
+  openai: {strong: openai/gpt-6-astra, mid: openai/gpt-6.1-sol, cheap: openai/gpt-6-luna}
+  gemini: {strong: gemini/gemini-3.1-pro-preview, mid: gemini/gemini-3.8-flash, cheap: gemini/gemini-3.5-flash-lite}
+models:
+  anthropic/claude-sonnet-5-5:
+    cached_per_mtok: 0.10  # LiteLLM 1.105.1 says 0.20; Anthropic: cache hits are 0.05x input
+  anthropic/claude-haiku-5-5:  # absent from LiteLLM 1.105.1
+    input_per_mtok: 0.10  # ponytail: <=100k-token prompt tier; >100k prompts cost 5x
+    cached_per_mtok: 0.01
+    output_per_mtok: 0.50
+    context_window: 1000000
+    max_output: 128000
+    tools: true
+    json_schema: true
+    vision: true
+    prompt_cache: true
