@@ -171,5 +171,19 @@ def test_control_plane_files_ask(tmp_path):
         assert protect.decide(payload(tool, tmp_path / rel, content="x"), tmp_path) == ("ask", CONTROL_PLANE_REASON), rel
 
 
-def test_agent_prompts_not_control_plane(tmp_path):
-    assert protect.decide(payload("Write", tmp_path / ".claude/agents/architect.md", content="x"), tmp_path) is None
+def test_agents_and_skills_ask(tmp_path):
+    for tool, rel in [("Write", ".claude/agents/architect.md"), ("Edit", ".claude/skills/x/SKILL.md")]:
+        assert protect.decide(payload(tool, tmp_path / rel, content="x"), tmp_path) == ("ask", CONTROL_PLANE_REASON), rel
+
+
+def test_case_variants_cannot_bypass_rules(tmp_path):
+    for rel in [".Claude/Settings.Local.JSON", ".MCP.json", ".Claude/HOOKS/x.py"]:
+        assert protect.decide(payload("Write", tmp_path / rel, content="x"), tmp_path) == ("ask", CONTROL_PLANE_REASON), rel
+    result = protect.decide(payload("Write", tmp_path / ".GITHUB/workflows/new.yml", content="x"), tmp_path)
+    assert result and result[0] == "ask"
+
+
+def test_features_rule_is_case_insensitive(tmp_path):
+    write(tmp_path, "docs/features.json", json.dumps(features()))
+    result = protect.decide(payload("Write", tmp_path / "DOCS/features.json", content="{bad"), tmp_path)
+    assert result and result[0] == "deny"
