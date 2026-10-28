@@ -12,3 +12,4 @@ Newest entries at the bottom. Each session appends: date, plan + task, what chan
 - Claude Code version: 2.1.77 (not updated; the installed copy hosts the dispatching session).
 - autoCompactWindow: documented in settings-reference (number of tokens 100000-1000000, any file); set to 300000. Installed 2.1.77 may predate it and ignore it.
 - Hook/statusLine commands verified by scripted run through Git Bash, not interactive /hooks.
+- Step 1a tool kit installed: plugins (pyright-lsp, typescript-lsp, security-guidance, pr-review-toolkit, claude-md-management, frontend-design), LangChain skills (7, MIT, langchain-skills@126c384), MCP docs-langchain; Claude Code 2.1.77. No `data` plugin exists in this CLI's config (nothing to disable).

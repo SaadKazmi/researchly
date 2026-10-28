@@ -50,5 +50,13 @@
   "statusLine": {
     "type": "command",
     "command": "uv run --no-project --python 3.12 \"$CLAUDE_PROJECT_DIR/.claude/statusline.py\""
+  },
+  "enabledPlugins": {
+    "pyright-lsp@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true,
+    "pr-review-toolkit@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": true
   }
 }
