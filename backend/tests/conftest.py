@@ -1,8 +1,13 @@
 import asyncio
+import os
+import uuid
+from collections.abc import Iterator
 
 import keyring
 import pytest
 from keyring.backend import KeyringBackend
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import make_url
 
 
 class MemoryKeyring(KeyringBackend):
@@ -39,3 +44,37 @@ def _memory_keyring():
 def anyio_backend():
     # psycopg's async driver cannot run on Windows' default Proactor loop.
     return ("asyncio", {"loop_factory": asyncio.SelectorEventLoop})
+
+
+@pytest.fixture(scope="session")
+def pg_admin_url() -> Iterator[str]:
+    url = os.environ.get("RESEARCHLY_TEST_DATABASE_URL")
+    if url:
+        yield url
+        return
+    try:
+        from testcontainers.community.postgres import PostgresContainer
+
+        container = PostgresContainer("pgvector/pgvector:pg18", driver="psycopg")
+        container.start()
+    except Exception as exc:
+        if os.environ.get("CI"):
+            raise
+        pytest.skip(f"no Postgres: set RESEARCHLY_TEST_DATABASE_URL or start Docker ({exc})")
+    try:
+        yield container.get_connection_url()
+    finally:
+        container.stop()
+
+
+@pytest.fixture
+def db_url(pg_admin_url: str) -> Iterator[str]:
+    """A fresh, empty database per test."""
+    name = f"t_{uuid.uuid4().hex[:12]}"
+    admin = create_engine(pg_admin_url, isolation_level="AUTOCOMMIT")
+    with admin.connect() as conn:
+        conn.execute(text(f'CREATE DATABASE "{name}"'))
+    yield make_url(pg_admin_url).set(database=name).render_as_string(hide_password=False)
+    with admin.connect() as conn:
+        conn.execute(text(f'DROP DATABASE "{name}" WITH (FORCE)'))
+    admin.dispose()
