@@ -45,3 +45,29 @@ async def test_ledger_writes_usage_and_cost(db_url):
     assert (row.in_tok, row.cached_tok, row.out_tok) == (1000, 400, 200)
     assert row.cost_usd == Decimal("0.003240")
     assert row.latency_ms >= 0
+
+
+class _FailingChatModel(GenericFakeChatModel):
+    def _generate(self, *args, **kwargs):
+        raise RuntimeError("provider down")
+
+
+async def test_ledger_writes_zero_token_error_row(db_url):
+    migrate.upgrade(db_url)
+    engine = make_engine(db_url)
+    sessions = make_sessionmaker(engine)
+    model = _FailingChatModel(messages=iter([]))
+    cb = LedgerCallback(
+        sessions,
+        research_run_id=None,
+        agent="lead",
+        role="mid",
+        provider="anthropic",
+        model="anthropic/claude-sonnet-5-5",
+    )
+    with pytest.raises(RuntimeError, match="provider down"):
+        await model.ainvoke("hello", config={"callbacks": [cb]})
+    async with sessions() as s:
+        row = (await s.scalars(select(LlmCall))).one()
+    await engine.dispose()
+    assert (row.status, row.in_tok, row.cached_tok, row.out_tok, row.cost_usd) == ("error", 0, 0, 0, Decimal("0"))
