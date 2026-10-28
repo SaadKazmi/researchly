@@ -18,14 +18,15 @@ Researchly is an open-source, local-first, multi-agent research assistant. A use
 - summarize, explain and visualize concepts;
 - write research notebooks and full research books with checked citations and figures.
 
-It has long-term memory. It runs on the user's own machine, and the user brings their own API keys for LLMs and for scholarly sources.
+It has long-term memory. It runs on the user's own machine. **The only thing that costs the user money is their own LLM API key.** Every other component is free, keyless, needs no signup, and is installed automatically.
 
 ### 1.1 Goals
 - One complete product, shipped as a single release. There is a build order, but no "v1 / v2".
 - Grounded outputs: every factual sentence in generated content links to a stored evidence passage, and every reference resolves to a real paper.
 - Local-first and private: one user, data on their machine, keys in the OS keychain.
 - Works with any major LLM provider, including fully offline through Ollama.
-- Installs with one command; the same features in Docker and native modes.
+- Zero cost beyond the LLM key: no paid services, no required API keys or accounts for any data source, no licensed runtimes (e.g., Docker Desktop is never required).
+- Installs with one command, without admin rights, and sets up everything end to end. It always picks the best-available option for the user: Docker mode if a container engine exists (started automatically), native otherwise. The strongest tools (SearXNG, GROBID, BM25) are preferred in every mode where they can run.
 - Tested end to end: by deterministic tests, by a simulated-user agent, by red-team tools and by benchmark evals.
 
 ### 1.2 Non-goals
@@ -41,7 +42,7 @@ It has long-term memory. It runs on the user's own machine, and the user brings 
 | # | Decision | Rationale |
 |---|---|---|
 | D1 | Single user, local-first | User decision |
-| D2 | One-line install script → `researchly` CLI. Docker runtime when available, native fallback otherwise; both supported and tested | User decision (opencode/openclaw-style install) |
+| D2 | One-line install script (no admin) → uv → `researchly` CLI → `researchly setup`. **Best-available runtime:** if a container engine is installed (Docker Engine/Desktop, Podman, Rancher Desktop, Colima, OrbStack), use **Docker mode** and start the engine if it is stopped. Otherwise use the **native** runtime. Never *require* or *install* a container engine. Both modes are tested | User rule: best outcome first (full SearXNG, GROBID, BM25, container sandbox). Researchly cannot install an engine for the user: Docker Desktop is paid for companies with ≥250 employees or ≥$10M revenue, and free engines need admin on Windows/macOS |
 | D3 | Distribution: GitHub (SaadKazmi/researchly), GitHub Releases + GHCR images; install one-liners in README | User decision |
 | D4 | Prefer existing, best-in-class frameworks; trust reported benchmarks | User rule |
 | D5 | Python backend, TypeScript/React frontend | Scholarly/ML ecosystem is Python; best UI libraries are React |
@@ -53,6 +54,8 @@ It has long-term memory. It runs on the user's own machine, and the user brings 
 | D11 | **user-simulator** agent drives the real UI via Playwright with personas and edge cases | User decision |
 | D12 | Opus wherever Fable would be used | User has no Fable access |
 | D13 | Agent topology: hub-and-spoke. Parallel reading, single sequential writer. Verifier separate from writer. No agent debate | MAST, Google scaling study, Anthropic, Cognition, Open Deep Research findings |
+| D14 | **Zero-cost rule:** only the LLM key may cost money. All scholarly sources work keyless by default; optional free keys only raise limits | User requirement |
+| D15 | Keyless data plan (§8): OpenAlex **singleton** lookups ($0) are the enrichment hub; search fans out to arXiv, Crossref, Europe PMC/PubMed, HF Papers and capped OpenAlex search; citations come from OpenCitations + OpenAlex `referenced_works` + Crossref. Semantic Scholar is optional-key only; Unpaywall is dropped | Live-checked 2026-10-28: S2 keyless returned 429 on 7 of 8 calls; Unpaywall requires an email; OpenAlex singletons report `Cost-USD: 0` |
 
 ---
 
@@ -77,7 +80,7 @@ Each feature has an ID. `docs/features.json` mirrors these IDs, and each carries
 - **F1.8** Answers carry inline `[n]` citation chips. Hovering shows the quote; clicking opens the reader at the passage.
 
 ### F2 Discovery
-- **F2.1** Multi-source search across the §8 connectors plus web search (SearXNG by default; Tavily/Exa/Brave with the user's own key).
+- **F2.1** Multi-source search across the keyless §8 connectors plus web search through **SearXNG** (local, free, the default in every mode where it can run). Optional extras: Tavily, Exa or Brave with the user's own key. `ddgs` is an explicit opt-in only, because it scrapes and carries ToS risk.
 - **F2.2** Identity resolution and dedupe across sources (DOI, arXiv ID, OpenAlex ID, S2 ID, then a fuzzy title+year+first-author match).
 - **F2.3** Explainable ranking (§10): a per-paper score breakdown; presets **Balanced**, **Seminal** and **Recent**.
 - **F2.4** Coverage indicator: an estimate of search completeness from the discovery-rate curve, with a "search more" action.
@@ -85,7 +88,7 @@ Each feature has an ID. `docs/features.json` mirrors these IDs, and each carries
 
 ### F3 Library
 - **F3.1** Collections, tags, notes and highlights per project.
-- **F3.2** Full-text acquisition is legal open access only (arXiv, Unpaywall/OpenAlex OA locations, Europe PMC, CORE). The license is stored per paper.
+- **F3.2** Full-text acquisition is legal open access only (OpenAlex `best_oa_location`, arXiv, Europe PMC, CORE). The license is stored per paper.
 - **F3.3** Parsing pipeline (§9.1) into structured sections, figures, tables, equations and references.
 - **F3.4** PDF reader (pdf.js) with passage highlighting that jumps from any citation.
 - **F3.5** Import BibTeX, RIS and CSL-JSON; Zotero read through its local API, write through its web API. Export BibTeX and CSL-JSON.
@@ -146,12 +149,12 @@ Each feature has an ID. `docs/features.json` mirrors these IDs, and each carries
 ### F9 Settings
 - **F9.1** LLM providers: Anthropic, OpenAI, Google Gemini, OpenRouter, Ollama, any OpenAI-compatible endpoint. Dev builds also offer the `claude-code` provider.
 - **F9.2** Model routing per role (§7.3), with good defaults per provider.
-- **F9.3** Keys for scholarly sources (OpenAlex, Semantic Scholar, NCBI, CORE, ADS) and contact email (Crossref, Unpaywall).
+- **F9.3** Sources work with no configuration. Optional free keys (OpenAlex, Semantic Scholar, NCBI, OpenAIRE, CORE) and an optional personal `mailto` (Crossref polite pool) only raise limits. Each shows what it unlocks.
 - **F9.4** Budgets and confirmation thresholds.
 - **F9.5** Data directory, backup schedule, theme and language.
 
 ### F10 Platform
-- **F10.1** CLI: `researchly install | onboard | start | stop | status | update | logs | backup | restore | migrate-runtime | db shell | doctor | uninstall`.
+- **F10.1** CLI: `researchly setup | onboard | start | stop | status | config | update | logs | backup | restore | migrate-runtime | db shell | bundle export|import | doctor | uninstall`.
 - **F10.2** Usage dashboard: tokens and cost by run, agent, model and day; cache-hit rate.
 - **F10.3** Offline mode: Ollama for the LLM and embeddings; the cache serves previously fetched papers.
 - **F10.4** MCP server: exposes library search, paper lookup and evidence search to external MCP clients (stdio + Streamable HTTP, current spec 2026-07-28).
@@ -170,7 +173,7 @@ Each feature has an ID. `docs/features.json` mirrors these IDs, and each carries
 │ runs/       run manager, budgets, procrastinate jobs, resume-on-start                  │
 │ agents/     Deep Agents factory, roster, prompts, skills (SKILL.md), middleware         │
 │ services/   ranking · dedupe · graph · ingest/parse · embed · search · export · studio │
-│ connectors/ OpenAlex · S2 · arXiv · Unpaywall · HF Papers · Crossref · EuropePMC · …   │
+│ connectors/ OpenAlex · arXiv · Crossref · OpenCitations · DataCite · EuropePMC · HF … │
 │ llm/        provider registry · capability table · routing · RecordReplay · ledger     │
 │ memory/     memory adapter (Mem0 | Hindsight) · playbook                              │
 │ security/   safe fetcher (SSRF) · spotlighting · sanitizer · keychain · permissions    │
@@ -183,22 +186,57 @@ Each feature has an ID. `docs/features.json` mirrors these IDs, and each carries
 ```
 
 ### 4.1 Runtime modes
-| Component | Docker mode | Native mode |
+**Runtime selection (best outcome first).** Runs at `setup` and on every `start`:
+1. **Detect a container engine.** Docker Engine or Desktop, Podman (`podman compose` / Docker-compatible socket), Rancher Desktop, Colima or OrbStack, through CLI presence and the socket/context.
+2. **If one is found but stopped, start it for the user**, then wait for readiness (with progress output and a timeout):
+
+   | Engine | Start command |
+   |---|---|
+   | Docker Desktop on Windows | Launch `Docker Desktop.exe` |
+   | Docker Desktop on macOS | `open -a Docker` |
+   | Docker Desktop on Linux | `systemctl --user start docker-desktop` |
+   | Rootless Docker Engine | `systemctl --user start docker` |
+   | Podman | `podman machine start` |
+   | Colima | `colima start` |
+   | Rancher Desktop | `rdctl start` |
+   | OrbStack | `orb start` |
+
+   If starting needs elevation (e.g., the rootful `docker.service`), the CLI explains the single command to run and offers native mode for now.
+3. **Engine ready → Docker mode.** This is the full-capability path.
+4. **No engine, or it fails to start → native mode**, chosen automatically. No container engine is ever installed for the user, because of admin rights and licensing. A first-run note explains that installing one unlocks extra capability, and `doctor` lists exactly what is degraded.
+5. The user can pin a mode with `researchly config set runtime docker|native|auto` (default `auto`).
+
+When Docker Desktop is the engine, a one-time informational note mentions its commercial licensing terms. It never blocks.
+
+| Component | Docker mode (preferred when an engine exists) | Native mode (fallback; no admin) |
 |---|---|---|
-| Postgres | Custom image `ghcr.io/saadkazmi/researchly-postgres` (from `pgvector/pgvector:pg18` + pg_textsearch + pg_trgm) | Embedded Postgres + pgvector installed by uv as a Python wheel (candidates: `pgserver`, `pg0-embedded`; conda-forge `postgresql`+`pgvector` as fallback; chosen by the step-1 spike). Keyword search uses `tsvector`/`ts_rank` because pg_textsearch has no Windows/macOS builds. **Both modes run the same Postgres major version** (see §16.1) |
-| App | Container | `uv`-managed venv, process supervised by the CLI |
-| SearXNG | Container | Python process (uv) |
-| Kernel sandbox | Container: no network, read-only root, CPU/mem/pid limits, non-root user, gVisor if present | Separate restricted subprocess. The UI shows a lower-isolation warning |
-| GROBID | Optional container | Only if Java 21+ is detected |
+| Postgres | `ghcr.io/saadkazmi/researchly-postgres` (from `pgvector/pgvector:pg18` + pg_trgm + pg_textsearch) | **`pg0-embedded`** wheel: PG 18 + pgvector 0.8.5, MIT, wheels for win-x64, macOS arm64 (14+) / x64 (15+), Linux x64/arm64 (glibc ≥2.35). Fallback: conda-forge `postgresql` 18 + `pgvector` via pixi (old macOS/Linux, or if pg0 lacks `pg_trgm`). Decided by the step-1 spike |
+| Keyword search | pg_textsearch BM25 | Built-in `tsvector` + `ts_rank_cd` |
+| App + workers | Container | uv-managed Python 3.12 (python-build-standalone) |
+| Web search | **SearXNG** container (always on) | **SearXNG** native process, installed from source into an app-private venv and served by granian. Linux/macOS are supported; Windows is made to work in the step-1 spike. If it truly cannot run, web search is off and `doctor` says why |
+| PDF parsing | Docling + **GROBID** container (references, header) | Docling (`docling-slim`, ONNX-runtime models extra; no torch/CUDA). **GROBID** native via `jdk4py` (JDK 21+ wheel) on Linux/macOS. Windows native: LLM reference-string parsing + Crossref/OpenAlex matching |
+| Code cells | Pyodide in Deno for light cells; full kernel in a locked-down container (§19.4) | Pyodide in Deno (default); full CPython kernel opt-in inside the OS sandbox (§19.4) |
+| Exports | In the container | `pypandoc_binary`, `typst` wheel, `nodejs-wheel` + `mystmd` (app-private npm prefix) |
+| Headless browser | In the container | `playwright install chromium` (user cache). On Linux with missing system libs, `doctor` prints the one command to fix it, and fetching degrades to httpx + trafilatura |
+| Models | Shared model cache mounted into containers | Embeddings, reranker, grounding checker and Kokoro TTS downloaded via `huggingface_hub` on first use (resumable, no account, Apache/MIT models only) |
 | Frontend | Static build served by the app | Same |
 
-**Capability detection:** at startup the app records a `capabilities` row (`bm25_engine`, `sandbox_level`, `grobid`, `gpu`, `ollama`). Services read it. The UI surfaces any degraded capabilities in Settings → System, and `researchly doctor` prints them.
+**Capability detection:** at startup the app records a `capabilities` row (`bm25_engine`, `sandbox_level`, `web_search`, `grobid`, `browser`, `gpu`, `ollama`). Services read it. The UI surfaces any degraded capabilities in Settings → System, and `researchly doctor` prints them along with fixes.
+
+**Known platform gaps** (documented; `doctor` explains them):
+- Windows on ARM has no pg0/jdk4py wheels, so it runs x64 emulation or the conda-forge fallback.
+- macOS older than 14 (arm64) or 15 (x64), and Linux with glibc older than 2.35, use the conda-forge fallback.
 
 ### 4.2 Process model
 - A single app process runs the API plus async workers. Research runs execute as asyncio tasks that report progress through the DB and stream AG-UI events.
 - Scheduled and background jobs (alerts, ingestion batches, embedding backfills, exports) run on **procrastinate** (Postgres-backed).
 - On startup, any run in state `running` is resumed from its LangGraph checkpoint (`thread_id`).
 - Live progress fan-out uses Postgres `LISTEN/NOTIFY`.
+- **Native supervision:** the `researchly` CLI is the supervisor. It spawns Postgres, SearXNG, the optional GROBID and the app as child processes: inside a Job Object with KILL_ON_JOB_CLOSE on Windows, and a process group with SIGTERM then SIGKILL on POSIX.
+  - Ports are free `127.0.0.1` ports recorded in `state.json`.
+  - Health checks use `/health` and `pg_isready`, with restart-with-backoff.
+  - Logs are rotated in the platform data directory (`platformdirs`).
+  - Start at login is opt-in and needs no admin: `systemd --user`, `~/Library/LaunchAgents`, or the HKCU Run key.
 
 ### 4.3 Localhost guard
 The app binds to `127.0.0.1` by default. Cross-origin requests are rejected. A random per-install token is issued at `onboard`, stored in the OS keychain, and required in a header. This protects against other local sites calling the API (CSRF/DNS-rebinding). The `Host` header must be `localhost` or `127.0.0.1`.
@@ -366,26 +404,66 @@ Every LLM call writes an `llm_calls` row: `run_id, agent, role, provider, model,
 
 ## 8. Scholarly data
 
-### 8.1 Connectors
-| Tier | Source | Use | Auth / limits (verify on implementation) |
-|---|---|---|---|
-| 1 | OpenAlex | Metadata, citations (`referenced_works`), topics, OA locations, FWCI / percentiles | Free API key, $1/day free budget (singleton free; list $0.10/1k; search $1/1k); 30 rps keyed. CC0 |
-| 1 | Semantic Scholar | Citations, influential citations, recommendations (positive/negative seeds), SPECTER2 embeddings, TLDRs | Key gives 1 rps. Attribution required; no redistribution |
-| 1 | arXiv | Search, metadata, HTML/LaTeX source, PDFs | 1 request / 3 s, single connection. Per-paper licenses |
-| 1 | Unpaywall | OA locations by DOI | `email` param; 100k/day |
-| 1 | Hugging Face Papers | Code links, upvotes, linked models/datasets | Public API |
-| 2 | Crossref | DOI metadata, references, funders | `mailto` polite pool; read `x-rate-limit-*` |
-| 2 | Europe PMC | Biomedical search + OA full-text XML | ~10 rps |
-| 2 | OpenCitations v2 | Open DOI→DOI citations (cross-check) | 180/min; token recommended |
-| 2 | CORE | Repository OA full text | Key; small per-10s limits |
-| 3 | PubMed E-utilities | Biomedical metadata | 3 rps (10 with key) |
-| 3 | bioRxiv/medRxiv | Preprints ↔ published DOI | 0.5–1 s spacing |
-| 3 | OpenReview v2 | Reviews, decisions (venue prior) | Be polite; no published limit |
-| 3 | DBLP | CS bibliography | Honor `Retry-After` |
-| 3 | ACL Anthology | NLP metadata | `acl-anthology` package (local data) |
-| 3 | NASA ADS | Astro/physics | Token; 5k/day |
+### 8.1 Connectors (keyless by default)
+Every default connector works with **no key, no account and no email**. Limits below were live-checked from response headers on 2026-10-28, or taken from the docs where noted. The connector test suite re-verifies them nightly (`@live`).
 
-**Excluded:** Google Scholar (no API, ToS), SSRN, Altmetric (key-gated, non-commercial), Scite.
+| Tier | Source | Role in Researchly | Keyless limits / cost (observed) | License / terms |
+|---|---|---|---|---|
+| 1 | **OpenAlex** | **Enrichment hub** through singleton lookups: abstract, topics, `referenced_works`, `related_works`, `cited_by_count`, `fwci` / percentile, `best_oa_location`, `is_retracted`, licenses. Batch DOI resolution (`doi:a\|b\|…`, up to 100 per call). Autocomplete. Capped search | Keyless daily budget **$0.10 per IP** (`X-RateLimit-Limit-USD: 0.1`). **Singletons and autocomplete cost $0**. Filter/list $0.0001 per call; search $0.001 per call. Content/PDF API needs a key (not used) | CC0 |
+| 1 | **arXiv** | Primary preprint search; metadata; HTML/LaTeX source; PDFs | 1 request / 3 s, single connection | Metadata CC0; per-paper licenses; no implied endorsement |
+| 1 | **Crossref** | Search fallback, DOI metadata, references, licenses, funders, retractions | Public pool: single 5 rps (concurrency 1), list 1 rps (concurrency 1). Polite pool (10 rps / 3 rps) only if the user adds their own `mailto` | Metadata open |
+| 1 | **OpenCitations Index/Meta v2** | DOI↔DOI citations in both directions; citation counts (covers arXiv DataCite DOIs) | 180 req/min/IP (docs) | CC0 |
+| 1 | **DataCite** | arXiv ID ↔ `10.48550/arXiv.<id>` DOI mapping; datasets/software | No published limit; be polite | Open |
+| 1 | **Europe PMC** | Biomedical search, citations/references, OA full-text XML | No limit headers; capped at 5 rps | Per-article licenses |
+| 1 | **PubMed E-utilities** | Biomedical search | 3 rps (`X-Ratelimit-Limit: 3`) | Public |
+| 1 | **Hugging Face Papers** | ML search, upvotes, linked repos/models/datasets | API 500 / 5 min; search 50 / 5 min | Public |
+| 1 | **PwC archive** (HF `pwc-archive`, frozen July 2025) | Local paper→code table, downloaded at runtime (not bundled) | One download | Verify license (likely CC-BY-SA); do not redistribute |
+| 2 | OpenReview API v2 | ML venue decisions and reviews (venue prior) | 20 / min | Public |
+| 2 | bioRxiv/medRxiv | Preprints ↔ published DOIs | Polite 1 req/s | Per-paper licenses |
+| 2 | CORE v3 | Repository OA full-text fallback | ~10 / min | Per-item |
+| 2 | OpenAIRE Graph v1 | Secondary search, EU repositories, OA links | Budget **60 / hour** (docs; live header disagreed) | CC-BY: attribution shown |
+| 2 | DBLP | CS venues and bibliography | Polite; honor `Retry-After` (live check pending) | CC0 |
+| 2 | ACL Anthology | NLP metadata (local package data) | None (local) | Open |
+| Opt | arXiv OAI-PMH local harvest | Optional offline index of chosen arXiv categories (SQLite/Postgres, a few GB) | Polite incremental harvest | CC0 metadata |
+| Opt | OpenCitations Meta dump (8.4 GB) | Optional offline DOI→metadata store | One download | CC0 |
+
+**Optional free keys** (Settings → Sources; off by default, never required):
+
+| Key | Effect |
+|---|---|
+| OpenAlex | 10× budget ($1/day) |
+| Semantic Scholar | Unlocks a TLDR / influential-citations / recommendations connector at 1 rps. Keyless S2 returned 429 on 7 of 8 calls in live checks, so it is **never** a keyless default |
+| NCBI | 10 rps |
+| OpenAIRE | 7,200 / hour |
+| CORE | Higher limits |
+
+OpenAlex offers automatic key provisioning by email. It is used **only** if the user explicitly consents and enters their own email.
+
+**Excluded:**
+- Unpaywall: requires an email; OpenAlex `best_oa_location` covers it.
+- Semantic Scholar keyless and S2 datasets: key required.
+- Google Scholar: no API, ToS.
+- Internet Archive Scholar / fatcat: bot wall, unreachable.
+- Wikidata/Scholia: anonymous traffic gets 429.
+- Lens.org and BASE: key or IP registration required.
+- SSRN, Altmetric, Scite, NASA ADS: key-gated.
+- Kaggle arXiv dump: needs an account.
+
+### 8.1.1 Routing (keyless)
+- **Search fan-out**, then local dedupe and rerank:
+  - arXiv;
+  - Crossref `query`;
+  - OpenAlex `search`, capped at **≤50/day per install**, with the rest of the budget kept for filters;
+  - Europe PMC / PubMed when the query classifier says biomedical;
+  - HF Papers when it says ML;
+  - OpenAIRE and DBLP as low-rate extras in Deep runs.
+- **Identity:** arXiv ID → DataCite DOI. Batch DOI resolution goes through one OpenAlex `doi:` filter call (1 credit per 100 DOIs), or through singletons ($0) when the budget is low.
+- **Enrichment:** OpenAlex singleton ($0) first, then Crossref singleton (license, funders, retraction relations).
+- **References (backward):** the union of OpenAlex `referenced_works` ($0), Crossref references and OpenCitations `/references`.
+- **Citations (forward):** OpenCitations `/citations` first. OpenAlex `cites:` (1 credit per 200 citers) only for top-k seed papers, capped at 1,000 citers each. Europe PMC for biomedical papers.
+- **Full text:** OpenAlex `best_oa_location.pdf_url`, then arXiv HTML/LaTeX/PDF, then Europe PMC OA XML, then CORE. Always fetched directly from the host, never redistributed.
+- **Budget guard:** read `X-RateLimit-Remaining-USD` on every OpenAlex response. At ≤20% remaining, stop paid operations (search, list) and fall back to free singletons and the other sources. The UI shows "OpenAlex daily budget low", and the budget resets at midnight UTC.
+- **Shared IP caveat:** the keyless OpenAlex budget is per IP, so university or corporate NAT users may run out early. Researchly degrades gracefully and suggests the optional free key.
 
 ### 8.2 Connector contract
 ```python
@@ -397,18 +475,33 @@ class Connector(Protocol):
     def capabilities(self) -> ConnectorCaps: ...   # search, citations, fulltext, embeddings, ...
 ```
 - All HTTP goes through one `PoliteClient`:
-  - per-host token buckets configured from a `limits.yaml`;
-  - honors `Retry-After`;
-  - exponential backoff with jitter;
-  - a descriptive User-Agent with the contact email;
+  - per-host token buckets from `limits.yaml`, set just below the observed limits:
+
+    | Host | Rate | Concurrency |
+    |---|---|---|
+    | OpenAlex | 5 rps | 2 |
+    | Crossref single | 5 rps | 2 |
+    | Crossref list | 1 rps | 1 |
+    | OpenCitations | 2 rps | — |
+    | arXiv | 1 per 3 s | 1 |
+    | OpenReview | 1 per 3 s | — |
+    | OpenAIRE | 1 per min | — |
+    | PubMed | 2 rps | — |
+    | Europe PMC | 5 rps | — |
+    | HF search | 8 per min | — |
+    | CORE | 8 per min | — |
+
+  - honors `Retry-After` and 429/503;
+  - exponential backoff with jitter, plus a **circuit breaker per source**;
+  - User-Agent `Researchly/<ver> (+https://github.com/SaadKazmi/researchly)`. A `mailto` is added **only** if the user sets their own; there is no shared project email;
   - `robots.txt` checks for non-API fetches;
   - ETag/If-None-Match;
-  - responses cached in `http_cache` (UNLOGGED table, TTL per source).
+  - responses cached in `http_cache` (Postgres) keyed by normalized ID. TTLs: metadata and references 60 days, citation counts 7 days, search results 24 h. A singleton is never re-fetched within its TTL, and DOIs are deduped across agents before any call.
 - Each connector ships with recorded cassettes plus a contract test (the `add-scholarly-connector` skill).
 - When a quota is exhausted (e.g., the OpenAlex daily budget), the connector raises `QuotaExhausted`. The Lead is told, the UI shows a banner, and other sources continue.
 
 ### 8.3 Identity resolution
-1. Exact match on DOI, arXiv ID, OpenAlex ID, S2 ID or PMID, via the `paper_ids` table.
+1. Exact match on DOI (including the arXiv DataCite DOI `10.48550/arXiv.<id>`), arXiv ID, OpenAlex ID, PMID or S2 ID (when the optional key is used), via the `paper_ids` table.
 2. Otherwise a fuzzy match on normalized title (trigram ≥ 0.92) + year ± 1 + first-author surname.
 3. Merging keeps provenance per field (`field_sources` JSONB).
 
@@ -417,7 +510,7 @@ class Connector(Protocol):
 - Full text is cached locally for the user's personal research.
 - Exports (F6.5) respect licenses.
 - The UI always links back to the source landing page.
-- The app shows S2 attribution where S2 data is displayed.
+- A data-attribution line appears in the footer of results and graph views ("Data: OpenAlex (CC0), OpenCitations (CC0), Crossref, arXiv, Europe PMC, OpenAIRE (CC-BY) …"), listing only the sources used. S2 attribution is added when the optional S2 key is used.
 
 ---
 
@@ -425,21 +518,21 @@ class Connector(Protocol):
 
 ### 9.1 Full-text pipeline
 1. **arXiv HTML** (`arxiv.org/html/<id>`), else **LaTeX source** parsed to sections (pylatexenc/plasTeX-lite), else the PDF.
-2. **PDF**: **Docling** in-process for body text, tables and formulas. **GROBID** (if available) adds the header and references. **MinerU / PaddleOCR-VL** is an optional GPU mode.
-3. **References**: preferred from the OpenAlex/S2 APIs; parsed references are only a fallback.
+2. **PDF**: **Docling** in-process (ONNX-runtime models; no torch) for body text, tables and formulas. **GROBID** adds the header and references whenever it can run (Docker mode, or native Linux/macOS). **MinerU / PaddleOCR-VL** is an optional GPU mode.
+3. **References**: preferred from OpenAlex `referenced_works`, Crossref and OpenCitations. Parsed references (GROBID, or the LLM parsing reference strings followed by Crossref/OpenAlex matching) are a fallback.
 4. **Output**: `paper_sections`, `paper_figures` (image + caption + referencing paragraphs), `paper_tables`, `paper_equations` and `paper_refs`.
 
 ### 9.2 Chunking & embeddings
 - **All papers:** title + abstract are embedded.
 - **Ingested papers only:** full text is chunked by section, with ~350-token chunks, 15% overlap, and the section path recorded.
-- **Default embedder:** Qwen3-Embedding-0.6B (Apache-2.0) via fastembed/ONNX on CPU, Matryoshka-truncated to 1024 dims, stored as `halfvec(1024)`.
+- **Default embedder:** Qwen3-Embedding-0.6B (Apache-2.0) as ONNX on CPU through onnxruntime (fastembed if it supports the model; otherwise an ONNX export loaded directly, confirmed in step 2), Matryoshka-truncated to 1024 dims, stored as `halfvec(1024)`.
 - **Alternatives:** Ollama embeddings, provider embeddings, or bge-m3.
 - Every vector set records `embed_model_id` and `dim`. Changing the model triggers a background re-embed job.
-- **Paper-to-paper similarity:** SPECTER2 vectors from S2 when available (`paper_specter halfvec(768)`).
+- **Paper-to-paper similarity:** SPECTER2 (`allenai/specter2_base`, Apache-2.0) computed **locally** from title + abstract (`paper_specter halfvec(768)`). This replaces the S2-hosted vectors, with no key needed.
 
 ### 9.3 Search
 - **Hybrid:** BM25 (pg_textsearch, or the tsvector fallback) + dense (pgvector HNSW, `iterative_scan=relaxed_order`), fused with RRF (k=60).
-- **Rerank:** cross-encoder **bge-reranker-v2-m3** (fastembed/ONNX) on the top 50. Optionally an LLM rerank with the `cheap` role.
+- **Rerank:** cross-encoder **bge-reranker-v2-m3** (Apache-2.0, ONNX via onnxruntime) on the top 50. Optionally an LLM rerank with the `cheap` role.
 - **Contextual retrieval:** opt-in per collection. The `cheap` model writes a 50–100 token context prefix per chunk, using prompt caching per paper. A cost estimate is shown first.
 - **Graph-aware expansion:** personalized PageRank over the citation + concept subgraph (NetworkX), seeded by top hits, HippoRAG-style.
 - **Scale guard:** if the chunk count exceeds 5M, install pgvectorscale (StreamingDiskANN) in the same DB. An ADR is required before any separate vector DB.
@@ -458,8 +551,8 @@ score = w_rel*rel + w_imp*impact + w_inf*influential + w_graph*centrality
 | Component | Definition (normalized 0–1 within candidate set) | Balanced | Seminal | Recent |
 |---|---|---|---|---|
 | rel | Cross-encoder relevance to the query/sub-question | 0.45 | 0.35 | 0.40 |
-| impact | OpenAlex field/year-normalized citation percentile (FWCI fallback; else log1p(cites) percentile by year) | 0.20 | 0.30 | 0.05 |
-| influential | log1p(S2 influentialCitationCount) | 0.10 | 0.15 | 0.05 |
+| impact | OpenAlex `citation_normalized_percentile` / FWCI from free singletons. These are null for preprints, so the fallback is a **local percentile** of `cited_by_count` within the same OpenAlex topic × year, computed from the cache | 0.20 | 0.30 | 0.05 |
+| influential | Keyless proxy: the share of citers that are themselves in the candidate/seed set (co-citation by seeds), plus citing-context weight when full text is ingested (cited in more than one section). Uses S2 `influentialCitationCount` when the optional key is set | 0.10 | 0.15 | 0.05 |
 | centrality | PageRank + co-citation strength in the local candidate graph | 0.10 | 0.15 | 0.05 |
 | velocity | Citations in the last 24 months / total | 0.05 | 0.00 | 0.25 |
 | venue_prior | Curated venue tier + OpenReview acceptance/oral | 0.05 | 0.05 | 0.05 |
@@ -508,7 +601,7 @@ score = w_rel*rel + w_imp*impact + w_inf*influential + w_graph*centrality
 1. **Deterministic:**
    - every `[cite:<evidence_id>]` resolves to a stored evidence card;
    - the quoted span exists in the chunk (normalized string match);
-   - every reference resolves to a real record (DOI/Crossref/OpenAlex/S2, fuzzy title-author-year match, graded Exact / Minor / Major drift).
+   - every reference resolves to a real record (DOI via Crossref/DataCite/OpenAlex, fuzzy title-author-year match, graded Exact / Minor / Major drift), and retracted papers are flagged (OpenAlex `is_retracted`, Crossref retraction relations).
 2. **Grounding model:** sentences are decomposed into atomic claims, and each (claim, cited passage) pair is scored by **FactCG-DeBERTa-L** (MIT, CPU). **MiniCheck-Flan-T5-Large** is the alternative.
 3. **Escalation:** low-confidence pairs (0.35–0.65) go to the `mid` LLM as judge.
 4. **Action:** unsupported claims are re-retrieved, then rewritten, then dropped or flagged "unsupported" in the UI.
@@ -627,7 +720,11 @@ Migrations use Alembic. Every migration has an upgrade → downgrade → upgrade
   - Docker: the DB is on the internal compose network only, with no host port published. `researchly start --expose-db` publishes it on `127.0.0.1` for power users.
   - Native: it binds to `127.0.0.1` on a free port (default 54329), with Unix sockets on macOS/Linux.
 - **Data location:** `<data_dir>/pg` (`~/.researchly` by default; configurable at onboard). Docker uses a bind mount there, so both modes keep data in the same visible place.
-- **Same major version in both modes:** the step-1 spike picks a native distribution available for Windows, macOS and Linux. The Docker image is pinned to the **same major version**, PG 18 if the native candidate offers it, otherwise the newest major the native candidate supports, with a minimum of PG 16. This keeps `pg_dump` portable across modes. The schema and SQL must not rely on features newer than that major.
+- **Same major version in both modes: PostgreSQL 18.** Native uses `pg0-embedded`, which bundles PG 18 + pgvector 0.8.5 (fallback: conda-forge PG 18 + pgvector). Docker uses the PG 18 image. This keeps `pg_dump` portable across modes. The step-1 spike verifies, on all five platform targets:
+  - `CREATE EXTENSION vector, pg_trgm` works;
+  - start time;
+  - data directory relocation to `<data_dir>/pg`.
+  If `pg_trgm` is missing from pg0, native mode uses the conda-forge fallback, and this is recorded in an ADR.
 - **Extensions:**
   - `vector` and `pg_trgm` are always present. `pg_textsearch` is present in Docker mode only.
   - The Alembic baseline creates the extensions that are available and records the BM25 engine in `capability`.
@@ -711,8 +808,13 @@ Threat references: OWASP Top 10 for LLM Applications 2025 and OWASP Top 10 for A
 - Unit tests cover known bypasses (DNS rebinding, decimal and octal IPs, IPv6 forms, redirect to internal).
 
 ### 19.4 Code execution (ASI05)
-- **Docker mode:** a Jupyter kernel container per project session with `--network none`, read-only root plus a tmpfs workdir, limits of 2 CPU, 2 GB memory and 256 PIDs, a 60 s per-cell timeout, a non-root user, `no-new-privileges`, dropped capabilities, and the `runsc` runtime if installed.
-- **Native mode:** a subprocess with resource limits (job objects on Windows, rlimits on Unix), a temp workdir and network blocked where the OS allows. The UI shows a "lower isolation" badge and asks for confirmation before the first run.
+- **Light cells (every mode): Pyodide inside Deno.** Deno's permission flags are the real boundary: no network, read and write only in the cell's temp dir, no subprocesses or FFI. Pure Python, numpy, pandas and matplotlib work, and behaviour is identical on every OS. Import blocking is never treated as a security boundary (DEF CON 34 showed Pyodide ctypes escapes when restrictions were Python-level only).
+- **Full CPython kernel, Docker mode:** a Jupyter kernel container per project session with `--network none`, read-only root plus a tmpfs workdir, limits of 2 CPU, 2 GB memory and 256 PIDs, a 60 s per-cell timeout, a non-root user, `no-new-privileges`, dropped capabilities, and the `runsc` (gVisor) runtime if installed.
+- **Full CPython kernel, native mode** (opt-in), in the OS sandbox. This is the same approach Claude Code's sandbox-runtime and Codex use:
+  - **macOS:** `sandbox-exec` with a generated Seatbelt profile. Writes are denied except in the workdir, and network goes through a localhost proxy that denies all traffic.
+  - **Linux:** bubblewrap + seccomp when `bwrap` and user namespaces are available. Otherwise Landlock (no root; network rules on kernel ≥6.7) + rlimits.
+  - **Windows:** restricted token + ACLs + Job Object (unelevated). An optional stronger mode adds a dedicated sandbox user + firewall rules, which costs one UAC prompt and is offered, not required.
+  - **Fail closed:** if the sandbox cannot be established, the kernel does not start (avoids the silent-fallback class of CVE-2026-57144).
 - **Every** AI-proposed code cell needs a user click to run.
 
 ### 19.5 Output rendering
@@ -832,11 +934,21 @@ See §15.3: writes come only from user turns, memories carry provenance, behavio
   - publish a GitHub Release with `install.sh` / `install.ps1` checksums;
   - post-release install test on all three OSes.
 - **Versioning:** SemVer, with Conventional Commits generating the changelog. The repo stays private until the first release tag, then becomes public.
-- **Installer:**
-  - Detects the OS and architecture, installs `uv` if missing, then `uv tool install researchly-cli` from the release wheel.
-  - Then runs `researchly onboard`, which detects Docker and chooses the runtime mode (the user can override).
-  - Idempotent and re-runnable; it never uses `sudo` silently.
-  - The PowerShell version mirrors the bash one.
+- **Installer** (modelled on the uv and pixi installers):
+  - **Steps:**
+    1. `install.sh` / `install.ps1` detects the OS and architecture.
+    2. It installs `uv` to the user directory if missing (uv's own installer, PATH changes controlled).
+    3. `uv tool install researchly --python 3.12` (Python from python-build-standalone).
+    4. `researchly setup` runs runtime selection (§4.1): it detects the container engine and starts it if needed, or prepares native components.
+    5. It then fetches models and browsers lazily and resumably, runs `onboard` (LLM key, optional source keys), runs `doctor`, and prints the local URL.
+  - **No admin, ever.** Everything goes to user directories: `~/.local/bin` and `%LOCALAPPDATA%`. Idempotent and re-runnable. Never uses `sudo`; when an OS-level fix would help (e.g., Playwright Linux libs), `doctor` prints the single command for the user to run.
+  - **Integrity:** the script verifies SHA-256 hashes of everything it downloads. curl does not set the macOS quarantine flag, so Gatekeeper will not check it for us. Release assets carry GitHub artifact attestations (Sigstore), and the CLI is published to PyPI with Trusted Publishing.
+  - **Windows:** the documented one-liner is `powershell -ExecutionPolicy ByPass -c "irm …/install.ps1 | iex"`. Optional Authenticode signing through SignPath Foundation (free for OSI projects).
+  - **Networks:** honors `HTTPS_PROXY`, `SSL_CERT_FILE` / `UV_NATIVE_TLS`, `UV_INDEX_URL` and `HF_ENDPOINT` for corporate networks and mirrors.
+  - **Air-gapped:** `researchly bundle export|import` makes a tarball of the uv cache, models and browsers.
+  - **`researchly update`:** `uv tool upgrade researchly` plus pulling the matching images (Docker mode), then migrations. It checks GitHub Releases at most daily (opt-out).
+  - **`researchly uninstall [--purge-data]`:** removes the tool, caches, autostart entries and PATH lines, and data only with `--purge-data`.
+  - **Footprint (estimate, measured in step 9):** core ~0.6 GB, models ~1.5–2.5 GB, optional JDK + GROBID ~0.6 GB. First run downloads only the core; everything else is fetched on first use.
 
 ---
 
@@ -904,7 +1016,13 @@ There is a single release; the steps below are dependency order only. Each step 
    - Alembic baseline, app skeleton, frontend shell.
    - LLM layer (registry, capabilities, ledger, RecordReplay, dev `claude-code` provider).
    - Localhost guard, keychain.
-   - CLI skeleton (`start`/`stop`/`doctor`), and the **native-mode Postgres spike** (risk 1).
+   - CLI skeleton (`setup`/`start`/`stop`/`doctor`) with runtime selection and engine auto-start.
+   - **Platform spikes** (risks 1–3), each run on all five targets in CI and each producing an ADR:
+     - pg0 Postgres (`vector`, `pg_trgm`, start time);
+     - native SearXNG on Windows;
+     - native sandbox per OS;
+     - Docling-ONNX without torch;
+     - ONNX embedder/reranker loading.
 2. **Data:**
    - PoliteClient + http_cache, Tier-1 connectors, identity resolution.
    - Ingestion pipeline, embeddings, hybrid search + rerank.
@@ -926,7 +1044,7 @@ There is a single release; the steps below are dependency order only. Each step 
 
 ## 25. Non-functional requirements
 - **Performance targets** on a reference laptop (8-core CPU, 16 GB RAM, no GPU):
-  - App cold start under 10 s (Docker, warm images).
+  - App cold start under 10 s (Docker with warm images, and native).
   - Library search p95 under 300 ms at 100k papers / 1M chunks.
   - Graph view interactive (≥30 fps pan/zoom) at 20k nodes; field view at 100k nodes.
   - Embedding throughput ≥ 50 chunks/s on CPU.
@@ -942,11 +1060,16 @@ There is a single release; the steps below are dependency order only. Each step 
 ## 26. Risks & spikes
 | Risk | Mitigation | When |
 |---|---|---|
-| Native Postgres + extensions on Windows/macOS | Step-1 spike compares `pgserver`, `pg0-embedded` and conda-forge `postgresql`+`pgvector` on all 3 OSes. Criteria: Postgres major version, pgvector ≥0.8, pg_trgm, start time, maintenance and license. The result is an ADR that also fixes the shared major version (§16.1) | Step 1 |
+| 1. Native Postgres (pg0 is a single-vendor project; `pg_trgm` presence unverified) | Step-1 spike on all 5 targets; conda-forge PG 18 + pgvector via pixi as fallback. (`pgserver` rejected: stale since 2024, PG 16. `pgserver-search` rejected: missing platforms) | Step 1 |
+| 2. Native SearXNG on Windows (no official support) | Spike: app-private venv + granian. If it fails, Windows native runs without web search and `doctor` explains the trade-off; Docker mode always has it | Step 1 |
+| 3. Native sandboxes (`sandbox-exec` deprecated but working; Ubuntu 24.04 AppArmor blocks bwrap user namespaces; Pyodide escape history) | Landlock fallback on Linux; fail closed; Deno permissions as the boundary for Pyodide; security tests per OS | Step 1, 10 |
+| Keyless OpenAlex budget shared per IP (NAT) | Free singletons first, ≤50 searches/day, budget guard at 20%, other sources fill in, optional free key suggested | Step 2 |
+| Container engine auto-start fails or needs elevation | Timeout → explain → native fallback for this session | Step 1 |
+| Torch/CUDA bloat via Docling on Linux | ONNX-runtime models extra; a CI check that `torch` is absent from the native lock | Step 1 |
 | LiteLLM supply chain | Exact pin with hashes, ≥14-day-old non-advisory release, upgrade PR checklist, no Docker image, telemetry off (§19.7) | Ongoing |
 | Mem0 vs Hindsight quality | Bake-off with an ADR | Step 6 |
 | Deep Agents churn | Pinned version, single factory module, upgrade ADR + full suite | Ongoing |
-| Scholarly API limits/quotas | Caching, quotas surfaced in UI, multiple sources, user keys | Step 2 |
+| Scholarly API limits/quotas | Per-host buckets below observed limits, circuit breakers, caching, quotas surfaced in UI, multiple keyless sources, optional free keys | Step 2 |
 | Dev `claude-code` provider latency (seconds per call) | Use only for recording and exploration; CI uses replay | Step 1 |
 | Multi-agent token cost (~15× chat) | Effort tiers, budgets, estimates, cheap-role routing, caching | Step 3 |
 | Tauri/desktop not in scope | Browser UI only; revisit by ADR | — |
