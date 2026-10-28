@@ -13,12 +13,12 @@ _known: set[str] = set()
 
 
 def register_secret(value: str) -> None:
-    if len(value) >= 8:
+    if len(value.strip()) >= 8:
         _known.add(value)
 
 
 def redact(text: str) -> str:
-    for secret in _known:
+    for secret in sorted(_known, key=len, reverse=True):
         text = text.replace(secret, "[REDACTED]")
     for pattern in _PATTERNS:
         text = pattern.sub("[REDACTED]", text)
@@ -29,4 +29,11 @@ class RedactingFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         record.msg = redact(record.getMessage())
         record.args = None
+        if record.exc_info:
+            record.exc_text = logging.Formatter().formatException(record.exc_info)
+            record.exc_info = None  # formatters must use the redacted exc_text, never re-render the traceback
+        if record.exc_text:
+            record.exc_text = redact(record.exc_text)
+        if record.stack_info:
+            record.stack_info = redact(record.stack_info)
         return True
