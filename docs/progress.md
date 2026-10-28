@@ -25,7 +25,7 @@ Newest entries at the bottom. Each session appends: date, plan + task, what chan
 - Spec §23.2 still says the data plugin "is disabled"; it is not (see below).
 
 ### User actions outstanding
-- `claude update` (2.1.77 is old; then confirm `/hooks` lists 4 events and `/agents` lists 9 agents with opus/sonnet/haiku models).
-- Authenticate context7 (`claude mcp list` shows "Needs authentication").
+- Done 2026-10-28: `claude update` → 2.1.312; context7 authenticated (`claude mcp list` → Connected).
+- Optional: approve project MCP `docs-langchain` in an interactive `claude` session (CLI shows "Pending approval"; the VS Code session already loads it).
 - Done 2026-10-28: `data` plugin (synced from claude.ai, `data@knowledge-work-plugins`) disabled for this project via gitignored `.claude/settings.local.json`; global pyright 1.1.414 restored to a complete install after a second EBUSY (a running pyright-langserver locks `dist`).
 - Note: run `claude update` (and any `npm i -g` of a tool that is currently running) only with all Claude Code sessions closed — npm cannot replace locked files on Windows and leaves a broken install.
