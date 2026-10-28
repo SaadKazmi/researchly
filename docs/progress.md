@@ -26,6 +26,6 @@ Newest entries at the bottom. Each session appends: date, plan + task, what chan
 
 ### User actions outstanding
 - `claude update` (2.1.77 is old; then confirm `/hooks` lists 4 events and `/agents` lists 9 agents with opus/sonnet/haiku models).
-- Disable the `data` plugin via `/plugin` (CLI couldn't find it).
 - Authenticate context7 (`claude mcp list` shows "Needs authentication").
-- Re-run `npm i -g pyright` once VS Code's pyright-langserver isn't holding the install dir (current install was repaired by manual copy).
+- Done 2026-10-28: `data` plugin (synced from claude.ai, `data@knowledge-work-plugins`) disabled for this project via gitignored `.claude/settings.local.json`; global pyright 1.1.414 restored to a complete install after a second EBUSY (a running pyright-langserver locks `dist`).
+- Note: run `claude update` (and any `npm i -g` of a tool that is currently running) only with all Claude Code sessions closed — npm cannot replace locked files on Windows and leaves a broken install.
