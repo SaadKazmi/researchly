@@ -65,3 +65,13 @@ async def test_recording_scrubs_secrets(tmp_path):
     text = path.read_text(encoding="utf-8")
     assert "super-secret-token-123" not in text and "me@example.org" not in text
     json.loads(text)  # still valid JSON
+
+
+@pytest.mark.anyio
+async def test_recording_scrubs_secrets_with_json_escapes(tmp_path):
+    secret = r'pa"ss\word12'  # noqa: S105
+    register_secret(secret)
+    path = tmp_path / "calls.jsonl"
+    await recorder(path, AIMessage(content=f"x {secret} y")).ainvoke("hi")
+    line = json.loads(path.read_text(encoding="utf-8"))
+    assert line["response"]["data"]["content"] == "x [REDACTED] y"

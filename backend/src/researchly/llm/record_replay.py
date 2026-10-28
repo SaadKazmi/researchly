@@ -30,6 +30,17 @@ def fixture_key(request: dict[str, Any]) -> str:
     return hashlib.sha256(_canonical(request).encode("utf-8")).hexdigest()
 
 
+def _scrub(obj: Any) -> Any:
+    """Redact every string leaf; on serialized JSON an escaped secret (quote, backslash) would slip past redact()."""
+    if isinstance(obj, str):
+        return redact(obj)
+    if isinstance(obj, dict):
+        return {_scrub(k): _scrub(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_scrub(v) for v in obj]
+    return obj
+
+
 def fixtures_path(settings: Settings) -> Path:
     return settings.llm_fixtures_dir / settings.llm_fixtures_suite / "calls.jsonl"
 
@@ -107,7 +118,8 @@ class RecordReplayChatModel(BaseChatModel):
         line = {"key": key, "request": request, "response": message_to_dict(result.generations[0].message)}
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.path.open("a", encoding="utf-8", newline="\n") as fh:
-            fh.write(redact(_canonical(line)) + "\n")
+            # round-trip through JSON first so default=str leaves are strings _scrub can reach
+            fh.write(_canonical(_scrub(json.loads(_canonical(line)))) + "\n")
 
     def _generate(
         self,
