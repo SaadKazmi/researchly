@@ -1,6 +1,9 @@
+import io
 import json
+import sys
 from pathlib import Path
 
+import _common
 import protect
 
 MIGRATION_DIR = "backend/src/researchly/db/migrations/versions"
@@ -96,15 +99,58 @@ def test_features_invalid_json_denied(tmp_path):
 
 
 def test_multiedit_applies_all_edits(tmp_path):
-    p = write(tmp_path, "docs/features.json", json.dumps(features()))
+    # Edit 1 is a passes flip (allowed alone). Edit 2 only matches after edit 1 has
+    # run and adds a top-level key (structure change). Ask only if both are applied.
+    spec = ["e2e/specs/F1.1.spec.ts"]
+    p = write(tmp_path, "docs/features.json", json.dumps(features(e2e=spec)))
     decision = protect.decide(
         {
             "tool_name": "MultiEdit",
             "tool_input": {
                 "file_path": str(p),
-                "edits": [{"old_string": '"title": "Projects"', "new_string": '"title": "X"'}],
+                "edits": [
+                    {"old_string": '"passes": false', "new_string": '"passes": true'},
+                    {"old_string": '"passes": true}]}', "new_string": '"passes": true}], "owner": "x"}'},
+                ],
             },
         },
         tmp_path,
     )
+    assert decision is not None and decision[0] == "ask"
+
+
+def test_read_payload_decodes_utf8_regardless_of_locale(monkeypatch):
+    raw = json.dumps({"x": "§"}, ensure_ascii=False).encode("utf-8")
+    monkeypatch.setattr(sys, "stdin", io.TextIOWrapper(io.BytesIO(raw), encoding="cp1252"))
+    assert _common.read_payload()["x"] == "§"
+
+
+def test_main_fails_closed_on_hook_error(monkeypatch, capsys):
+    def boom(payload, root):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(protect, "decide", boom)
+    monkeypatch.setattr(sys, "stdin", io.TextIOWrapper(io.BytesIO(b""), encoding="utf-8"))
+    assert protect.main() == 0
+    out = json.loads(capsys.readouterr().out)["hookSpecificOutput"]
+    assert out["permissionDecision"] == "ask"
+    assert "RuntimeError: boom" in out["permissionDecisionReason"]
+
+
+def test_features_non_object_json_denied(tmp_path):
+    p = write(tmp_path, "docs/features.json", json.dumps(features()))
+    decision = protect.decide(payload("Write", p, content="[]"), tmp_path)
+    assert decision is not None and decision[0] == "deny"
+    assert "must be a JSON object" in decision[1]
+
+
+def test_unreadable_existing_features_asks(tmp_path):
+    p = write(tmp_path, "docs/features.json", "{bad")
+    decision = protect.decide(payload("Write", p, content=json.dumps(features())), tmp_path)
+    assert decision is not None and decision[0] == "ask"
+
+
+def test_non_object_existing_features_asks(tmp_path):
+    p = write(tmp_path, "docs/features.json", "[]")
+    decision = protect.decide(payload("Write", p, content=json.dumps(features())), tmp_path)
     assert decision is not None and decision[0] == "ask"

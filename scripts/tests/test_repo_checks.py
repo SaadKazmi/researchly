@@ -101,3 +101,27 @@ def test_main_on_minimal_repo(tmp_path: Path, capsys: pytest.CaptureFixture[str]
     (tmp_path / "docs" / "features.json").write_text('{"features": []}', encoding="utf-8")
     assert main(tmp_path) == 1
     assert "features must be a non-empty list" in capsys.readouterr().out
+
+
+def test_non_object_data_rejected():
+    assert check_features([]) == ["features.json must be a JSON object"]
+    assert check_features(None) == ["features.json must be a JSON object"]
+
+
+def test_non_string_id_reported_not_raised():
+    errors = check_features({"features": [feature(id=7)]})
+    assert "<non-string id>: id must be a string" in errors
+
+
+def test_build_step_bool_rejected():
+    assert "F1.1: build_step must be 1..10" in check_features({"features": [feature(build_step=True)]})
+
+
+def test_passes_with_blank_e2e_rejected():
+    errors = check_features({"features": [feature(passes=True, e2e=[""])]})
+    assert "F1.1: passes=true requires at least one e2e spec" in errors
+
+
+def test_blank_e2e_entry_reported():
+    errors = check_features({"features": [feature(e2e=["", "x"])]})
+    assert "F1.1: e2e entries must be non-empty strings" in errors

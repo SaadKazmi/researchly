@@ -16,7 +16,9 @@ INSTRUCTION_FILES = ("AGENTS.md", "CLAUDE.md", "backend/AGENTS.md", "frontend/AG
 _ID_RE = re.compile(r"^F\d+\.\d+$")
 
 
-def check_features(data: dict) -> list[str]:
+def check_features(data: object) -> list[str]:
+    if not isinstance(data, dict):
+        return ["features.json must be a JSON object"]
     features = data.get("features")
     if not isinstance(features, list) or not features:
         return ["features must be a non-empty list"]
@@ -27,19 +29,26 @@ def check_features(data: dict) -> list[str]:
         if not isinstance(f, dict) or set(f) != FEATURE_KEYS:
             errors.append(f"{fid}: keys must be {sorted(FEATURE_KEYS)}")
             continue
+        if not isinstance(fid, str):
+            errors.append("<non-string id>: id must be a string")
+            continue
         if not _ID_RE.match(fid):
             errors.append(f"{fid}: bad id")
         if fid in seen:
             errors.append(f"{fid}: duplicate id")
         seen.add(fid)
+        e2e = f["e2e"]
         if not isinstance(f["passes"], bool):
             errors.append(f"{fid}: passes must be a boolean")
-        elif f["passes"] and not f["e2e"]:
+        elif f["passes"] and not (isinstance(e2e, list) and any(isinstance(s, str) and s for s in e2e)):
             errors.append(f"{fid}: passes=true requires at least one e2e spec")
-        if not isinstance(f["build_step"], int) or not 1 <= f["build_step"] <= 10:
+        bs = f["build_step"]
+        if isinstance(bs, bool) or not isinstance(bs, int) or not 1 <= bs <= 10:
             errors.append(f"{fid}: build_step must be 1..10")
-        if not isinstance(f["e2e"], list):
+        if not isinstance(e2e, list):
             errors.append(f"{fid}: e2e must be a list")
+        elif not all(isinstance(s, str) and s for s in e2e):
+            errors.append(f"{fid}: e2e entries must be non-empty strings")
     return errors
 
 

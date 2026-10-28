@@ -42,12 +42,17 @@ def _check_features_change(payload: dict, path: Path) -> tuple[str, str] | None:
         new = json.loads(new_text)
     except json.JSONDecodeError as exc:
         return ("deny", f"docs/features.json would become invalid JSON: {exc}")
+    if not isinstance(new, dict):
+        return ("deny", "docs/features.json must be a JSON object")
     errors = check_features(new)
     if errors:
         return ("deny", "docs/features.json invalid: " + "; ".join(errors[:5]))
     if path.exists():
-        old = json.loads(path.read_text(encoding="utf-8"))
-        if _skeleton(old) != _skeleton(new):
+        try:
+            old = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return ("ask", "existing docs/features.json is unreadable; confirm this edit manually.")
+        if not isinstance(old, dict) or _skeleton(old) != _skeleton(new):
             return ("ask", "docs/features.json structure change: only `passes` may change without user approval.")
     return None
 
@@ -67,7 +72,11 @@ def decide(payload: dict, root: Path) -> tuple[str, str] | None:
 
 
 def main() -> int:
-    result = decide(read_payload(), project_root())
+    try:
+        result = decide(read_payload(), project_root())
+    except Exception as exc:
+        # A broken guard must fail closed to user approval, not silently allow the edit.
+        result = ("ask", f"protect hook error ({type(exc).__name__}: {exc}); confirm this edit manually.")
     if result:
         decision, reason = result
         print(

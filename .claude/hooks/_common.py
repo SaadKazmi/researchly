@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 def read_payload() -> dict:
-    raw = sys.stdin.read()
+    raw = sys.stdin.buffer.read().decode("utf-8")
     return json.loads(raw) if raw.strip() else {}
 
 
