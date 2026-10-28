@@ -29,6 +29,7 @@ htmlcov/
 # Claude Code local
 CLAUDE.local.md
 .claude/settings.local.json
+.claude/worktrees/
 
 # Superpowers SDD scratch
 .superpowers/
