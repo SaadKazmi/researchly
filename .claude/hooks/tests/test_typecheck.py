@@ -18,9 +18,9 @@ def make(root: Path, rel: str) -> None:
     p.write_text("", encoding="utf-8")
 
 
-def test_parse_porcelain_handles_renames_and_untracked():
-    text = " M backend/a.py\n?? frontend/src/b.tsx\nR  old.py -> backend/new.py\n"
-    assert typecheck.parse_porcelain(text) == ["backend/a.py", "frontend/src/b.tsx", "backend/new.py"]
+def test_parse_porcelain_z_handles_renames_untracked_and_spaces():
+    text = " M backend/a.py\0?? frontend/src/b c.tsx\0R  backend/new.py\0old.py\0"
+    assert typecheck.parse_porcelain(text) == ["backend/a.py", "frontend/src/b c.tsx", "backend/new.py"]
 
 
 def test_checks_for_backend_and_frontend(tmp_path):

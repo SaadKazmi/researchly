@@ -201,3 +201,32 @@ def test_hooks_dir_wins_import_path_over_scripts():
     )
     paths = [Path(p) for p in out.stdout.splitlines() if p]
     assert paths.index(hooks) < paths.index(scripts)
+
+
+def test_features_structure_change_inside_worktree_asks(tmp_path):
+    wt = tmp_path / ".claude" / "worktrees" / "w1"
+    (wt / "docs").mkdir(parents=True)
+    old = {"features": [{"id": "F1.1", "title": "t", "build_step": 3, "spec_ref": "§3", "acceptance": "a", "e2e": [], "passes": False}]}
+    (wt / "docs" / "features.json").write_text(json.dumps(old), encoding="utf-8")
+    new = {"features": [{**old["features"][0], "title": "changed"}]}
+    payload = {"tool_name": "Write", "tool_input": {"file_path": str(wt / "docs" / "features.json"), "content": json.dumps(new)}}
+    assert protect.decide(payload, tmp_path)[0] == "ask"
+
+
+def test_control_plane_inside_worktree_asks(tmp_path):
+    path = tmp_path / ".claude" / "worktrees" / "w1" / ".claude" / "hooks" / "x.py"
+    assert protect.decide({"tool_name": "Write", "tool_input": {"file_path": str(path)}}, tmp_path)[0] == "ask"
+
+
+def test_auto_mode_skips_control_plane_and_workflow_asks(tmp_path):
+    # The auto-mode classifier already guards harness self-modification; a second prompt only interrupts.
+    for rel in (".claude/hooks/protect.py", ".github/workflows/ci.yml"):
+        p = payload("Write", tmp_path / rel, content="x") | {"permission_mode": "auto"}
+        assert protect.decide(p, tmp_path) is None, rel
+
+
+def test_auto_mode_keeps_migration_and_features_guards(tmp_path):
+    mig = write(tmp_path, "backend/src/researchly/db/migrations/versions/0001_x.py", "x")
+    assert protect.decide(payload("Edit", mig, old_string="x", new_string="y") | {"permission_mode": "auto"}, tmp_path)[0] == "ask"
+    feat = tmp_path / "docs/features.json"
+    assert protect.decide(payload("Write", feat, content="{bad") | {"permission_mode": "auto"}, tmp_path)[0] == "deny"
