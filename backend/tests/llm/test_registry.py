@@ -64,3 +64,13 @@ def test_litellm_cost_map_is_local():
 
     assert os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] == "True"
     assert registry.litellm.model_cost  # bundled map loaded without network
+
+
+def test_replay_mode_needs_no_provider(tmp_path):
+    from researchly.llm.record_replay import RecordReplayChatModel
+
+    s = Settings(env="test", llm_fixtures="replay", llm_fixtures_dir=tmp_path, llm_fixtures_suite="smoke")
+    model = chat_model("strong", [], s, T)
+    assert isinstance(model, RecordReplayChatModel)
+    assert (model.mode, model.model_alias, model.role) == ("replay", "claude-code/sonnet", "strong")
+    assert model.path == tmp_path / "smoke" / "calls.jsonl"

@@ -90,6 +90,15 @@ def cost_usd(model: str, in_tok: int, cached_tok: int, out_tok: int, table: Capa
 def chat_model(
     role: Role, providers: Sequence[ProviderSpec], settings: Settings, table: CapabilityTable | None = None
 ) -> BaseChatModel:
+    if settings.llm_fixtures == "replay":
+        from researchly.llm.record_replay import RecordReplayChatModel, fixtures_path
+
+        return RecordReplayChatModel(
+            mode="replay",
+            path=fixtures_path(settings),
+            role=role,
+            model_alias=f"claude-code/{settings.dev_provider_model}",
+        )
     spec, name = resolve_model(role, providers, table or load_table())
     api_key = get_secret(spec.key_ref) if spec.key_ref else None  # fetched per construction, never stored
     return _KeyedChatLiteLLM(model=name, api_key=api_key, api_base=spec.base_url)
