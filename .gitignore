@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+dist/
+build/
+*.egg-info/
+
+# Node
+node_modules/
+frontend/dist/
+.pnpm-store/
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+
+# Test artifacts
+e2e/.artifacts/
+e2e/test-results/
+e2e/playwright-report/
+coverage/
+htmlcov/
+
+# Claude Code local
+CLAUDE.local.md
+.claude/settings.local.json
+
+# Superpowers SDD scratch
+.superpowers/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
