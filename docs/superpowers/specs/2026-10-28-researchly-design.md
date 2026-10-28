@@ -1000,7 +1000,7 @@ See §15.3: writes come only from user turns, memories carry provenance, behavio
   - SessionStart `compact|resume`: inject `progress.md`, the current plan path and `git status`.
   - `permissions.deny`: `.env*` and lockfile edits.
 - **Token settings:**
-  - `CLAUDE_CODE_SUBAGENT_MODEL=sonnet`.
+  - Per-agent `model:` frontmatter sets each subagent's model. `CLAUDE_CODE_SUBAGENT_MODEL` is not set, because Claude Code checks it before agent frontmatter, so it would override every agent's model.
   - Effort: medium by default, high for planning and debugging.
   - `autoCompactWindow` set to 300000.
   - A status line showing context %, cost and effort.

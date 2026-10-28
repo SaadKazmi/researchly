@@ -665,9 +665,9 @@ Researchly is an open-source, local-first, multi-agent research assistant: chat 
 |---|---|
 | Repo checks | `uv run --no-project --python 3.12 scripts/repo_checks.py` |
 | Hook/script tests | `uv run --no-project --python 3.12 --with pytest pytest .claude/hooks/tests scripts/tests -q` |
-| Backend tests | `uv run --project backend pytest -q` |
-| Backend lint/format | `uv run --project backend ruff check` · `uv run --project backend ruff format` |
-| Backend types | `uv run --project backend pyright` |
+| Backend tests | `uv run --directory backend pytest -q` |
+| Backend lint/format | `uv run --directory backend ruff check` · `uv run --directory backend ruff format` |
+| Backend types | `uv run --directory backend pyright` |
 | Frontend tests | `pnpm -C frontend test` |
 | Frontend types/lint | `pnpm -C frontend exec tsc --noEmit` · `pnpm -C frontend lint` |
 | E2E smoke | `pnpm -C e2e exec playwright test --grep @smoke` |
@@ -693,7 +693,7 @@ The default `python` on dev machines may be old; always go through `uv`.
 5. Flip `passes` in `features.json` only after its E2E spec passes; append to `docs/progress.md`.
 
 ## Gotchas
-- Windows dev box: PowerShell 5.1 has no `&&`; use `;` with `if ($?)`. Git Bash is used by hooks.
+- Windows dev box: PowerShell 5.1 has no `&&`; use `;` with `if ($?)`. Hooks are Python scripts launched via `uv run` (Claude Code runs hook commands through Git Bash on Windows).
 - `docs/features.json` edits other than `passes` require user approval (hook asks).
 - Docker may be installed but stopped; the CLI starts it — don't assume either runtime in tests; both modes are in CI.
 
@@ -1074,8 +1074,8 @@ def test_python_in_backend(tmp_path):
     make(tmp_path, "backend/pyproject.toml")
     cmds = fmt.commands_for("backend/src/researchly/app.py", tmp_path)
     assert cmds == [
-        ["uv", "run", "--project", "backend", "ruff", "format", "backend/src/researchly/app.py"],
-        ["uv", "run", "--project", "backend", "ruff", "check", "--fix", "backend/src/researchly/app.py"],
+        ["uv", "run", "--directory", "backend", "ruff", "format", "src/researchly/app.py"],
+        ["uv", "run", "--directory", "backend", "ruff", "check", "--fix", "src/researchly/app.py"],
     ]
 
 
@@ -1126,7 +1126,7 @@ def test_checks_for_backend_and_frontend(tmp_path):
     make(tmp_path, "frontend/package.json")
     cmds = typecheck.checks_for(["backend/src/x.py", "frontend/src/y.ts"], tmp_path)
     assert cmds == [
-        ["uv", "run", "--project", "backend", "pyright"],
+        ["uv", "run", "--directory", "backend", "pyright"],
         ["pnpm", "-C", "frontend", "exec", "tsc", "--noEmit"],
     ]
 
@@ -1215,8 +1215,8 @@ _FRONTEND_EXT = (".ts", ".tsx", ".css", ".json")
 def commands_for(rel: str, root: Path) -> list[list[str]]:
     if rel.startswith("backend/") and rel.endswith(".py") and (root / "backend/pyproject.toml").exists():
         return [
-            ["uv", "run", "--project", "backend", "ruff", "format", rel],
-            ["uv", "run", "--project", "backend", "ruff", "check", "--fix", rel],
+            ["uv", "run", "--directory", "backend", "ruff", "format", rel.removeprefix("backend/")],
+            ["uv", "run", "--directory", "backend", "ruff", "check", "--fix", rel.removeprefix("backend/")],
         ]
     if rel.startswith("frontend/") and rel.endswith(_FRONTEND_EXT) and (root / "frontend/package.json").exists():
         return [["pnpm", "-C", "frontend", "exec", "prettier", "--write", rel.removeprefix("frontend/")]]
@@ -1282,7 +1282,7 @@ def checks_for(changed: list[str], root: Path) -> list[list[str]]:
     if any(p.startswith("backend/") and p.endswith(".py") for p in changed) and (
         root / "backend/pyproject.toml"
     ).exists():
-        cmds.append(["uv", "run", "--project", "backend", "pyright"])
+        cmds.append(["uv", "run", "--directory", "backend", "pyright"])
     if any(p.startswith("frontend/") and p.endswith((".ts", ".tsx")) for p in changed) and (
         root / "frontend/package.json"
     ).exists():
