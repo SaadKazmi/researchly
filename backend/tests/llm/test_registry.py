@@ -50,6 +50,15 @@ def test_chat_model_reads_key_at_construction_and_never_from_settings():
     assert "sk-ant" not in repr(model)
 
 
+def test_chat_model_key_never_appears_in_dumps():
+    key = "sk-ant-api03-ABCDEFGHIJKLMNOPQRSTUVWX"
+    set_secret("anthropic", key)
+    model = chat_model("cheap", [ANTHROPIC], Settings(env="test"), T)
+    assert isinstance(model, ChatLiteLLM)
+    assert key not in str(model.model_dump())  # model_dump_json() can't serialize ChatLiteLLM's client at all
+    assert model.api_key == key  # still usable for calls
+
+
 def test_litellm_cost_map_is_local():
     import os
 

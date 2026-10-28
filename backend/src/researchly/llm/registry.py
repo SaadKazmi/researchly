@@ -11,12 +11,22 @@ from typing import Literal  # noqa: E402
 import litellm  # noqa: E402
 from langchain_core.language_models import BaseChatModel  # noqa: E402
 from langchain_litellm import ChatLiteLLM  # noqa: E402
+from pydantic import Field  # noqa: E402
 
 from researchly.config import Settings  # noqa: E402
 from researchly.llm.capabilities import CapabilityTable, ModelOverride, load_table  # noqa: E402
 from researchly.security.keychain import get_secret  # noqa: E402
 
 Role = Literal["strong", "mid", "cheap", "critic"]
+
+
+litellm.suppress_debug_info = True  # no "Provider List" banner on stdout
+
+
+class _KeyedChatLiteLLM(ChatLiteLLM):
+    """ChatLiteLLM whose key never reaches model_dump() (no keys in state/checkpoints/traces)."""
+
+    api_key: str | None = Field(default=None, repr=False, exclude=True)
 
 
 class NoModelForRole(LookupError):
@@ -82,4 +92,4 @@ def chat_model(
 ) -> BaseChatModel:
     spec, name = resolve_model(role, providers, table or load_table())
     api_key = get_secret(spec.key_ref) if spec.key_ref else None  # fetched per construction, never stored
-    return ChatLiteLLM(model=name, api_key=api_key, api_base=spec.base_url)
+    return _KeyedChatLiteLLM(model=name, api_key=api_key, api_base=spec.base_url)
