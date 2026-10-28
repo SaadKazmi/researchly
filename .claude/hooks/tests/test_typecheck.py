@@ -1,3 +1,4 @@
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -55,3 +56,10 @@ def test_failure_blocks_with_truncated_reason(tmp_path):
 def test_success_does_not_block(tmp_path):
     make(tmp_path, "backend/pyproject.toml")
     assert typecheck.decide({}, tmp_path, ["backend/x.py"], run=lambda cmd: Result(0)) is None
+
+
+def test_run_decodes_non_cp1252_utf8_output(tmp_path):
+    code = "import sys; sys.stdout.buffer.write('\u201d error'.encode('utf-8')); sys.exit(1)"
+    result = typecheck._run(tmp_path)([sys.executable, "-c", code])
+    assert result.returncode == 1
+    assert "error" in result.stdout

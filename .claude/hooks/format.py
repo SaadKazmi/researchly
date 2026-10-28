@@ -30,7 +30,7 @@ def main() -> int:
     rel = rel_path(read_payload().get("tool_input", {}).get("file_path", ""), root)
     for cmd in commands_for(rel, root) if rel else []:
         exe = shutil.which(cmd[0]) or cmd[0]
-        subprocess.run([exe, *cmd[1:]], cwd=root, capture_output=True, text=True, check=False)
+        subprocess.run([exe, *cmd[1:]], cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace", check=False)
     return 0
 
 

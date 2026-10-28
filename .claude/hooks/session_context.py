@@ -34,7 +34,7 @@ def build_context(root: Path, git_status: str, limit: int = 10_000) -> str:
 def main() -> int:
     root = project_root()
     status = subprocess.run(
-        ["git", "status", "--short"], cwd=root, capture_output=True, text=True, check=False
+        ["git", "status", "--short"], cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace", check=False
     ).stdout
     print(
         json.dumps(

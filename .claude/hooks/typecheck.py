@@ -64,7 +64,7 @@ def decide(
 def _run(root: Path) -> Callable[[list[str]], CompletedLike]:
     def run(cmd: list[str]) -> CompletedLike:
         exe = shutil.which(cmd[0]) or cmd[0]
-        return subprocess.run([exe, *cmd[1:]], cwd=root, capture_output=True, text=True, check=False)
+        return subprocess.run([exe, *cmd[1:]], cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace", check=False)
 
     return run
 
@@ -72,7 +72,7 @@ def _run(root: Path) -> Callable[[list[str]], CompletedLike]:
 def main() -> int:
     root = project_root()
     status = subprocess.run(
-        ["git", "status", "--porcelain=v1", "-uall"], cwd=root, capture_output=True, text=True, check=False
+        ["git", "status", "--porcelain=v1", "-uall"], cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace", check=False
     ).stdout
     result = decide(read_payload(), root, parse_porcelain(status), _run(root))
     if result:

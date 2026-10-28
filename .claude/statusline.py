@@ -15,6 +15,10 @@ def render(payload: dict) -> str:
     return f"{model} | ctx {ctx} | ${cost:.2f} | effort {effort}"
 
 
-if __name__ == "__main__":
-    raw = sys.stdin.read()
+def main() -> None:
+    raw = sys.stdin.buffer.read().decode("utf-8", errors="replace")
     print(render(json.loads(raw) if raw.strip() else {}))
+
+
+if __name__ == "__main__":
+    main()

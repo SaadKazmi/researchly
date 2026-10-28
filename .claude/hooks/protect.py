@@ -1,6 +1,6 @@
 """PreToolUse hook: ask/deny rules for sensitive files.
 
-- Harness control plane (.claude/settings*.json, hooks/, agents/, skills/, statusline, .mcp.json): ask.
+- Harness control plane (.claude/settings*.json, hooks/, agents/, skills/, statusline, .mcp.json, scripts/repo_checks.py): ask.
 - .github/workflows/*: ask (CI changes need the user's eye).
 - Existing Alembic revisions: ask (add a new revision instead).
 - docs/features.json: deny invalid content; ask for anything beyond flipping `passes`.
@@ -14,12 +14,12 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+sys.path.append(str(Path(__file__).resolve().parents[2] / "scripts"))  # append: the hooks dir must win
 
 from _common import project_root, read_payload, rel_path  # noqa: E402
 from repo_checks import check_features  # noqa: E402
 
-_CONTROL_PLANE = {".claude/settings.json", ".claude/settings.local.json", ".claude/statusline.py", ".mcp.json"}
+_CONTROL_PLANE = {".claude/settings.json", ".claude/settings.local.json", ".claude/statusline.py", ".mcp.json", "scripts/repo_checks.py"}
 _CONTROL_PLANE_DIRS = (".claude/hooks/", ".claude/agents/", ".claude/skills/")
 _MIGRATION_RE = re.compile(r"^backend/src/researchly/db/migrations/versions/.+\.py$")
 

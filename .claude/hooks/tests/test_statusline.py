@@ -1,3 +1,5 @@
+import io
+import json
 import sys
 from pathlib import Path
 
@@ -18,3 +20,11 @@ def test_render_full_payload():
 
 def test_render_missing_fields():
     assert statusline.render({}) == "? | ctx ?% | $0.00 | effort ?"
+
+
+def test_main_decodes_utf8_stdin_under_cp1252_text_wrapper(monkeypatch, capsys):
+    raw = json.dumps({"model": {"display_name": "Opus ”"}}, ensure_ascii=False).encode("utf-8")
+    stdin = io.TextIOWrapper(io.BytesIO(raw), encoding="cp1252", errors="strict")
+    monkeypatch.setattr(sys, "stdin", stdin)
+    statusline.main()
+    assert "Opus ”" in capsys.readouterr().out

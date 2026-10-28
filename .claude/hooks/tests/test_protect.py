@@ -1,5 +1,6 @@
 import io
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -167,6 +168,7 @@ def test_control_plane_files_ask(tmp_path):
         ("Write", ".claude/hooks/tests/test_protect.py"),
         ("Write", ".claude/statusline.py"),
         ("Write", ".mcp.json"),
+        ("Edit", "scripts/repo_checks.py"),
     ]:
         assert protect.decide(payload(tool, tmp_path / rel, content="x"), tmp_path) == ("ask", CONTROL_PLANE_REASON), rel
 
@@ -187,3 +189,15 @@ def test_features_rule_is_case_insensitive(tmp_path):
     write(tmp_path, "docs/features.json", json.dumps(features()))
     result = protect.decide(payload("Write", tmp_path / "DOCS/features.json", content="{bad"), tmp_path)
     assert result and result[0] == "deny"
+
+
+def test_hooks_dir_wins_import_path_over_scripts():
+    # fresh interpreter: the conftest path setup would mask protect's own ordering
+    hooks = Path(protect.__file__).resolve().parent
+    scripts = hooks.parents[1] / "scripts"
+    code = "import sys; sys.path.insert(0, sys.argv[1]); import protect; print(*sys.path, sep='\\n')"
+    out = subprocess.run(
+        [sys.executable, "-c", code, str(hooks)], capture_output=True, text=True, encoding="utf-8", check=True
+    )
+    paths = [Path(p) for p in out.stdout.splitlines() if p]
+    assert paths.index(hooks) < paths.index(scripts)
