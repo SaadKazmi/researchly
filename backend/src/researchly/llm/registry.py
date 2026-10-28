@@ -99,6 +99,23 @@ def chat_model(
             role=role,
             model_alias=f"claude-code/{settings.dev_provider_model}",
         )
+    if settings.env == "development" and settings.dev_provider == "claude-code":
+        from researchly.llm.dev.claude_code import ClaudeCodeChatModel  # absent from release wheels
+
+        dev = ClaudeCodeChatModel(model=settings.dev_provider_model)
+        if settings.llm_fixtures == "record":
+            from researchly.llm.record_replay import RecordReplayChatModel, fixtures_path
+
+            return RecordReplayChatModel(
+                inner=dev,
+                mode="record",
+                path=fixtures_path(settings),
+                role=role,
+                model_alias=f"claude-code/{settings.dev_provider_model}",
+            )
+        return dev
+    if settings.llm_fixtures == "record":
+        raise ValueError("recording fixtures needs RESEARCHLY_ENV=development and RESEARCHLY_DEV_PROVIDER=claude-code")
     spec, name = resolve_model(role, providers, table or load_table())
     api_key = get_secret(spec.key_ref) if spec.key_ref else None  # fetched per construction, never stored
     return _KeyedChatLiteLLM(model=name, api_key=api_key, api_base=spec.base_url)
