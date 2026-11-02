@@ -34,8 +34,9 @@ class MemoryKeyring(KeyringBackend):
 
 
 @pytest.fixture(autouse=True)
-def _memory_keyring():
-    """Tests never touch the real OS keychain."""
+def _memory_keyring(tmp_path, monkeypatch):
+    """Tests never touch the real OS keychain or the real data dir."""
+    monkeypatch.setenv("RESEARCHLY_DATA_DIR", str(tmp_path / "data"))
     previous = keyring.get_keyring()
     backend = MemoryKeyring()
     keyring.set_keyring(backend)

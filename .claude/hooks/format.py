@@ -15,11 +15,12 @@ _FRONTEND_EXT = (".ts", ".tsx", ".css", ".json")
 
 
 def commands_for(rel: str, root: Path) -> list[list[str]]:
-    if rel.startswith("backend/") and rel.endswith(".py") and (root / "backend/pyproject.toml").exists():
-        return [
-            ["uv", "run", "--directory", "backend", "ruff", "format", rel.removeprefix("backend/")],
-            ["uv", "run", "--directory", "backend", "ruff", "check", "--fix", rel.removeprefix("backend/")],
-        ]
+    for pkg in ("backend", "cli"):
+        if rel.startswith(f"{pkg}/") and rel.endswith(".py") and (root / pkg / "pyproject.toml").exists():
+            return [
+                ["uv", "run", "--directory", pkg, "ruff", "format", rel.removeprefix(f"{pkg}/")],
+                ["uv", "run", "--directory", pkg, "ruff", "check", "--fix", rel.removeprefix(f"{pkg}/")],
+            ]
     if rel.startswith("frontend/") and rel.endswith(_FRONTEND_EXT) and (root / "frontend/package.json").exists():
         return [["pnpm", "-C", "frontend", "exec", "prettier", "--write", rel.removeprefix("frontend/")]]
     return []

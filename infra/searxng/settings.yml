@@ -1,0 +1,9 @@
+# SearXNG for Researchly (spec §4.1): private instance on the compose network; JSON API on, rate limiter off.
+# The secret comes from SEARXNG_SECRET, injected by the CLI.
+use_default_settings: true
+server:
+  limiter: false
+  public_instance: false
+  image_proxy: false
+search:
+  formats: [html, json]

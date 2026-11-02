@@ -1,0 +1,72 @@
+# Docker mode (spec §4.1, §16.1). The CLI injects every ${RESEARCHLY_*} value at start; no secret lives here.
+# The database is on the internal network only; the app publishes 127.0.0.1 only.
+name: researchly
+
+x-app: &app
+  build:
+    context: ../backend
+    dockerfile: ../infra/app.Dockerfile
+  image: researchly-app:dev
+
+services:
+  postgres:
+    build: ./postgres
+    image: researchly-postgres:dev
+    environment:
+      POSTGRES_PASSWORD: ${RESEARCHLY_PG_SUPERUSER_PASSWORD:?}
+    volumes:
+      - ${RESEARCHLY_DATA_DIR:?}/pg:/var/lib/postgresql
+    networks: [internal]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  migrate:
+    <<: *app
+    command: ["python", "-m", "researchly.db.provision"]
+    environment:
+      RESEARCHLY_DB_SUPERUSER_URL: postgresql+psycopg://postgres:${RESEARCHLY_PG_SUPERUSER_PASSWORD:?}@postgres:5432/postgres
+      RESEARCHLY_DB_APP_PASSWORD: ${RESEARCHLY_DB_APP_PASSWORD:?}
+      RESEARCHLY_DB_RO_PASSWORD: ${RESEARCHLY_DB_RO_PASSWORD:?}
+    networks: [internal]
+    depends_on:
+      postgres: {condition: service_healthy}
+    restart: "no"
+
+  app:
+    <<: *app
+    environment:
+      RESEARCHLY_DATABASE_URL: postgresql+psycopg://researchly_app:${RESEARCHLY_DB_APP_PASSWORD:?}@postgres:5432/researchly
+      RESEARCHLY_LOCAL_TOKEN: ${RESEARCHLY_LOCAL_TOKEN:?}
+    ports: ["127.0.0.1:${RESEARCHLY_PORT:-8765}:8000"]
+    networks: [internal, default]
+    depends_on:
+      postgres: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=2)"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  searxng:
+    image: searxng/searxng:2026.10.25-54ca1d9cf
+    environment:
+      SEARXNG_SECRET: ${RESEARCHLY_SEARXNG_SECRET:?}
+    volumes:
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
+    networks: [internal, default]
+    restart: unless-stopped
+
+  grobid:
+    image: grobid/grobid:0.9.1-crf
+    profiles: [grobid]
+    networks: [internal, default]
+    restart: unless-stopped
+
+networks:
+  internal:
+    internal: true

@@ -2,6 +2,7 @@
   "pythonVersion": "3.12",
   "venvPath": "backend",
   "venv": ".venv",
+  "exclude": ["cli", "**/node_modules", "**/__pycache__", "**/.*"],
   "executionEnvironments": [
     { "root": ".claude/hooks", "extraPaths": [".claude/hooks", "scripts"] },
     { "root": "scripts", "extraPaths": ["scripts"] },

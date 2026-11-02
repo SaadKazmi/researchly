@@ -63,3 +63,10 @@ def test_run_decodes_non_cp1252_utf8_output(tmp_path):
     result = typecheck._run(tmp_path)([sys.executable, "-c", code])
     assert result.returncode == 1
     assert "error" in result.stdout
+
+
+def test_checks_for_cli(tmp_path):
+    make(tmp_path, "cli/pyproject.toml")
+    assert typecheck.checks_for(["cli/src/researchly_cli/main.py"], tmp_path) == [
+        ["uv", "run", "--directory", "cli", "pyright"]
+    ]
