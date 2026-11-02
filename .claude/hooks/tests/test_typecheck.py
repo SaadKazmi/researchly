@@ -29,8 +29,13 @@ def test_checks_for_backend_and_frontend(tmp_path):
     cmds = typecheck.checks_for(["backend/src/x.py", "frontend/src/y.ts"], tmp_path)
     assert cmds == [
         ["uv", "run", "--directory", "backend", "pyright"],
-        ["pnpm", "-C", "frontend", "exec", "tsc", "--noEmit"],
+        ["pnpm", "-C", "frontend", "typecheck"],
     ]
+
+
+def test_checks_for_e2e(tmp_path):
+    make(tmp_path, "e2e/package.json")
+    assert typecheck.checks_for(["e2e/specs/smoke.spec.ts"], tmp_path) == [["pnpm", "-C", "e2e", "typecheck"]]
 
 
 def test_checks_skip_missing_projects(tmp_path):
