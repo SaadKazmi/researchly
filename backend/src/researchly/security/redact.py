@@ -29,6 +29,7 @@ class RedactingFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         record.msg = redact(record.getMessage())
         record.args = None
+        record.__dict__.pop("color_message", None)  # uvicorn's coloured formatter would print it unformatted
         if record.exc_info:
             record.exc_text = logging.Formatter().formatException(record.exc_info)
             record.exc_info = None  # formatters must use the redacted exc_text, never re-render the traceback

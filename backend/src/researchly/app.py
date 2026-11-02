@@ -2,18 +2,17 @@
 
 import logging
 from importlib.metadata import version
-from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.responses import PlainTextResponse
 
 from researchly.api import system
 from researchly.config import Settings
 from researchly.security.keychain import ensure_local_token
 from researchly.security.localhost_guard import LocalhostGuard
 from researchly.security.redact import RedactingArgsFilter, RedactingFilter, register_secret
-from researchly.spa import SPAStaticFiles
+from researchly.spa import BUILD_HINT, WEB_DIR, SPAStaticFiles
 
-WEB_DIR = Path(__file__).parent / "web"  # `pnpm -C frontend build` writes the SPA here
 logger = logging.getLogger(__name__)
 
 
@@ -35,7 +34,7 @@ def create_app(settings: Settings | None = None, *, token: str | None = None) ->
         title="Researchly",
         version=version("researchly"),
         openapi_url="/api/openapi.json",
-        docs_url="/api/docs",
+        docs_url=None,  # Swagger UI loads CDN script into the cookie-authenticated origin (ADR 0003)
         redoc_url=None,
     )
     app.state.settings = settings
@@ -49,5 +48,10 @@ def create_app(settings: Settings | None = None, *, token: str | None = None) ->
     if WEB_DIR.is_dir():
         app.mount("/", SPAStaticFiles(directory=WEB_DIR, html=True), name="spa")  # last: the routes above win
     else:
-        logger.warning("frontend not built (%s is missing): run `pnpm -C frontend build`", WEB_DIR)
+        logger.warning("frontend not built (%s is missing): %s", WEB_DIR, BUILD_HINT)
+
+        @app.get("/", include_in_schema=False, response_class=PlainTextResponse)
+        async def not_built() -> str:  # the login link lands here, so say why there is no UI
+            return f"The Researchly web UI is not built: {BUILD_HINT}, then reload this page.\n"
+
     return app

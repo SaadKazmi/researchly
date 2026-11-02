@@ -41,10 +41,15 @@ class LocalhostGuard:
         headers = {k.decode("latin-1"): v.decode("latin-1") for k, v in scope["headers"]}
         host = headers.get("host", "")
         origin = headers.get("origin")
-        if urlsplit(f"//{host}").hostname not in _HOSTS:
+        try:
+            host_ok = urlsplit(f"//{host}").hostname in _HOSTS
+            origin_ok = origin is None or urlsplit(origin).netloc == host
+        except ValueError:  # a malformed Host or Origin (e.g. "[") fails closed
+            host_ok = origin_ok = False
+        if not host_ok:
             await _deny(scope, receive, send, "host not allowed", 403)
             return
-        if origin is not None and urlsplit(origin).netloc != host:
+        if not origin_ok:
             await _deny(scope, receive, send, "cross-origin request rejected", 403)
             return
         public = scope["type"] == "http" and scope["method"] in ("GET", "HEAD") and not _private(scope["path"])

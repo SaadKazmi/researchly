@@ -8,8 +8,8 @@ from pathlib import Path
 from typing import NoReturn
 
 import typer
-from researchly.app import WEB_DIR
 from researchly.security.keychain import KeychainUnavailable, store_name
+from researchly.spa import BUILD_HINT, WEB_DIR
 
 from researchly_cli import docker, engines, native, state
 
@@ -23,7 +23,6 @@ LICENCE_NOTE = (
     "Researchly never requires it; any engine or native mode works."
 )
 
-BUILD_HINT = "run `pnpm -C frontend install` and `pnpm -C frontend build`"
 FRONTEND_DIR = Path(__file__).resolve().parents[3] / "frontend"  # source checkouts only; release wheels ship the build
 
 app = typer.Typer(no_args_is_help=True, add_completion=False, help="Researchly: a local-first research assistant.")
@@ -116,13 +115,23 @@ def _pnpm() -> str | None:
     return next((path for name in names if (path := shutil.which(name))), None)
 
 
+def _web_ui_stale() -> bool:
+    """No build yet, or the checkout's frontend sources changed since (e.g. after `git pull`)."""
+    built = WEB_DIR / "index.html"
+    if not built.is_file():
+        return True
+    sources = [*FRONTEND_DIR.glob("*.*"), *FRONTEND_DIR.glob("src/**/*"), *FRONTEND_DIR.glob("public/**/*")]
+    return any(path.stat().st_mtime > built.stat().st_mtime for path in sources)
+
+
 def _ensure_web_ui() -> None:
-    """Native mode serves the SPA from the backend package; a source checkout builds it on first start."""
+    """Native mode serves the SPA from the backend package; a source checkout (re)builds it when it is stale."""
     pnpm = _pnpm()
-    if not WEB_DIR.is_dir() and pnpm and (FRONTEND_DIR / "package.json").is_file():
-        typer.echo("Building the web UI (first start only)...")
+    if pnpm and (FRONTEND_DIR / "package.json").is_file() and _web_ui_stale():
+        typer.echo("Building the web UI...")
         for args in (["install", "--frozen-lockfile"], ["build"]):
             if subprocess.run([pnpm, "-C", str(FRONTEND_DIR), *args], check=False).returncode:  # noqa: S603 - fixed argv
+                typer.secho("warning: the web UI build failed (see above)", err=True)
                 break
     if not WEB_DIR.is_dir():
         typer.secho(f"warning: the web UI is not built; {BUILD_HINT}", err=True)

@@ -1,3 +1,4 @@
+import os
 import sys
 
 import pytest
@@ -24,8 +25,10 @@ def healthy(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def web_built(monkeypatch, tmp_path):
-    """Default: the web UI counts as built, so no test ever runs a real pnpm build."""
+    """Default: a built web UI and no frontend sources, so no test ever runs a real pnpm build."""
+    (tmp_path / "index.html").write_text("<!doctype html>")
     monkeypatch.setattr(main, "WEB_DIR", tmp_path)
+    monkeypatch.setattr(main, "FRONTEND_DIR", tmp_path / "no-frontend")
 
 
 def _native_start(monkeypatch):
@@ -53,7 +56,7 @@ def test_start_native_warns_when_the_web_ui_is_not_built(monkeypatch, healthy, t
 
 def _fake_pnpm(monkeypatch, tmp_path, failing=()):
     web, frontend = tmp_path / "web", tmp_path / "frontend"
-    frontend.mkdir()
+    (frontend / "src").mkdir(parents=True)
     (frontend / "package.json").write_text("{}")
     monkeypatch.setattr(main, "WEB_DIR", web)
     monkeypatch.setattr(main, "FRONTEND_DIR", frontend)
@@ -66,7 +69,8 @@ def _fake_pnpm(monkeypatch, tmp_path, failing=()):
         if step in failing:
             return type("R", (), {"returncode": 1})()
         if step == "build":
-            web.mkdir()
+            web.mkdir(exist_ok=True)
+            (web / "index.html").write_text("<!doctype html>")
         return type("R", (), {"returncode": 0})()
 
     monkeypatch.setattr(main.subprocess, "run", run)
@@ -90,6 +94,20 @@ def test_start_native_survives_a_failed_web_build(monkeypatch, healthy, tmp_path
     _native_start(monkeypatch)
     result = runner.invoke(app, ["start"])
     assert result.exit_code == 0 and len(calls) == 1 and "not built" in result.output
+
+
+def test_start_native_rebuilds_a_stale_web_ui_only(monkeypatch, healthy, tmp_path):
+    calls, frontend = _fake_pnpm(monkeypatch, tmp_path)
+    _native_start(monkeypatch)
+    (tmp_path / "web").mkdir()
+    built = tmp_path / "web" / "index.html"
+    built.write_text("<!doctype html>")
+    (frontend / "src" / "main.tsx").write_text("")
+    os.utime(built, (1, 1))  # sources pulled after the last build
+    assert "Building the web UI" in runner.invoke(app, ["start"]).output and len(calls) == 2
+    calls.clear()
+    state.clear_state()
+    assert "Building the web UI" not in runner.invoke(app, ["start"]).output and calls == []
 
 
 @pytest.mark.parametrize(

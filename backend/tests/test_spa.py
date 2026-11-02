@@ -46,7 +46,9 @@ async def test_hashed_assets_are_immutable_and_missing_ones_404(web):
         asset = await c.get("/assets/index-abc123.js")
         missing = await c.get("/assets/index-gone.js")
         favicon = await c.get("/favicon.svg")
+        revalidated = await c.get("/assets/index-abc123.js", headers={"if-none-match": asset.headers["etag"]})
     assert asset.status_code == 200 and "immutable" in asset.headers["cache-control"]
+    assert revalidated.status_code == 304 and "immutable" in revalidated.headers["cache-control"]
     assert missing.status_code == 404
     assert favicon.status_code == 200 and favicon.headers["cache-control"] == "no-cache"
 
@@ -63,7 +65,8 @@ async def test_unknown_api_paths_stay_json_404s(web):
 @pytest.mark.anyio
 async def test_without_a_build_the_api_still_works():
     async with client() as c:
-        assert (await c.get("/")).status_code == 404
+        hint = await c.get("/")  # where the login link lands: say why there is no UI
+        assert hint.status_code == 200 and "pnpm -C frontend build" in hint.text
         assert (await c.get("/health")).status_code == 200
 
 

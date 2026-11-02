@@ -3,6 +3,7 @@ import logging
 
 import httpx
 import pytest
+from fastapi.routing import APIRoute
 from uvicorn.logging import AccessFormatter
 
 from researchly.app import create_app
@@ -123,9 +124,24 @@ async def test_system_reports_the_version():
     assert r.status_code == 200 and r.json() == {"version": "0.0.0"}
 
 
-def test_openapi_and_docs_live_under_api():
+def test_openapi_lives_under_api_and_the_cdn_docs_page_is_off():
     app = create_app(Settings(env="test"), token=TOKEN)
-    assert (app.openapi_url, app.docs_url, app.redoc_url) == ("/api/openapi.json", "/api/docs", None)
+    assert (app.openapi_url, app.docs_url, app.redoc_url) == ("/api/openapi.json", None, None)
+
+
+def test_every_data_route_is_private():
+    """GET outside /api and /mcp is public (ADR 0003), so a new route must live under them."""
+    app = create_app(Settings(env="test"), token=TOKEN)
+    public = {"/health", "/"}  # "/" is the not-built hint
+    paths = {route.path for route in app.routes if isinstance(route, APIRoute)}
+    assert all(p in public or p.startswith(("/api/", "/mcp")) for p in paths), paths
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(("name", "value"), [("host", "["), ("origin", "http://[")])
+async def test_malformed_host_or_origin_is_403_not_500(name, value):
+    async with client() as c:
+        assert (await c.get("/health", headers={name: value})).status_code == 403
 
 
 def test_uvicorn_access_log_redacts_the_login_token():
