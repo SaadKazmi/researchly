@@ -17,6 +17,9 @@ dependencies = [
   "litellm==1.105.1",
   "langchain-core==1.6.12",
   "langchain-litellm==0.11.1",
+  "fastembed==0.9.1",  # ONNX embedder + reranker on CPU, no torch (ADR 0007)
+  "onnxruntime==1.23.2; sys_platform == 'darwin' and platform_machine == 'x86_64'",  # last Intel-Mac wheel
+  "onnxruntime>=1.23; sys_platform != 'darwin' or platform_machine != 'x86_64'",
 ]
 
 [dependency-groups]
@@ -59,8 +62,9 @@ venv = ".venv"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-m 'not live'"
+addopts = "-m 'not live and not platform'"
 markers = [
   "db: needs Postgres 18 + pgvector",
   "live: calls a real model; opt-in, never in CI",
+  "platform: downloads real models or runtimes; runs in the CI platform job (all five OS)",
 ]
