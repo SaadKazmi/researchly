@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import Literal
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -16,3 +17,5 @@ class Settings(BaseSettings):
     llm_fixtures: Literal["record", "replay", "off"] = "off"
     llm_fixtures_dir: Path = Path("e2e/fixtures/llm")
     llm_fixtures_suite: str = "default"
+    data_dir: Path = Path.home() / ".researchly"  # spec §16.1
+    local_token: SecretStr | None = None  # injected by the CLI (spec §16.1); else read from the keychain
