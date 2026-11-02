@@ -7,6 +7,7 @@ adds structured tables where it runs.
 
 import importlib.machinery
 import sys
+import threading
 import types
 from dataclasses import dataclass
 from functools import cache
@@ -57,9 +58,13 @@ def _without_torch_imports(ocr: bool) -> None:
         rapid_ocr.decide_device = lambda *_a, **_k: "cpu"  # type: ignore[assignment]
 
 
+_SETUP = threading.Lock()  # concurrent first calls must not interleave the sys.modules swap
+
+
 @cache
 def _converter(ocr: bool) -> DocumentConverter:
-    _without_torch_imports(ocr)
+    with _SETUP:
+        _without_torch_imports(ocr)
     layout = LayoutObjectDetectionOptions.from_preset(
         "layout_heron_default",
         # 3. the engine runs its torch-based device probe when the list is exactly ["CPUExecutionProvider"], so repeat
