@@ -18,6 +18,9 @@ dependencies = [
   "langchain-core==1.6.12",
   "langchain-litellm==0.11.1",
   "fastembed==0.9.1",  # ONNX embedder + reranker on CPU, no torch (ADR 0007)
+  # PDF text, layout and OCR on onnxruntime; pypdfium2 because docling-parse 7.x has no Intel-Mac wheel (ADR 0005)
+  "docling-slim[format-pdf-pypdfium2,convert-core,feat-ocr-rapidocr-onnx]==2.142.1",
+  "transformers>=4.50,<5",  # Heron image processor; 5.x refuses it without torchvision
   "onnxruntime==1.23.2; sys_platform == 'darwin' and platform_machine == 'x86_64'",  # last Intel-Mac wheel
   "onnxruntime>=1.23; sys_platform != 'darwin' or platform_machine != 'x86_64'",
 ]

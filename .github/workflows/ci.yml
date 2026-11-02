@@ -88,6 +88,7 @@ jobs:
           path: backend/.models
           # model files are OS-independent, but HF caches use symlinks that Windows restores differently
           key: models-${{ runner.os == 'Windows' && 'win' || 'posix' }}-${{ hashFiles('backend/src/researchly/embeddings.py', 'backend/src/researchly/ingest/pdf.py') }}
+          restore-keys: models-${{ runner.os == 'Windows' && 'win' || 'posix' }}-
       - run: uv sync --locked
       - name: Platform tests (real models and runtimes)
         run: |
