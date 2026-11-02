@@ -32,3 +32,11 @@ def test_tsx_in_frontend(tmp_path):
 def test_other_files_skipped(tmp_path):
     make(tmp_path, "backend/pyproject.toml")
     assert fmt.commands_for("docs/progress.md", tmp_path) == []
+
+
+def test_python_in_cli(tmp_path):
+    make(tmp_path, "cli/pyproject.toml")
+    assert fmt.commands_for("cli/src/researchly_cli/main.py", tmp_path) == [
+        ["uv", "run", "--directory", "cli", "ruff", "format", "src/researchly_cli/main.py"],
+        ["uv", "run", "--directory", "cli", "ruff", "check", "--fix", "src/researchly_cli/main.py"],
+    ]

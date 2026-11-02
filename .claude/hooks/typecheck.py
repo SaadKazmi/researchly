@@ -38,10 +38,11 @@ def parse_porcelain(text: str) -> list[str]:
 
 def checks_for(changed: list[str], root: Path) -> list[list[str]]:
     cmds: list[list[str]] = []
-    if any(p.startswith("backend/") and p.endswith(".py") for p in changed) and (
-        root / "backend/pyproject.toml"
-    ).exists():
-        cmds.append(["uv", "run", "--directory", "backend", "pyright"])
+    for pkg in ("backend", "cli"):
+        if any(p.startswith(f"{pkg}/") and p.endswith(".py") for p in changed) and (
+            root / pkg / "pyproject.toml"
+        ).exists():
+            cmds.append(["uv", "run", "--directory", pkg, "pyright"])
     if any(p.startswith("frontend/") and p.endswith((".ts", ".tsx")) for p in changed) and (
         root / "frontend/package.json"
     ).exists():
