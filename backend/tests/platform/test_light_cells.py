@@ -126,13 +126,27 @@ def test_env_and_ffi_are_denied(cache: Path, workdir: Path) -> None:
     assert "NotCapable" in ffi.stdout + (ffi.error or "")
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="creating symlinks needs a privilege on Windows")
-def test_symlink_out_of_the_workdir_is_denied(cache: Path, workdir: Path, outside: Path) -> None:
+def test_cell_cannot_create_a_symlink_out(cache: Path, workdir: Path, outside: Path) -> None:
+    # NODEFS passes the target to Deno as a host path, and Deno stats it first: no read access, no link
+    code = f"import os\nos.symlink('{_p(outside / 'secret.txt')}', '/work/l')\nprint('READ', open('/work/l').read())\n"
+    result = run_cell(code, workdir, cache)
+    assert "decoy-secret" not in result.stdout + (result.error or "")
+    assert "NotCapable" in (result.error or "")
+    assert not (workdir / "l").is_symlink()
+
+
+def test_planted_symlink_out_of_the_workdir_is_denied(cache: Path, workdir: Path, outside: Path) -> None:
+    # a link already in the workdir (say, from an unpacked archive) must not lead outside it
     (workdir / "mine.txt").write_text("my-content", encoding="utf-8")
-    link = "import os\nos.symlink('{}', '/work/{}')\nprint('READ', open('/work/{}').read())\n"
-    control = run_cell(link.format(_p(workdir / "mine.txt"), "ok", "ok"), workdir, cache)
-    assert "READ my-content" in control.stdout, (control.stdout, control.error)  # symlinks work in the harness
-    result = run_cell(link.format(_p(outside / "secret.txt"), "l", "l"), workdir, cache)
+    try:
+        (workdir / "ok").symlink_to(workdir / "mine.txt")
+        (workdir / "l").symlink_to(outside / "secret.txt")
+    except OSError:
+        pytest.skip("this account cannot create symlinks")
+    read = "print('READ', open('/work/{}').read())\n"
+    control = run_cell(read.format("ok"), workdir, cache)
+    assert "READ my-content" in control.stdout, (control.stdout, control.error)  # links inside the workdir resolve
+    result = run_cell(read.format("l"), workdir, cache)
     assert "decoy-secret" not in result.stdout + (result.error or "")
 
 
