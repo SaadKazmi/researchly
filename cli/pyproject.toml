@@ -44,13 +44,6 @@ target-version = "py312"
 select = ["E", "F", "I", "UP", "B", "SIM", "ASYNC", "S"]
 ignore = ["S101"]
 
-[tool.pyright]
-include = ["src", "tests"]
-pythonVersion = "3.12"
-typeCheckingMode = "standard"
-venvPath = "."
-venv = ".venv"
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
