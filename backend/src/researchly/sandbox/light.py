@@ -46,6 +46,19 @@ def _check_paths(*paths: Path) -> None:
             raise ValueError(f"path must not contain a comma: {path}")
 
 
+def _first_link(workdir: Path) -> Path | None:
+    """Deno checks a link's own path, not its target, so a link in the workdir would lead outside it.
+
+    A cell cannot create links (Deno stats the target first), so this only catches links the host put there.
+    """
+    for root, dirs, files in os.walk(workdir):  # top-down: a linked dir is seen before anything inside it
+        for name in dirs + files:
+            path = Path(root, name)
+            if path.is_symlink() or path.is_junction() or (path.is_file() and path.stat().st_nlink > 1):
+                return path
+    return None
+
+
 def _pyodide_dir(cache: Path) -> Path:
     return cache / "deno" / "npm" / "registry.npmjs.org" / "pyodide" / PYODIDE_VERSION
 
@@ -75,6 +88,10 @@ def warm_up(cache: Path) -> None:
 
 def run_cell(code: str, workdir: Path, cache: Path, *, timeout: float = 60.0) -> CellResult:
     _check_paths(workdir, cache)
+    if link := _first_link(workdir):
+        return CellResult(
+            ok=False, stdout="", error=f"refused: {link.relative_to(workdir)} is a link out of the workdir"
+        )
     read = ",".join(_p(p) for p in (_pyodide_dir(cache), cache / "pyodide", workdir))
     args = [
         _deno(),

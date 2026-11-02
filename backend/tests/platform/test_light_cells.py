@@ -9,6 +9,7 @@ import pytest
 
 from researchly.sandbox.light import CellResult, _deno, run_cell, warm_up
 
+from ..test_sandbox_light import plant_dir_link
 from .conftest import report
 
 pytestmark = pytest.mark.platform
@@ -135,19 +136,12 @@ def test_cell_cannot_create_a_symlink_out(cache: Path, workdir: Path, outside: P
     assert not (workdir / "l").is_symlink()
 
 
-def test_planted_symlink_out_of_the_workdir_is_denied(cache: Path, workdir: Path, outside: Path) -> None:
-    # a link already in the workdir (say, from an unpacked archive) must not lead outside it
-    (workdir / "mine.txt").write_text("my-content", encoding="utf-8")
-    try:
-        (workdir / "ok").symlink_to(workdir / "mine.txt")
-        (workdir / "l").symlink_to(outside / "secret.txt")
-    except OSError:
-        pytest.skip("this account cannot create symlinks")
-    read = "print('READ', open('/work/{}').read())\n"
-    control = run_cell(read.format("ok"), workdir, cache)
-    assert "READ my-content" in control.stdout, (control.stdout, control.error)  # links inside the workdir resolve
-    result = run_cell(read.format("l"), workdir, cache)
+def test_planted_link_out_of_the_workdir_is_refused(cache: Path, workdir: Path, outside: Path) -> None:
+    # a link already in the workdir (say, from an unpacked archive): Deno would follow it (seen on windows-2025)
+    plant_dir_link(workdir / "j", outside)
+    result = run_cell("print('READ', open('/work/j/secret.txt').read())\n", workdir, cache)
     assert "decoy-secret" not in result.stdout + (result.error or "")
+    assert "is a link out of the workdir" in (result.error or "")
 
 
 def test_runaway_cell_is_killed(cache: Path, workdir: Path) -> None:
