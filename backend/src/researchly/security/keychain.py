@@ -9,6 +9,7 @@ import contextlib
 import json
 import os
 import secrets
+import sys
 from pathlib import Path
 
 import keyring
@@ -17,6 +18,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from keyring.backend import KeyringBackend
 from keyring.backends import fail
 from keyring.errors import KeyringError, PasswordDeleteError
+from pydantic import ValidationError
 
 from researchly.config import Settings
 from researchly.security.redact import register_secret
@@ -42,17 +44,29 @@ class EncryptedFileKeyring(KeyringBackend):
     def _key(self) -> bytes:
         if not self.key_path.exists():
             self.key_path.parent.mkdir(parents=True, exist_ok=True)
-            fd = os.open(self.key_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-            with os.fdopen(fd, "wb") as fh:
-                fh.write(AESGCM.generate_key(bit_length=256))
-        return self.key_path.read_bytes()
+            try:
+                fd = os.open(self.key_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            except FileExistsError:
+                pass  # another process created it first: use theirs
+            else:
+                with os.fdopen(fd, "wb") as fh:
+                    fh.write(AESGCM.generate_key(bit_length=256))
+        key = self.key_path.read_bytes()
+        if len(key) != 32:
+            raise KeyringError(f"{self.key_path} is not a 256-bit key")
+        return key
 
     def _entries(self) -> dict[str, str]:
-        return json.loads(self.path.read_text("utf-8")) if self.path.exists() else {}
+        try:
+            return json.loads(self.path.read_text("utf-8")) if self.path.exists() else {}
+        except ValueError as exc:  # json.JSONDecodeError and bad UTF-8 included
+            raise KeyringError(f"{self.path} is corrupt") from exc
 
     def _save(self, entries: dict[str, str]) -> None:
         tmp = self.path.with_suffix(".tmp")
         fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        if sys.platform != "win32":
+            os.fchmod(fd, 0o600)  # the mode above applies only when the file is new
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             json.dump(entries, fh)
         os.replace(tmp, self.path)
@@ -61,10 +75,10 @@ class EncryptedFileKeyring(KeyringBackend):
         blob = self._entries().get(f"{service}/{username}")
         if blob is None:
             return None
-        raw = base64.b64decode(blob)
         try:
+            raw = base64.b64decode(blob)
             return AESGCM(self._key()).decrypt(raw[:12], raw[12:], f"{service}/{username}".encode()).decode()
-        except InvalidTag as exc:
+        except (InvalidTag, ValueError) as exc:  # ValueError: bad base64 or a truncated nonce
             raise KeyringError(f"{self.path} cannot be decrypted with {self.key_path}") from exc
 
     def set_password(self, service: str, username: str, password: str) -> None:
@@ -83,7 +97,14 @@ class EncryptedFileKeyring(KeyringBackend):
 
 def _backend() -> KeyringBackend:
     if isinstance(keyring.get_keyring(), fail.Keyring):
-        keyring.set_keyring(EncryptedFileKeyring(Settings().data_dir))
+        try:
+            directory = Settings().data_dir
+        except ValidationError as exc:  # its text echoes RESEARCHLY_* values, which may be secrets
+            fields = ", ".join(str(error["loc"][0]) for error in exc.errors() if error["loc"])
+            raise KeychainUnavailable(
+                f"cannot locate the secrets file: invalid RESEARCHLY_* settings ({fields})"
+            ) from exc
+        keyring.set_keyring(EncryptedFileKeyring(directory))
     return keyring.get_keyring()
 
 
