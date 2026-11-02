@@ -93,3 +93,13 @@ def test_live_tool_call_roundtrip():
         .invoke("What's the weather in Paris? Use the tool.")
     )
     assert reply.tool_calls and reply.tool_calls[0]["name"] == "get_weather"
+
+
+@pytest.mark.parametrize(
+    "structured",
+    [None, {"type": "tool_calls", "calls": []}, {"type": "tool_calls"}, {"type": "final"}],
+)
+def test_malformed_structured_output_raises(monkeypatch, structured):
+    monkeypatch.setattr(claude_code, "query", fake_query(structured=structured))
+    with pytest.raises(RuntimeError, match="malformed structured output"):
+        ClaudeCodeChatModel().bind_tools([get_weather]).invoke("weather?")

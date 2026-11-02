@@ -30,7 +30,7 @@ def _render(messages: list[BaseMessage]) -> tuple[str, str]:
         if isinstance(m, SystemMessage):
             continue
         if isinstance(m, ToolMessage):
-            turns.append(f"[tool result {m.tool_call_id}]\n{m.text}")
+            turns.append(f"[tool result {m.name} {m.tool_call_id}]\n{m.text}")
         elif isinstance(m, AIMessage) and m.tool_calls:
             turns.append(f"[assistant]\n{m.text}\n[tool calls] {json.dumps(m.tool_calls, default=str)}")
         else:
@@ -65,6 +65,14 @@ def _schema(forced: bool) -> dict[str, Any]:
         },
         "required": ["type"],
     }
+
+
+def _well_formed(data: Any) -> bool:
+    if not isinstance(data, dict):
+        return False
+    if data.get("type") == "tool_calls":
+        return bool(data.get("calls"))
+    return data.get("type") == "final" and isinstance(data.get("content"), str)
 
 
 def _usage(result: ResultMessage) -> UsageMetadata:
@@ -129,6 +137,8 @@ class ClaudeCodeChatModel(BaseChatModel):
             output_format = {"type": "json_schema", "schema": _schema(forced)}
         result = asyncio.run(self._run(system, prompt, output_format), loop_factory=_LOOP)
         data = result.structured_output if tools else None
+        if tools and not _well_formed(data):  # an empty reply would silently end an agent loop
+            raise RuntimeError(f"claude-code provider returned malformed structured output: {data!r}")
         if data and data.get("type") == "tool_calls":
             calls = [
                 {"name": c["name"], "args": c["args"], "id": f"call_{uuid.uuid4().hex[:24]}", "type": "tool_call"}
