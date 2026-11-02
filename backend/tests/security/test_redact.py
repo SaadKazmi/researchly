@@ -47,3 +47,9 @@ def test_logging_filter_redacts_exception_text():
     formatted = logging.Formatter().format(record)
     assert secret not in formatted
     assert "[REDACTED]" in formatted
+
+
+def test_key_pattern_needs_a_word_boundary():
+    prose = "risk-of-bias-assessment-tool and task-specific-fine-tuning-approach"
+    assert redact(prose) == prose
+    assert redact("key=sk-" + "a" * 24) == "key=[REDACTED]"

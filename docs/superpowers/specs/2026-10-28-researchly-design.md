@@ -727,7 +727,7 @@ Migrations use Alembic. Every migration has an upgrade → downgrade → upgrade
   If `pg_trgm` is missing from pg0, native mode uses the conda-forge fallback, and this is recorded in an ADR.
 - **Extensions:**
   - `vector` and `pg_trgm` are always present. `pg_textsearch` is present in Docker mode only.
-  - The Alembic baseline creates the extensions that are available and records the BM25 engine in `capability`.
+  - Provisioning (the CLI at `setup`/`start`, as the superuser) creates `vector` and `pg_textsearch`, which are not trusted extensions, before migrations run. The Alembic baseline (`CREATE EXTENSION IF NOT EXISTS`, a no-op for those) creates the trusted `pg_trgm` as `researchly_app` and records the BM25 engine in `capability`. Downgrades never drop extensions.
   - Search code goes through one `KeywordIndex` interface with two implementations (pg_textsearch and tsvector), and both are tested.
 - **Migrations on start:** `researchly start` takes an automatic pre-migration backup, runs `alembic upgrade head`, then starts the app. If a migration fails, start aborts and shows how to restore the backup. `doctor` reports the migration state.
 - **Tuning:** at onboard the CLI sets a memory-aware `postgresql.conf` override:

@@ -4,7 +4,7 @@ import logging
 import re
 
 _PATTERNS = [
-    re.compile(r"sk-[A-Za-z0-9_\-]{20,}"),  # OpenAI / Anthropic style keys
+    re.compile(r"(?<![A-Za-z0-9])sk-[A-Za-z0-9_\-]{20,}"),  # OpenAI / Anthropic style keys; not "risk-of-bias-…"
     re.compile(r"AIza[0-9A-Za-z_\-]{35}"),  # Google API keys
     re.compile(r"(?i)bearer\s+[A-Za-z0-9._\-]{16,}"),
     re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}"),  # emails

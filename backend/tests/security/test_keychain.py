@@ -1,6 +1,7 @@
 import keyring
 import pytest
 from keyring.backends.fail import Keyring as FailKeyring
+from keyring.errors import KeyringLocked
 
 from researchly.security import keychain
 from researchly.security.redact import redact
@@ -27,5 +28,14 @@ def test_ensure_local_token_is_stable():
 
 def test_no_backend_raises_clear_error():
     keyring.set_keyring(FailKeyring())
+    with pytest.raises(keychain.KeychainUnavailable):
+        keychain.get_secret("anthropic")
+
+
+def test_locked_keychain_raises_clear_error(monkeypatch):
+    def locked(*_args):
+        raise KeyringLocked("locked")
+
+    monkeypatch.setattr(keyring, "get_password", locked)
     with pytest.raises(keychain.KeychainUnavailable):
         keychain.get_secret("anthropic")

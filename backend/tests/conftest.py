@@ -3,6 +3,9 @@ import os
 import uuid
 from collections.abc import Iterator
 
+# Before any test module imports langchain_litellm: litellm fetches its cost map over the network at import.
+os.environ["LITELLM_LOCAL_MODEL_COST_MAP"] = "True"
+
 import keyring
 import pytest
 from keyring.backend import KeyringBackend

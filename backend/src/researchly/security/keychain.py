@@ -4,7 +4,7 @@ import contextlib
 import secrets
 
 import keyring
-from keyring.errors import KeyringError, NoKeyringError, PasswordDeleteError
+from keyring.errors import KeyringError, PasswordDeleteError
 
 from researchly.security.redact import register_secret
 
@@ -19,8 +19,8 @@ class KeychainUnavailable(RuntimeError):
 def get_secret(name: str) -> str | None:
     try:
         value = keyring.get_password(SERVICE, name)
-    except NoKeyringError as exc:
-        raise KeychainUnavailable(f"no OS keychain backend available: {exc}") from exc
+    except KeyringError as exc:  # no backend, locked or denied
+        raise KeychainUnavailable(f"OS keychain unavailable: {exc}") from exc
     if value:
         register_secret(value)
     return value

@@ -18,6 +18,9 @@ depends_on = None
 
 def upgrade() -> None:
     available = set(op.get_bind().scalars(sa.text("SELECT name FROM pg_available_extensions")))
+    # Provisioning creates the untrusted extensions (vector, pg_textsearch) as superuser, so these are no-ops for
+    # the non-superuser schema owner (spec §16.1); pg_trgm is trusted. Extensions belong to provisioning, so
+    # downgrade never drops them.
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
     op.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
     bm25 = "pg_textsearch" if "pg_textsearch" in available else "tsvector"  # spec §16.1
@@ -66,6 +69,3 @@ def downgrade() -> None:
     op.drop_index("ix_llm_call_run_id", table_name="llm_call")
     for table in ("llm_call", "provider_config", "capability", "setting"):
         op.drop_table(table)
-    op.execute("DROP EXTENSION IF EXISTS pg_textsearch")
-    op.execute("DROP EXTENSION IF EXISTS pg_trgm")
-    op.execute("DROP EXTENSION IF EXISTS vector")

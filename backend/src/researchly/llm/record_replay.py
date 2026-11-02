@@ -74,13 +74,15 @@ class RecordReplayChatModel(BaseChatModel):
         return self.bind(tools=[convert_to_openai_tool(t) for t in tools], **kwargs)
 
     def _request(self, messages: list[BaseMessage], kwargs: dict[str, Any]) -> dict[str, Any]:
-        return {
+        request = {
             "messages": [_message(m) for m in messages],
             "tools": kwargs.get("tools"),
             "response_schema": kwargs.get("response_format"),
             "role": self.role,
             "model_alias": self.model_alias,
         }
+        # Key on the scrubbed form: replayed replies come back scrubbed and feed the next turn's history.
+        return _scrub(json.loads(_canonical(request)))
 
     def _entries(self) -> dict[str, dict[str, Any]]:
         if not self.path.exists():

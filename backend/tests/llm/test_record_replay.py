@@ -2,7 +2,7 @@ import json
 
 import pytest
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.tools import tool
 
 from researchly.llm.record_replay import FixtureMissing, RecordReplayChatModel
@@ -75,3 +75,16 @@ async def test_recording_scrubs_secrets_with_json_escapes(tmp_path):
     await recorder(path, AIMessage(content=f"x {secret} y")).ainvoke("hi")
     line = json.loads(path.read_text(encoding="utf-8"))
     assert line["response"]["data"]["content"] == "x [REDACTED] y"
+
+
+@pytest.mark.anyio
+async def test_multi_turn_replay_survives_scrubbed_replies(tmp_path):
+    path = tmp_path / "calls.jsonl"
+    first, second = AIMessage(content="write to a.b@uni.edu"), AIMessage(content="done")
+    inner = GenericFakeChatModel(messages=iter([first, second]))
+    rec = RecordReplayChatModel(inner=inner, mode="record", path=path, role="cheap", model_alias="claude-code/sonnet")
+    reply = await rec.ainvoke("hi")
+    await rec.ainvoke([HumanMessage("hi"), reply, HumanMessage("thanks")])
+    rep = replayer(path)
+    replayed = await rep.ainvoke("hi")  # comes back scrubbed
+    assert (await rep.ainvoke([HumanMessage("hi"), replayed, HumanMessage("thanks")])).content == "done"

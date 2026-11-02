@@ -2,6 +2,7 @@ import pytest
 from alembic.autogenerate import compare_metadata
 from alembic.migration import MigrationContext
 from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.engine import make_url
 
 from researchly.db import migrate
 from researchly.db.base import Base
@@ -38,3 +39,19 @@ def test_models_match_migrations(db_url):
         diff = compare_metadata(MigrationContext.configure(conn), Base.metadata)
     engine.dispose()
     assert diff == []
+
+
+def test_migrations_run_as_non_superuser_owner(db_url):
+    # spec §16.1: researchly_app owns the schema; provisioning creates the untrusted `vector` as superuser
+    admin = create_engine(db_url, isolation_level="AUTOCOMMIT")
+    with admin.connect() as conn:
+        conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+        conn.execute(text("DROP ROLE IF EXISTS app_owner"))
+        conn.execute(text("CREATE ROLE app_owner LOGIN PASSWORD 'app'"))
+        conn.execute(text(f'ALTER DATABASE "{make_url(db_url).database}" OWNER TO app_owner'))
+        conn.execute(text("ALTER SCHEMA public OWNER TO app_owner"))
+    admin.dispose()
+    owner_url = make_url(db_url).set(username="app_owner", password="app").render_as_string(hide_password=False)  # noqa: S106
+    migrate.upgrade(owner_url)
+    migrate.downgrade(owner_url)
+    migrate.upgrade(owner_url)
