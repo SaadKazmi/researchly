@@ -121,7 +121,7 @@ Each feature has an ID. `docs/features.json` mirrors these IDs, and each carries
   - All are declarative specs, schema-validated before rendering.
 
 ### F6 Notebooks & books
-- **F6.1** Research notebook: a block document with text, citations, figures and **executable code cells** run in the sandboxed kernel (§19.4). Pyodide is used for light client-side cells.
+- **F6.1** Research notebook: a block document with text, citations, figures and **executable code cells** run in the sandboxed kernel (§19.4). Light cells run in Pyodide inside Deno (§19.4).
 - **F6.2** Research book generator:
   - Pipeline: evidence-first → perspective-guided outline → section-by-section writing → verification → critique (§12).
   - The user can edit the references, outline and text at each stage.
@@ -213,8 +213,8 @@ When Docker Desktop is the engine, a one-time informational note mentions its co
 | Postgres | `ghcr.io/saadkazmi/researchly-postgres` (from `pgvector/pgvector:pg18` + pg_trgm + pg_textsearch) | **`pg0-embedded`** wheel: PG 18 + pgvector 0.8.5, MIT, wheels for win-x64, macOS arm64 (14+) / x64 (15+), Linux x64/arm64 (glibc ≥2.35). Fallback: conda-forge `postgresql` 18 + `pgvector` via pixi (old macOS/Linux, or if pg0 lacks `pg_trgm`). Decided by the step-1 spike |
 | Keyword search | pg_textsearch BM25 | Built-in `tsvector` + `ts_rank_cd` |
 | App + workers | Container | uv-managed Python 3.12 (python-build-standalone) |
-| Web search | **SearXNG** container (always on) | **SearXNG** native process, installed from source into an app-private venv and served by granian. Linux/macOS are supported; Windows is made to work in the step-1 spike. If it truly cannot run, web search is off and `doctor` says why |
-| PDF parsing | Docling + **GROBID** container (references, header) | Docling (`docling-slim`, ONNX-runtime models extra; no torch/CUDA). **GROBID** native via `jdk4py` (JDK 21+ wheel) on Linux/macOS. Windows native: LLM reference-string parsing + Crossref/OpenAlex matching |
+| Web search | **SearXNG** container (always on) | **SearXNG** native process, installed by `researchly start` from a pinned upstream commit (sha256-verified, hash-locked deps) into an app-private venv and served by granian on loopback; Windows adds a `pwd` shim (ADR 0004). If the install or start fails, web search is off and `doctor` says why |
+| PDF parsing | Docling + **GROBID** container (references, header) | Docling (`docling-slim`: pypdfium2, Heron layout and RapidOCR on onnxruntime; no torch/CUDA; tables as flattened text, ADR 0005). **GROBID** native via `jdk4py` (JDK 21+ wheel) on Linux/macOS. Windows native: LLM reference-string parsing + Crossref/OpenAlex matching |
 | Code cells | Pyodide in Deno for light cells; full kernel in a locked-down container (§19.4) | Pyodide in Deno (default); full CPython kernel opt-in inside the OS sandbox (§19.4) |
 | Exports | In the container | `pypandoc_binary`, `typst` wheel, `nodejs-wheel` + `mystmd` (app-private npm prefix) |
 | Headless browser | In the container | `playwright install chromium` (user cache). On Linux with missing system libs, `doctor` prints the one command to fix it, and fetching degrades to httpx + trafilatura |
@@ -518,21 +518,21 @@ class Connector(Protocol):
 
 ### 9.1 Full-text pipeline
 1. **arXiv HTML** (`arxiv.org/html/<id>`), else **LaTeX source** parsed to sections (pylatexenc/plasTeX-lite), else the PDF.
-2. **PDF**: **Docling** in-process (ONNX-runtime models; no torch) for body text, tables and formulas. **GROBID** adds the header and references whenever it can run (Docker mode, or native Linux/macOS). **MinerU / PaddleOCR-VL** is an optional GPU mode.
+2. **PDF**: **Docling** in-process, torch-free (pypdfium2 text, Heron ONNX layout, RapidOCR ONNX for image-only pages) for body text and reading order. Docling's table and formula models are torch-only, so tables are flattened text unless GROBID's TEI tables are available (ADR 0005; TableFormer-in-ONNX is re-evaluated at step 2/4). **GROBID** adds the header and references whenever it can run (Docker mode, or native Linux/macOS). **MinerU / PaddleOCR-VL** is an optional GPU mode.
 3. **References**: preferred from OpenAlex `referenced_works`, Crossref and OpenCitations. Parsed references (GROBID, or the LLM parsing reference strings followed by Crossref/OpenAlex matching) are a fallback.
 4. **Output**: `paper_sections`, `paper_figures` (image + caption + referencing paragraphs), `paper_tables`, `paper_equations` and `paper_refs`.
 
 ### 9.2 Chunking & embeddings
 - **All papers:** title + abstract are embedded.
 - **Ingested papers only:** full text is chunked by section, with ~350-token chunks, 15% overlap, and the section path recorded.
-- **Default embedder:** Qwen3-Embedding-0.6B (Apache-2.0) as ONNX on CPU through onnxruntime (fastembed if it supports the model; otherwise an ONNX export loaded directly, confirmed in step 2), Matryoshka-truncated to 1024 dims, stored as `halfvec(1024)`.
+- **Default embedder:** Qwen3-Embedding-0.6B (Apache-2.0) as ONNX on CPU through onnxruntime via fastembed (`Qwen/Qwen3-Embedding-0.6B-Q`, int8; Researchly adds the Qwen3 query instruction, which fastembed does not), 1024 dims, L2-normalised, stored as `halfvec(1024)` (ADR 0007).
 - **Alternatives:** Ollama embeddings, provider embeddings, or bge-m3.
 - Every vector set records `embed_model_id` and `dim`. Changing the model triggers a background re-embed job.
 - **Paper-to-paper similarity:** SPECTER2 (`allenai/specter2_base`, Apache-2.0) computed **locally** from title + abstract (`paper_specter halfvec(768)`). This replaces the S2-hosted vectors, with no key needed.
 
 ### 9.3 Search
 - **Hybrid:** BM25 (pg_textsearch, or the tsvector fallback) + dense (pgvector HNSW, `iterative_scan=relaxed_order`), fused with RRF (k=60).
-- **Rerank:** cross-encoder **bge-reranker-v2-m3** (Apache-2.0, ONNX via onnxruntime) on the top 50. Optionally an LLM rerank with the `cheap` role.
+- **Rerank:** cross-encoder **bge-reranker-v2-m3** (Apache-2.0, int8 ONNX via fastembed) on the top candidates. The depth and passage truncation are set at step 4 from a relevance-vs-latency benchmark: 50 pairs take 11–51 s on CPU CI runners (ADR 0007). Optionally an LLM rerank with the `cheap` role.
 - **Contextual retrieval:** opt-in per collection. The `cheap` model writes a 50–100 token context prefix per chunk, using prompt caching per paper. A cost estimate is shown first.
 - **Graph-aware expansion:** personalized PageRank over the citation + concept subgraph (NetworkX), seeded by top hits, HippoRAG-style.
 - **Scale guard:** if the chunk count exceeds 5M, install pgvectorscale (StreamingDiskANN) in the same DB. An ADR is required before any separate vector DB.
@@ -633,7 +633,7 @@ Binary, query-specific rubric items covering: factual accuracy, citation accurac
   - mystmd / Jupyter Book 2 for the static site.
 - **Code execution:**
   - The kernel gateway runs in the sandbox (§19.4); outputs are stored with the cell.
-  - Pyodide runs lightweight cells client-side (charts on data already in the doc).
+  - Light cells run in Pyodide inside Deno (§19.4), e.g. charts on data already in the doc.
 - **Versioning:** each save stores a `document_versions` row. AI edits are stored as suggestions the user accepts or rejects.
 
 ---
@@ -808,12 +808,12 @@ Threat references: OWASP Top 10 for LLM Applications 2025 and OWASP Top 10 for A
 - Unit tests cover known bypasses (DNS rebinding, decimal and octal IPs, IPv6 forms, redirect to internal).
 
 ### 19.4 Code execution (ASI05)
-- **Light cells (every mode): Pyodide inside Deno.** Deno's permission flags are the real boundary: no network, read and write only in the cell's temp dir, no subprocesses or FFI. Pure Python, numpy, pandas and matplotlib work, and behaviour is identical on every OS. Import blocking is never treated as a security boundary (DEF CON 34 showed Pyodide ctypes escapes when restrictions were Python-level only).
+- **Light cells (every mode): Pyodide inside Deno.** Deno's permission flags are the real boundary: no network, read and write only in the cell's temp dir, no subprocesses or FFI. Pure Python, numpy, pandas and matplotlib work, and behaviour is identical on every OS. Import blocking is never treated as a security boundary (DEF CON 34 showed Pyodide ctypes escapes when restrictions were Python-level only). A workdir holding a link (symlink, junction or hard link) is refused, because Deno checks a link's own path, not its target (ADR 0006).
 - **Full CPython kernel, Docker mode:** a Jupyter kernel container per project session with `--network none`, read-only root plus a tmpfs workdir, limits of 2 CPU, 2 GB memory and 256 PIDs, a 60 s per-cell timeout, a non-root user, `no-new-privileges`, dropped capabilities, and the `runsc` (gVisor) runtime if installed.
 - **Full CPython kernel, native mode** (opt-in), in the OS sandbox. This is the same approach Claude Code's sandbox-runtime and Codex use:
   - **macOS:** `sandbox-exec` with a generated Seatbelt profile. Writes are denied except in the workdir, and network goes through a localhost proxy that denies all traffic.
-  - **Linux:** bubblewrap + seccomp when `bwrap` and user namespaces are available. Otherwise Landlock (no root; network rules on kernel ≥6.7) + rlimits.
-  - **Windows:** restricted token + ACLs + Job Object (unelevated). An optional stronger mode adds a dedicated sandbox user + firewall rules, which costs one UAC prompt and is offered, not required.
+  - **Linux:** bubblewrap + seccomp when `bwrap` and user namespaces are available. Otherwise Landlock (no root; TCP rules from ABI 4, UDP only from ABI 10, so a seccomp socket filter closes the gap) + rlimits. Ubuntu 24.04+ blocks unprivileged user namespaces by default, so Landlock is a first-class path (ADR 0006).
+  - **Windows:** AppContainer with no capabilities + Job Object (unelevated): it blocks network and file access outside granted paths, which a restricted token does not do for network; the Job Object forbids child processes and caps memory and time (ADR 0006). An optional stronger mode adds a dedicated sandbox user + firewall rules, which costs one UAC prompt and is offered, not required.
   - **Fail closed:** if the sandbox cannot be established, the kernel does not start (avoids the silent-fallback class of CVE-2026-57144).
 - **Every** AI-proposed code cell needs a user click to run.
 
@@ -1061,11 +1061,11 @@ There is a single release; the steps below are dependency order only. Each step 
 | Risk | Mitigation | When |
 |---|---|---|
 | 1. Native Postgres (pg0 is a single-vendor project; `pg_trgm` presence unverified) | Step-1 spike on all 5 targets; conda-forge PG 18 + pgvector via pixi as fallback. (`pgserver` rejected: stale since 2024, PG 16. `pgserver-search` rejected: missing platforms) | Step 1 |
-| 2. Native SearXNG on Windows (no official support) | Spike: app-private venv + granian. If it fails, Windows native runs without web search and `doctor` explains the trade-off; Docker mode always has it | Step 1 |
-| 3. Native sandboxes (`sandbox-exec` deprecated but working; Ubuntu 24.04 AppArmor blocks bwrap user namespaces; Pyodide escape history) | Landlock fallback on Linux; fail closed; Deno permissions as the boundary for Pyodide; security tests per OS | Step 1, 10 |
+| 2. Native SearXNG on Windows (no official support) | Resolved in step 1e: pinned commit in an app-private venv + granian, with a `pwd` shim on Windows (ADR 0004). If install fails, native runs without web search and `doctor` explains; Docker mode always has it | Step 1 (done) |
+| 3. Native sandboxes (`sandbox-exec` deprecated but working; Ubuntu 24.04 AppArmor blocks bwrap user namespaces; Pyodide escape history) | Landlock fallback on Linux; fail closed; Deno permissions as the boundary for Pyodide; security tests per OS. Step-1e probes: Landlock ABI 8 and blocked bwrap on Ubuntu 24.04 runners, Seatbelt and unelevated AppContainer work (ADR 0006) | Step 1 (light cells done), 10 |
 | Keyless OpenAlex budget shared per IP (NAT) | Free singletons first, ≤50 searches/day, budget guard at 20%, other sources fill in, optional free key suggested | Step 2 |
 | Container engine auto-start fails or needs elevation | Timeout → explain → native fallback for this session | Step 1 |
-| Torch/CUDA bloat via Docling on Linux | ONNX-runtime models extra; a CI check that `torch` is absent from the native lock | Step 1 |
+| Torch/CUDA bloat via Docling on Linux | `docling-slim` without model extras; a CI test asserts torch and GPU packages are absent from both locks (ADR 0005) | Step 1 (done) |
 | LiteLLM supply chain | Exact pin with hashes, ≥14-day-old non-advisory release, upgrade PR checklist, no Docker image, telemetry off (§19.7) | Ongoing |
 | Mem0 vs Hindsight quality | Bake-off with an ADR | Step 6 |
 | Deep Agents churn | Pinned version, single factory module, upgrade ADR + full suite | Ongoing |

@@ -52,3 +52,13 @@ Newest entries at the bottom. Each session appends: date, plan + task, what chan
 - Deferred: see the plan's Deferred list (Windows/macOS E2E legs and auto-open browser at step 9; WebSocket regression test and LLM fixtures dir at step 3; TS 7 / Node 26 ADR).
 - No features.json flips (F10 and onboarding flip at step 9).
 - Next: plan 1e spikes (native SearXNG on Windows, native sandbox, Docling-ONNX, ONNX embedder/reranker).
+
+## 2026-11-03 — Step 1e platform spikes (plan docs/superpowers/plans/2026-11-02-step1e-platform-spikes.md, PR #5)
+- Done (feat/step1e-platform-spikes): torch-free PDF conversion with docling-slim on pypdfium2 + RapidOCR, with no-torch lock guard (ADR 0005); local int8 embedder (fastembed bge) and bge-reranker-v2-m3 int8 via onnxruntime (ADR 0007); light code cells as Pyodide 314.0.7 in Deno 2.9.8 with an escape suite on five OS (ADR 0006); stdlib per-OS kernel-sandbox probe (`scripts/sandbox_probe.py`, non-blocking CI job); native SearXNG from a pinned commit, sha256-checked, hash-locked deps, Windows `pwd` shim, supervised beside the app (ADR 0004); `platform` CI job on five OS.
+- Security: windows-2025 CI showed a planted symlink in a light-cell workdir let a cell read outside it (a junction does the same as non-admin). `run_cell` now refuses workdirs holding symlinks, junctions or hard links.
+- Spec updated: §4 web search/PDF rows, §9 Docling/embedder/rerank depth, §19.4 (link refusal, Landlock, Windows AppContainer + Job Object), §26 risks, F6.1 light cells server-side.
+- Tests: CLI 114 passed (+ real SearXNG install per OS in CI); backend platform tests on five OS; CI run 41535527204 green on every job.
+- Rulings: rerank depth set by a step 4 benchmark (50 int8 pairs take 11–51 s on CI); Windows kernel sandbox is AppContainer + Job Object, not a restricted token.
+- Deferred: see the plan's Deferred list (product wiring at step 2, rerank depth at step 4, warm Pyodide and the kernel sandbox at step 7/10, SearXNG install race at step 9).
+- No features.json flips.
+- Next: step 2 plan.

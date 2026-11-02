@@ -59,6 +59,9 @@ class State:
     supervisor_pid: int | None = None
     supervisor_created: float | None = None
     pg_port: int | None = None
+    searxng_port: int | None = None
+    searxng_pid: int | None = None
+    searxng_created: float | None = None
 
     @property
     def url(self) -> str:
@@ -74,9 +77,16 @@ def read_state() -> State | None:
     raw = _read_json("state.json")
     if not isinstance(raw, dict):
         return None
-    compose, pid, created, pg_port = (
-        raw.get(k) for k in ("compose", "supervisor_pid", "supervisor_created", "pg_port")
+    keys = (
+        "compose",
+        "supervisor_pid",
+        "supervisor_created",
+        "pg_port",
+        "searxng_port",
+        "searxng_pid",
+        "searxng_created",
     )
+    compose, pid, created, pg_port, sx_port, sx_pid, sx_created = (raw.get(k) for k in keys)
     compose = compose or []
     valid = (
         raw.get("mode") in ("native", "docker")
@@ -87,8 +97,13 @@ def read_state() -> State | None:
         and (pg_port is None or _port(pg_port))
         and (pid is None or (type(pid) is int and type(created) in (int, float)))  # the PID alone could be reused
         and (created is None or type(created) in (int, float))
+        and (sx_port is None or _port(sx_port))
+        and (sx_pid is None or (type(sx_pid) is int and type(sx_created) in (int, float)))
+        and (sx_created is None or type(sx_created) in (int, float))
     )
-    return State(raw["mode"], raw["port"], tuple(compose), pid, created, pg_port) if valid else None
+    if not valid:
+        return None
+    return State(raw["mode"], raw["port"], tuple(compose), pid, created, pg_port, sx_port, sx_pid, sx_created)
 
 
 def write_state(state: State) -> None:

@@ -27,13 +27,15 @@ Researchly is an open-source, local-first, multi-agent research assistant: chat 
 | Repo checks | `uv run --no-project --python 3.12 scripts/repo_checks.py` |
 | Hook/script tests | `uv run --no-project --python 3.12 --with pytest pytest .claude/hooks/tests scripts/tests -q` |
 | Backend tests | `uv run --directory backend pytest -q` |
+| Backend platform tests | `uv run --directory backend pytest -m platform -q` (downloads models, Deno and Pyodide; models cached in the gitignored `backend/.models`) |
 | Backend lint/format | `uv run --directory backend ruff check` · `uv run --directory backend ruff format` |
 | Backend types | `uv run --directory backend pyright` |
-| CLI tests | `uv run --directory cli pytest -q` (starts real pg0 Postgres; Docker-mode E2E: prefix `RESEARCHLY_TEST_DOCKER=1`, ~10 min cold) |
+| CLI tests | `uv run --directory cli pytest -q` (starts real pg0 Postgres and installs the pinned SearXNG; Docker-mode E2E: prefix `RESEARCHLY_TEST_DOCKER=1`, ~10 min cold) |
 | CLI lint/types | `uv run --directory cli ruff check` · `uv run --directory cli ruff format` · `uv run --directory cli pyright` |
 | Run locally | `uv run --directory cli researchly start` · `status` · `doctor` · `stop` |
 | Frontend tests | `pnpm -C frontend test` |
 | Frontend types/lint | `pnpm -C frontend typecheck` · `pnpm -C frontend lint` |
+| Sandbox probe | `uv run --no-project --python 3.12 scripts/sandbox_probe.py` (per-OS kernel-sandbox facts, ADR 0006) |
 | OpenAPI client | `pnpm -C frontend api:schema` (regenerates `frontend/src/api/`; CI fails if it is stale) |
 | E2E smoke | `pnpm -C frontend build` then `pnpm -C e2e exec playwright test --grep @smoke` (isolated data dir under `e2e/.artifacts`; `researchly start` rebuilds a missing or stale UI) |
 
@@ -65,6 +67,9 @@ The default `python` on dev machines may be old; always go through `uv`.
 - Pyright picks the repo-root `pyrightconfig.json` over a project's `pyproject.toml`, so the root config excludes `cli/` and the CLI has its own `cli/pyrightconfig.json`. A new Python project needs the same.
 - Frontend: pnpm 12 provides Node 24.22.2 via `devEngines.runtime` (system Node may differ). TypeScript stays on 6.0.3 until openapi-typescript supports TS 7. Supply chain: `minimumReleaseAge` 7 days + `trustPolicy: no-downgrade`; `trustPolicyExclude` entries need user approval.
 - The SPA builds into the gitignored `backend/src/researchly/web/` (shipped in the wheel). Native `researchly start` (re)builds it when it is missing or older than the frontend sources; an already-running app keeps serving the old build until restarted. Frontend dev: `researchly start`, open its login link once, then `pnpm -C frontend dev` on :5173 (proxies `/api`).
+- No torch: never add Docling model extras (they pull torch or `onnxruntime-gpu`); `backend/tests/test_lock.py` guards both locks. `docling-slim` is pinned exactly because `ingest/pdf.py` patches private behaviour (ADR 0005). onnxruntime is held at 1.23.2 on Intel Macs, the last x86_64 wheel (ADR 0007).
+- Light cells (`sandbox/light.py`): pass Deno paths as `Path.resolve().as_posix()` (Deno denies Windows 8.3 short names); Deno checks a link's own path, so `run_cell` refuses workdirs holding links. Deno/Pyodide bumps re-run the escape tests on all five OS (ADR 0006).
+- Native SearXNG: bumping the pin means a new commit SHA, tarball sha256 and regenerated `searxng-requirements.txt` (command in its header), plus the compose image tag (ADR 0004).
 - Native mode: `pg0.Pg0.drop()` deletes the data dir; only test teardown may call it. In a Windows venv, `sys.executable` is a launcher whose child is the real interpreter (the supervisor's PID is the launcher's; kill-on-close jobs chain).
 
 ## Compact instructions

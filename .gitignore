@@ -13,6 +13,7 @@ build/
 node_modules/
 frontend/dist/
 backend/src/researchly/web/
+backend/.models/
 .pnpm-store/
 
 # Env & secrets
