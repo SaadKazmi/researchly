@@ -145,3 +145,86 @@ def test_uvicorn_access_log_redacts_the_login_token():
         logger.filters[:] = saved
     assert TOKEN not in stream.getvalue()
     assert "/?token=[REDACTED]" in stream.getvalue()
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("path", ["//api/v1/system", "///mcp"])
+async def test_extra_leading_slashes_do_not_escape_the_private_prefixes(path):
+    async with client() as c:
+        assert (await c.get(f"{BASE}{path}")).status_code == 401
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("path", ["*", ""])
+async def test_odd_paths_never_crash_the_guard(path):
+    app = create_app(Settings(env="test"), token=TOKEN)
+    sent: list[dict] = []
+
+    async def receive():
+        return {"type": "http.request", "body": b"", "more_body": False}
+
+    async def send(message):
+        sent.append(message)
+
+    scope = {
+        "type": "http",
+        "method": "GET",
+        "path": path,
+        "raw_path": path.encode(),
+        "query_string": b"",
+        "headers": [(b"host", b"127.0.0.1:8765")],
+    }
+    await app(scope, receive, send)
+    status = sent[0]["status"]
+    assert status != 500 and status != 200
+
+
+@pytest.mark.anyio
+async def test_login_redirect_keeps_the_encoded_path():
+    async with client() as c:
+        r = await c.get(f"/a%3Fb?x=1&token={TOKEN}")
+    assert r.status_code == 303 and r.headers["location"] == "/a%3Fb?x=1"
+
+
+@pytest.mark.anyio
+async def test_any_valid_cookie_value_authenticates():
+    headers = {"cookie": f"{TOKEN_COOKIE}=x; {TOKEN_COOKIE}={TOKEN}", "sec-fetch-site": "same-origin"}
+    async with client() as c:
+        assert (await c.get("/api/v1/system", headers=headers)).status_code == 200
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("path", ["/api/v1/system", "/mcp"])
+async def test_token_param_on_private_paths_does_not_log_in(path):
+    async with client() as c:
+        r = await c.get(f"{path}?token={TOKEN}")
+    assert r.status_code == 401 and "set-cookie" not in r.headers
+
+
+@pytest.mark.anyio
+async def test_only_get_logs_in():
+    async with client() as c:
+        for r in (await c.head(f"/?token={TOKEN}"), await c.post(f"/?token={TOKEN}")):
+            assert "set-cookie" not in r.headers
+
+
+@pytest.mark.anyio
+async def test_first_token_param_decides():
+    async with client() as c:
+        r = await c.get(f"/?token=wrong&token={TOKEN}")
+    assert r.status_code == 401 and "set-cookie" not in r.headers
+
+
+@pytest.mark.parametrize("headers", [{}, {"origin": "http://evil.example"}])
+def test_websocket_without_token_or_from_foreign_origin_is_closed_1008(headers):
+    from starlette.testclient import TestClient
+    from starlette.websockets import WebSocketDisconnect
+
+    app = create_app(Settings(env="test"), token=TOKEN)
+    with (
+        TestClient(app, base_url=BASE) as tc,
+        pytest.raises(WebSocketDisconnect) as exc,
+        tc.websocket_connect("/api/x", headers=headers),
+    ):
+        pass
+    assert exc.value.code == 1008

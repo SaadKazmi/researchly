@@ -20,15 +20,13 @@ _FETCH_SITES = {"same-origin", "none"}  # "none": the user typed or bookmarked t
 
 
 def _private(path: str) -> bool:
-    return path.split("/", 2)[1] in _PRIVATE
+    return path.lstrip("/").split("/", 1)[0] in _PRIVATE
 
 
-def _cookie(header: str, name: str) -> str:
-    for part in header.split(";"):
-        key, _, value = part.strip().partition("=")
-        if key == name:
-            return value
-    return ""
+def _cookies(header: str, name: str) -> list[str]:
+    """Every value of the named cookie: another server on 127.0.0.1 can plant a same-named one that sorts first."""
+    pairs = (part.strip().partition("=") for part in header.split(";"))
+    return [value for key, _, value in pairs if key == name]
 
 
 class LocalhostGuard:
@@ -52,7 +50,9 @@ class LocalhostGuard:
         public = scope["type"] == "http" and scope["method"] in ("GET", "HEAD") and not _private(scope["path"])
         query = parse_qsl(scope.get("query_string", b"").decode("latin-1"), keep_blank_values=True)
         if public and scope["method"] == "GET" and any(key == "token" for key, _ in query):
-            await self._login(scope["path"], query)(scope, receive, send)
+            raw = scope.get("raw_path")
+            path = raw.decode("latin-1") if raw else scope["path"]
+            await self._login(path, query)(scope, receive, send)
             return
         if not public and not self._authenticated(headers):
             await _deny(scope, receive, send, "missing or invalid token", 401)
@@ -67,7 +67,7 @@ class LocalhostGuard:
             return True
         # a cookie rides along on every request to 127.0.0.1, whatever the port: only trust it from our own pages
         same_origin = headers.get("sec-fetch-site") in _FETCH_SITES
-        return same_origin and self._valid(_cookie(headers.get("cookie", ""), TOKEN_COOKIE))
+        return same_origin and any(self._valid(v) for v in _cookies(headers.get("cookie", ""), TOKEN_COOKIE))
 
     def _login(self, path: str, query: list[tuple[str, str]]) -> Response:
         """Swap the one-time `?token=` link for the cookie, then reload the same page without the token."""
