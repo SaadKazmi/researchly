@@ -1,5 +1,6 @@
 """Light code cells: Deno's permissions are the boundary, so every escape is attempted on every OS."""
 
+import re
 import sys
 import time
 from pathlib import Path
@@ -89,8 +90,8 @@ def test_ctypes_system_cannot_spawn(cache: Path, workdir: Path, outside: Path) -
     text = result.stdout + (result.error or "")
     if sys.platform == "win32":  # Pyodide routes system() to Deno's spawnSync, which needs env COMSPEC
         assert "NotCapable" in text
-    else:  # observed in CI: wasm system() returns non-zero or Deno refuses
-        assert "NotCapable" in text or ("rc " in text and "rc 0" not in text), text
+    else:  # wasm system() returns non-zero, or Deno refuses the spawn
+        assert "NotCapable" in text or re.search(r"^rc -?[1-9]", result.stdout, re.M), text
 
 
 def test_deno_command_is_denied(cache: Path, workdir: Path) -> None:
