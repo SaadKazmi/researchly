@@ -207,3 +207,27 @@ jobs:
           cache-dependency-glob: cli/uv.lock
       - run: uv sync --locked
       - run: uv run pytest -m docker -q -rA
+
+  sandbox-probes:
+    name: sandbox probes (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true # facts for ADR 0006, not a gate; the kernel sandbox is built at step 7/10
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm, windows-2025, macos-15, macos-15-intel]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: "0.12.10"
+      - if: runner.os == 'Linux'
+        run: sudo apt-get install -y bubblewrap # CI only: to see whether userns lets bwrap run here
+      - name: Probe
+        shell: bash
+        run: |
+          uv run --no-project --python 3.12 scripts/sandbox_probe.py | tee probe.json
+          { echo "### ${{ matrix.os }}"; echo '```json'; cat probe.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
