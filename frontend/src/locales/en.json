@@ -1,0 +1,32 @@
+{
+  "app": { "name": "Researchly", "version": "v{{version}}" },
+  "shell": { "skip": "Skip to content", "nav": "Main" },
+  "nav": {
+    "projects": "Projects",
+    "memory": "Memory",
+    "usage": "Usage",
+    "settings": "Settings"
+  },
+  "status": {
+    "checking": "Checking…",
+    "connected": "Connected",
+    "disconnected": "Disconnected"
+  },
+  "auth": {
+    "signIn": "Open Researchly from the link printed by <code>researchly start</code>."
+  },
+  "routes": {
+    "projects": "Projects",
+    "chat": "Chat",
+    "library": "Library",
+    "graph": "Graph",
+    "document": "Document",
+    "studio": "Studio",
+    "review": "Review",
+    "memory": "Memory",
+    "usage": "Usage",
+    "settings": "Settings",
+    "onboarding": "Welcome"
+  },
+  "placeholder": "This view arrives in a later build step."
+}
