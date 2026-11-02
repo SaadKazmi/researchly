@@ -22,6 +22,7 @@ import httpx
 import yaml
 
 from researchly.connectors.base import QuotaExhausted, ResponseTooLarge, SourceUnavailable
+from researchly.connectors.ssrf import Blocked
 
 if TYPE_CHECKING:
     from researchly.connectors.cache import HttpCache
@@ -219,7 +220,9 @@ class PoliteClient:
                     async with limit:
                         async with asyncio.timeout(TOTAL_TIMEOUT):
                             fetched = await self._send(url, params, headers, max_bytes, source)
-                except (httpx.TransportError, TimeoutError):
+                except (httpx.TransportError, TimeoutError) as exc:
+                    if isinstance(exc.__cause__, Blocked):  # a refusal, not an outage: no retry, no breaker strike
+                        raise SourceUnavailable(source, f"refused: {exc.__cause__}") from exc.__cause__
                     fetched = None
                 except Exception:  # the server answered (too big, bad redirect, bad body): not an outage
                     breaker.success()
