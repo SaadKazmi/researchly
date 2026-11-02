@@ -121,7 +121,7 @@ jobs:
       - run: uv run ruff check
       - run: uv run ruff format --check
       - run: uv run pyright
-      - run: uv run pytest -q -rA
+      - run: uv run pytest -q -rA --durations=5 # slowest tests (pg0, SearXNG install) for the ADRs
 
   frontend:
     runs-on: ubuntu-24.04
