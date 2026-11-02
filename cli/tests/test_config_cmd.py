@@ -19,3 +19,4 @@ def test_set_runtime_persists():
 def test_rejects_unknown_runtime_and_key():
     assert runner.invoke(app, ["config", "set", "runtime", "kubernetes"]).exit_code == 2
     assert runner.invoke(app, ["config", "get", "colour"]).exit_code == 2
+    assert runner.invoke(app, ["config", "set", "last_mode", "docker"]).exit_code == 2  # recorded by start only

@@ -10,7 +10,69 @@ from sqlalchemy import create_engine, text
 
 from researchly_cli import native, state
 
-pytestmark = pytest.mark.native
+
+@pytest.fixture
+def fakes(monkeypatch):
+    """native.start/stop with pg0, provisioning and the supervisor faked; returns the events in order."""
+    events: list[str] = []
+
+    class Postgres:
+        def __init__(self, data_dir, password):
+            pass
+
+        def start(self):
+            events.append("pg start")
+            return "postgresql+psycopg://postgres:x@127.0.0.1:5432/postgres", 5432
+
+        def stop(self):
+            events.append("pg stop")
+
+    class Supervisor:
+        pid = 4242
+
+        def create_time(self):
+            return 1.0
+
+    monkeypatch.setattr(native, "NativePostgres", Postgres)
+    monkeypatch.setattr(native, "setup_database", lambda url, app, ro: "postgresql+psycopg://app")
+    monkeypatch.setattr(native, "spawn", lambda cmd, log, env: events.append("spawn") or Supervisor())
+    monkeypatch.setattr(native, "terminate_tree", lambda pid, created: events.append(f"terminate {pid}"))
+    return events
+
+
+def test_failed_provisioning_stops_postgres_and_hides_detail(fakes, monkeypatch):
+    def fail(url, app, ro):
+        raise RuntimeError("could not connect\nCREATE ROLE researchly_app PASSWORD 'hunter2'")
+
+    monkeypatch.setattr(native, "setup_database", fail)
+    with pytest.raises(native.NativeStartError) as caught:
+        native.start(state.load_secrets())
+    assert str(caught.value) == "RuntimeError: could not connect"
+    assert fakes == ["pg start", "pg stop"]
+
+
+def test_interrupted_health_wait_stops_everything(fakes, monkeypatch):
+    def interrupted(check, timeout):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(state, "wait_until", interrupted)
+    with pytest.raises(KeyboardInterrupt):
+        native.start(state.load_secrets())
+    assert fakes == ["pg start", "spawn", "terminate 4242", "pg stop"]
+
+
+def test_stop_skips_a_supervisor_without_a_create_time(fakes):
+    native.stop(state.State(mode="native", port=8765, supervisor_pid=4242), state.load_secrets())
+    assert fakes == ["pg stop"]  # without the create time a reused PID cannot be told apart
+
+
+def test_uncreatable_pg_dir_names_the_likely_root_owner(monkeypatch):
+    def denied(self, *args, **kwargs):
+        raise PermissionError(13, "Permission denied")
+
+    monkeypatch.setattr(Path, "mkdir", denied)
+    with pytest.raises(native.NativeStartError, match="owned by root"):
+        native.NativePostgres(state.data_dir(), "x")
 
 
 def _report(line: str) -> None:
@@ -30,6 +92,7 @@ def secrets():
     pg.drop()  # test teardown only: drop() deletes the data dir
 
 
+@pytest.mark.native
 def test_native_start_serves_the_app_on_pg0_and_stops_cleanly(secrets):
     began = time.monotonic()
     run = native.start(secrets)

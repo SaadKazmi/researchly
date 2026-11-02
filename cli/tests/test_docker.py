@@ -37,6 +37,30 @@ def test_compose_runs_from_the_repo_root(runs):
     assert runs[0][1]["cwd"] == docker.COMPOSE_FILE.parents[1]  # bake reads only inside its cwd
 
 
+def test_start_creates_the_pg_dir_as_the_user(runs):
+    docker.start(state.load_secrets(), ("docker", "compose"))
+    assert (state.data_dir() / "pg" / "18" / "docker").is_dir()  # else rootful Docker creates it root-owned
+
+
+def test_stop_covers_every_profile(runs):
+    docker.stop(state.State(mode="docker", port=8765, compose=("docker", "compose")), state.load_secrets())
+    assert runs[0][0][-3:] == ["--profile", "*", "down"]  # grobid too
+
+
+def test_failed_start_takes_the_stack_down(monkeypatch):
+    calls: list[list[str]] = []
+
+    def compose(cmd, args, env):
+        calls.append(list(args))
+        if args[:3] == ["up", "-d", "--wait"]:
+            raise docker.DockerStartError("`docker compose up` failed")
+
+    monkeypatch.setattr(docker, "_compose", compose)
+    with pytest.raises(docker.DockerStartError):
+        docker.start(state.load_secrets(), ("docker", "compose"))
+    assert calls[-1] == ["--profile", "*", "down"]
+
+
 @pytest.mark.docker
 def test_docker_stack_serves_health_with_bm25(monkeypatch):
     monkeypatch.setenv("COMPOSE_PROJECT_NAME", f"researchly-test-{uuid.uuid4().hex[:6]}")

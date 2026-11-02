@@ -4,7 +4,7 @@ import os
 from typing import NoReturn
 
 import typer
-from researchly.security.keychain import store_name
+from researchly.security.keychain import KeychainUnavailable, store_name
 
 from researchly_cli import docker, engines, native, state
 
@@ -82,11 +82,34 @@ def _announce(selection: engines.Selection) -> None:
             state.save_config({**config, "docker_desktop_note": "shown"})
 
 
-def _stop(run: state.State, secrets: state.Secrets) -> None:
+def _warn_on_runtime_switch(mode: str) -> None:
+    config = state.load_config()
+    last = config.get("last_mode")
+    if config["runtime"] == "auto" and last and last != mode:
+        typer.secho(
+            f"WARNING: starting in {mode} mode, but the last run used {last} mode. Each mode keeps a separate "
+            f"database, so your {last}-mode data will not be here. To keep using it, stop and run "
+            f"`researchly config set runtime {last}`.",
+            err=True,
+            fg=typer.colors.YELLOW,
+            bold=True,
+        )
+
+
+def _secrets() -> state.Secrets:
+    try:
+        return state.load_secrets()
+    except KeychainUnavailable as exc:
+        _fail(str(exc))
+
+
+def _stop(run: state.State, secrets: state.Secrets) -> str | None:
+    """Stop `run`; the error message if that failed."""
     try:
         (docker.stop if run.mode == "docker" else native.stop)(run, secrets)
-    except docker.DockerStartError as exc:
-        _fail(str(exc))
+    except (docker.DockerStartError, native.NativeStartError) as exc:
+        return str(exc)
+    return None
 
 
 @app.command()
@@ -94,7 +117,7 @@ def setup() -> None:
     """Choose the runtime (starting a container engine if needed) and prepare it."""
     selection = _select()
     _announce(selection)
-    secrets = state.load_secrets()
+    secrets = _secrets()
     if selection.mode == "docker" and selection.engine is not None:
         try:
             docker.build(secrets, selection.engine.compose)
@@ -108,15 +131,17 @@ def setup() -> None:
 def start() -> None:
     """Start Researchly in the best available runtime and print its URL."""
     current = state.read_state()
-    secrets = state.load_secrets()
+    secrets = _secrets()
     if current is not None:
         if state.healthy(current.port):
             typer.echo(f"Already running ({current.mode}) at {current.url}")
             return
-        _stop(current, secrets)  # leftovers of a crashed run
+        if (error := _stop(current, secrets)) is not None:  # leftovers of a crashed run
+            typer.secho(f"warning: could not stop the previous {current.mode} run ({error}); starting anyway", err=True)
         state.clear_state()
     selection = _select()
     _announce(selection)
+    _warn_on_runtime_switch(selection.mode)
     try:
         if selection.mode == "docker" and selection.engine is not None:
             run = docker.start(secrets, selection.engine.compose)
@@ -125,6 +150,7 @@ def start() -> None:
     except (docker.DockerStartError, native.NativeStartError) as exc:
         _fail(str(exc))
     state.write_state(run)
+    state.save_config({**state.load_config(), "last_mode": run.mode})
     typer.echo(f"Researchly is running at {run.url}")
 
 
@@ -135,7 +161,8 @@ def stop() -> None:
     if current is None:
         typer.echo("Researchly is not running.")
         return
-    _stop(current, state.load_secrets())
+    if (error := _stop(current, _secrets())) is not None:
+        _fail(error)
     state.clear_state()
     typer.echo("Stopped.")
 

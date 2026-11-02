@@ -1,4 +1,7 @@
+import json
 import socket
+
+import pytest
 
 from researchly_cli import state
 
@@ -10,6 +13,42 @@ def test_state_roundtrip():
     assert run.url == "http://127.0.0.1:8765"
     state.clear_state()
     assert state.read_state() is None
+
+
+def _write(name: str, text: str) -> None:
+    state.data_dir().mkdir(parents=True, exist_ok=True)
+    (state.data_dir() / name).write_text(text, "utf-8")
+
+
+def test_read_state_drops_unknown_keys():
+    _write("state.json", json.dumps({"mode": "native", "port": 8765, "from_a_newer_cli": 1}))
+    assert state.read_state() == state.State(mode="native", port=8765)
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        "{not json",
+        "[]",
+        json.dumps({"mode": "kubernetes", "port": 8765}),
+        json.dumps({"mode": "docker", "port": 8765, "compose": ["rm", "-rf"]}),
+        json.dumps({"mode": "native", "port": 0}),
+        json.dumps({"mode": "native", "port": "8765"}),
+        json.dumps({"mode": "native", "port": 8765, "pg_port": 70000}),
+        json.dumps({"mode": "native", "port": 8765, "supervisor_pid": 42}),
+    ],
+)
+def test_read_state_rejects_corrupt_or_invalid_content(content):
+    _write("state.json", content)
+    assert state.read_state() is None
+
+
+@pytest.mark.parametrize("content", ["{not json", "[1]", json.dumps({"runtime": "native", "n": 1, "x": None})])
+def test_load_config_ignores_corrupt_or_non_string_entries(content):
+    _write("config.json", content)
+    config = state.load_config()
+    assert config["runtime"] == ("native" if "runtime" in content else "auto")
+    assert all(isinstance(v, str) for v in config.values()) and config.keys() <= {"runtime"}
 
 
 def test_config_defaults_and_persists():

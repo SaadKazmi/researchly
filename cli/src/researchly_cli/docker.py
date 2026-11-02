@@ -1,5 +1,6 @@
 """Docker runtime (spec §4.1): the compose stack in infra/, driven through the engine's compose command."""
 
+import contextlib
 import os
 import subprocess
 from collections.abc import Sequence
@@ -10,6 +11,7 @@ from researchly_cli import state
 # ponytail: works from a source checkout only; ship the compose file with the release images (step 10)
 COMPOSE_FILE = Path(__file__).resolve().parents[3] / "infra" / "compose.yaml"
 APP_PORT = 8765
+DOWN = ["--profile", "*", "down"]  # every profile, so an opt-in service (grobid) stops too
 
 
 class DockerStartError(RuntimeError):
@@ -49,13 +51,19 @@ def build(secrets: state.Secrets, compose: Sequence[str]) -> None:
 def start(secrets: state.Secrets, compose: Sequence[str]) -> state.State:
     port = state.free_port(APP_PORT)
     env = compose_env(secrets, port)
-    (state.data_dir() / "pg").mkdir(parents=True, exist_ok=True)
+    # Created as the user: rootful Docker would create it root-owned, and native mode needs to write in pg/18/
+    (state.data_dir() / "pg" / "18" / "docker").mkdir(parents=True, exist_ok=True)
     _compose(compose, ["build"], env)
-    _compose(compose, ["up", "-d", "--wait", "postgres"], env)
-    _compose(compose, ["run", "--rm", "migrate"], env)  # spec §16.1: a failed migration aborts the start
-    _compose(compose, ["up", "-d", "--wait", "app", "searxng"], env)
+    try:
+        _compose(compose, ["up", "-d", "--wait", "postgres"], env)
+        _compose(compose, ["run", "--rm", "migrate"], env)  # spec §16.1: a failed migration aborts the start
+        _compose(compose, ["up", "-d", "--wait", "app", "searxng"], env)
+    except BaseException:  # a failed or interrupted start leaves nothing running
+        with contextlib.suppress(Exception):
+            _compose(compose, DOWN, env)
+        raise
     return state.State(mode="docker", port=port, compose=tuple(compose))
 
 
 def stop(run: state.State, secrets: state.Secrets) -> None:
-    _compose(run.compose, ["down"], compose_env(secrets, run.port))
+    _compose(run.compose, DOWN, compose_env(secrets, run.port))
