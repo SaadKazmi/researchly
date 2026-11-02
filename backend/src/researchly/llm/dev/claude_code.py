@@ -39,7 +39,12 @@ def _render(messages: list[BaseMessage]) -> tuple[str, str]:
 
 
 def _catalogue(tools: list[dict[str, Any]]) -> str:
-    lines = ["You can call these tools. To call, reply with type=tool_calls; otherwise type=final with content."]
+    # Saying "you can call" makes the model try native tool_use, which fails and burns the turn budget.
+    lines = [
+        "These tools are not available to you directly; never try to invoke them. To use one, put it in your"
+        " structured reply: type=tool_calls with calls=[{name, args}]; the caller runs it and replies with the"
+        " result. Otherwise reply type=final with content. Tools:"
+    ]
     for t in tools:
         fn = t["function"]
         lines.append(
@@ -107,7 +112,7 @@ class ClaudeCodeChatModel(BaseChatModel):
             options = ClaudeAgentOptions(
                 tools=[],
                 system_prompt=system,
-                max_turns=1,
+                max_turns=2,  # structured output (output_format) spends one turn on its internal tool
                 setting_sources=[],
                 cwd=cwd,
                 model=self.model,

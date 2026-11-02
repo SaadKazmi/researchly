@@ -52,7 +52,7 @@ def test_plain_text_reply_and_isolated_options(monkeypatch):
         "input_token_details": {"cache_read": 5},
     }
     o = seen["options"]
-    assert (o.tools, o.max_turns, o.setting_sources, o.model, o.output_format) == ([], 1, [], "sonnet", None)
+    assert (o.tools, o.max_turns, o.setting_sources, o.model, o.output_format) == ([], 2, [], "sonnet", None)
     assert o.system_prompt == "be brief"
     assert "hi" in seen["prompt"]
 

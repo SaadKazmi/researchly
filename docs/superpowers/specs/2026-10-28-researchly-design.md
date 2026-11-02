@@ -392,7 +392,7 @@ Every LLM call writes an `llm_calls` row: `run_id, agent, role, provider, model,
 ### 7.7 Dev-only `claude-code` provider (the "ai-provider" agent)
 - `llm/dev/claude_code.py` defines `ClaudeCodeChatModel(BaseChatModel)`, which calls `claude_agent_sdk.query()` with:
   - `tools=[]` and `system_prompt` set to the app's system prompt;
-  - `max_turns=1` and `setting_sources=[]`;
+  - `max_turns=2` (structured output spends one turn on the CLI's internal output tool; live probe 2026-11-02: `max_turns=1` always hit `error_max_turns`) and `setting_sources=[]`;
   - `cwd` set to an empty temp dir.
 - **Tool calls are emulated** with a JSON schema that is a `oneOf` of `{type:"final", content}` and `{type:"tool_calls", calls:[{name, args}]}`, built from the bound tools. Results map to `AIMessage.tool_calls`.
 - **Structured output** passes through as the schema. Streaming maps `text_delta` events to chunks.
