@@ -27,7 +27,7 @@ Option (b), hardened:
 - **Protected requests** (everything under `/api` and `/mcp`, and every non-GET/HEAD request) accept either:
   - the `x-researchly-token` header (CLI, MCP clients, tests), or
   - the cookie, only when `Sec-Fetch-Site` is `same-origin` or `none` (a typed or bookmarked URL).
-- **Public:** GET/HEAD outside `/api` and `/mcp`, which covers the SPA's HTML, its hashed assets and client-side routes. The OpenAPI schema and docs move to `/api/openapi.json` and `/api/docs`, so they stay protected.
+- **Public:** GET/HEAD outside `/api` and `/mcp`, which covers the SPA's HTML, its hashed assets and client-side routes. The OpenAPI schema moves to `/api/openapi.json`, so it stays protected. FastAPI's Swagger UI page is disabled: it loads unpinned CDN script, which would run in the cookie-authenticated origin.
 - **Kept on every request, public or not:** the Host allowlist and the same-origin `Origin` check.
 - **Status codes:** token failures answer `401`; Host/Origin failures stay `403`; a WebSocket closes with `1008`.
 - **Logs:** uvicorn logs the query string, so the `uvicorn.access` and `uvicorn.error` loggers get redaction filters. A test pins `token=[REDACTED]` in the access log, and the E2E smoke reads the real `app.log`.
@@ -42,6 +42,7 @@ Option (b), hardened:
   - It could also plant a decoy `researchly_token` cookie (for example with `Path=/api`, which browsers send first). The guard accepts a request when *any* `researchly_token` value is valid, so a decoy cannot lock the user out.
   - Jupyter and VS Code serve-web carry the same exposure.
 - **Token exposure.** The token appears in terminal output and in the browser's history (the first URL), both readable by the same OS user only. It never appears in logs.
+- **WebSocket (to verify at step 3).** The cookie rule relies on browsers sending `Sec-Fetch-Site` on the WebSocket handshake; the step 3 WebSocket test checks Chromium, Firefox and WebKit. If one omits it, accept the cookie on a WebSocket only when `Origin` equals the host (browsers always send `Origin` there).
 - **Browser support.** Browsers without Fetch Metadata (Safari < 16.4) fall back to the 401 notice. Non-browser clients use the header.
 - **Dev server.** The Vite dev server on `:5173` proxies `/api` and `/health`. The host-only cookie set by `:8765` is also sent to `:5173`, and the proxy rewrites `Origin` to the app's.
 

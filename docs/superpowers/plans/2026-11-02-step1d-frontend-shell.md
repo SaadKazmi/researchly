@@ -1769,7 +1769,7 @@ Expected: 1 setup + 5 smoke tests pass, and `researchly stop` runs at teardown (
 ## Deferred (recorded, not built here)
 - **Windows/macOS E2E legs:** non-gating, added at step 9 (native parity).
 - **Docker-mode E2E leg:** when CI time allows. Task 6 already asserts `/` serves the SPA in the Docker E2E pytest.
-- **WebSocket 1008 / `/health/` regression test:** with the first WebSocket route (step 3).
+- **WebSocket 1008 / `/health/` regression test:** with the first WebSocket route (step 3). Also verify the cookie works on the WebSocket handshake in Chromium, Firefox and WebKit (`Sec-Fetch-Site` sent?), per ADR 0003.
 - **LLM fixtures directory in the E2E harness:** with the first LLM-backed flow (step 3).
 - **Auto-open the browser on `start`:** Jupyter's 0600 redirect-file trick (research §2.4), step 9 onboarding.
 - **TypeScript 7 / Node 26:** ADR when openapi-typescript supports TS 7. Re-check Node 26 LTS around 2026-12.

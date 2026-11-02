@@ -35,7 +35,7 @@ Researchly is an open-source, local-first, multi-agent research assistant: chat 
 | Frontend tests | `pnpm -C frontend test` |
 | Frontend types/lint | `pnpm -C frontend typecheck` · `pnpm -C frontend lint` |
 | OpenAPI client | `pnpm -C frontend api:schema` (regenerates `frontend/src/api/`; CI fails if it is stale) |
-| E2E smoke | `pnpm -C frontend build` then `pnpm -C e2e exec playwright test --grep @smoke` (isolated data dir under `e2e/.artifacts`; without a build, `researchly start` builds it) |
+| E2E smoke | `pnpm -C frontend build` then `pnpm -C e2e exec playwright test --grep @smoke` (isolated data dir under `e2e/.artifacts`; `researchly start` rebuilds a missing or stale UI) |
 
 The default `python` on dev machines may be old; always go through `uv`.
 
@@ -64,7 +64,7 @@ The default `python` on dev machines may be old; always go through `uv`.
 - Windows asyncio: psycopg async needs `SelectorEventLoop` (tests set it via `anyio_backend`); the dev `claude-code` provider runs the Agent SDK in its own thread on a Proactor loop.
 - Pyright picks the repo-root `pyrightconfig.json` over a project's `pyproject.toml`, so the root config excludes `cli/` and the CLI has its own `cli/pyrightconfig.json`. A new Python project needs the same.
 - Frontend: pnpm 12 provides Node 24.22.2 via `devEngines.runtime` (system Node may differ). TypeScript stays on 6.0.3 until openapi-typescript supports TS 7. Supply chain: `minimumReleaseAge` 7 days + `trustPolicy: no-downgrade`; `trustPolicyExclude` entries need user approval.
-- The SPA builds into the gitignored `backend/src/researchly/web/` (shipped in the wheel). Native `researchly start` builds it once if missing; rebuild after UI changes before running E2E. Frontend dev: `researchly start`, open its login link once, then `pnpm -C frontend dev` on :5173 (proxies `/api`).
+- The SPA builds into the gitignored `backend/src/researchly/web/` (shipped in the wheel). Native `researchly start` (re)builds it when it is missing or older than the frontend sources; an already-running app keeps serving the old build until restarted. Frontend dev: `researchly start`, open its login link once, then `pnpm -C frontend dev` on :5173 (proxies `/api`).
 - Native mode: `pg0.Pg0.drop()` deletes the data dir; only test teardown may call it. In a Windows venv, `sys.executable` is a launcher whose child is the real interpreter (the supervisor's PID is the launcher's; kill-on-close jobs chain).
 
 ## Compact instructions
