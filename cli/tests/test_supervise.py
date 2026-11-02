@@ -1,9 +1,12 @@
+import os
+import signal
 import sys
 from pathlib import Path
 
 import psutil
 import pytest
 
+from researchly_cli import supervise
 from researchly_cli.state import wait_until
 from researchly_cli.supervise import rotate, run_forever, spawn, supervisor_cmd, terminate_tree
 
@@ -63,6 +66,23 @@ def test_terminate_tree_ignores_a_reused_pid(start):
     sup, kids = start()
     terminate_tree(sup.pid, sup.create_time() - 1000)  # recorded create time does not match: not ours
     assert _alive(sup) and all(_alive(k) for k in kids)
+
+
+def test_group_sweep_is_skipped_for_a_supervisor_from_before_the_last_boot(monkeypatch):
+    swept: list[int] = []
+
+    def gone(pid):
+        raise psutil.NoSuchProcess(pid)
+
+    monkeypatch.setattr(supervise.sys, "platform", "linux")  # the sweep is POSIX-only; os.killpg is faked below
+    monkeypatch.setattr(os, "killpg", lambda pid, sig: swept.append(pid), raising=False)
+    monkeypatch.setattr(signal, "SIGKILL", 9, raising=False)
+    monkeypatch.setattr(psutil, "Process", gone)
+    monkeypatch.setattr(psutil, "boot_time", lambda: 1000.0)
+    terminate_tree(4242, created=999.0)  # recorded before the reboot: the group ID may now be anyone's
+    assert swept == []
+    terminate_tree(4242, created=1001.0)
+    assert swept == [4242]
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="console windows are a Windows concern")

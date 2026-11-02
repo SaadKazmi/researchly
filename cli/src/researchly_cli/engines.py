@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-from researchly_cli.supervise import detached
+from researchly_cli.supervise import popen_detached
 
 Runner = Callable[[Sequence[str]], tuple[int, str]]
 
@@ -64,7 +64,8 @@ def detect(
     run: Runner = run, which: Callable[[str], str | None] = shutil.which, platform: str = sys.platform
 ) -> Engine | None:
     """The installed engine, running or not (spec §4.1 step 1)."""
-    if which("docker"):
+    # The podman-docker shim installs a `docker` that is really Podman
+    if which("docker") and "podman" not in run(["docker", "--version"])[1].lower():
         compose = ("docker", "compose") if run(["docker", "compose", "version"])[0] == 0 else ()
         context = run(["docker", "context", "show"])[1]
         if context.startswith("colima"):
@@ -86,8 +87,9 @@ def detect(
         return Engine("docker", "docker", compose, None, "start your Docker engine")
     if which("podman"):
         compose = ("podman", "compose") if which("docker-compose") or which("podman-compose") else ()
-        start = None if platform.startswith("linux") else ("podman", "machine", "start")
-        return Engine("podman", "podman", compose, start, "systemctl --user start podman.socket")
+        linux = platform.startswith("linux")
+        start = ("systemctl", "--user", "start", "podman.socket") if linux else ("podman", "machine", "start")
+        return Engine("podman", "podman", compose, start)
     return None
 
 
@@ -97,9 +99,7 @@ def ready(engine: Engine, run: Runner = run) -> bool:
 
 def launch(cmd: Sequence[str]) -> None:
     """Start an engine without waiting: some start commands are GUIs, others block until the engine is up."""
-    subprocess.Popen(  # noqa: S603
-        list(cmd), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **detached()
-    )
+    popen_detached(cmd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def select_runtime(

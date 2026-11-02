@@ -131,6 +131,15 @@ def test_doctor_lists_native_degradations(monkeypatch):
         assert expected in result.stdout
 
 
+def test_doctor_notes_docker_host_when_the_engine_is_not_ready(monkeypatch):
+    monkeypatch.setattr(engines, "detect", lambda: DESKTOP)
+    monkeypatch.setattr(engines, "ready", lambda engine: False)
+    monkeypatch.delenv("DOCKER_HOST", raising=False)
+    assert "DOCKER_HOST" not in runner.invoke(app, ["doctor"]).stdout
+    monkeypatch.setenv("DOCKER_HOST", "tcp://10.0.0.5:2375")
+    assert "DOCKER_HOST is set" in runner.invoke(app, ["doctor"]).stdout
+
+
 @pytest.mark.native
 def test_native_cli_round_trip():
     state.save_config({"runtime": "native"})

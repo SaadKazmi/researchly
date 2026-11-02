@@ -1,5 +1,6 @@
 """`researchly` command line (spec F10.1, §4)."""
 
+import os
 from typing import NoReturn
 
 import typer
@@ -161,8 +162,13 @@ def doctor() -> None:
     if engine is None:
         typer.echo("container engine: none found")
     else:
-        detail = "ready" if engines.ready(engine) else "stopped"
+        ready = engines.ready(engine)
+        detail = "ready" if ready else "stopped"
         typer.echo(f"container engine: {engine.name} ({detail}{'' if engine.compose else ', no compose support'})")
+        if not ready and os.environ.get("DOCKER_HOST"):
+            typer.echo(
+                "note: DOCKER_HOST is set, so the engine is probed at that address; unset it to use the local one"
+            )
     typer.echo(f"secrets store: {store_name()}")
     typer.echo(f"data dir: {state.data_dir()}")
     typer.echo(f"logs: {state.log_dir()}")

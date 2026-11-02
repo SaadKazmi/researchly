@@ -1,6 +1,9 @@
+import subprocess
+import sys
+
 import pytest
 
-from researchly_cli.engines import NATIVE_NOTE, Engine, RuntimeUnavailable, detect, select_runtime
+from researchly_cli.engines import NATIVE_NOTE, Engine, RuntimeUnavailable, detect, launch, select_runtime
 
 COMPOSE_OK = {("docker", "compose", "version"): (0, "Docker Compose version v5.2.0")}
 
@@ -70,7 +73,29 @@ def test_podman_needs_a_compose_provider():
     bare = detect(fake_run(), which_only("podman"), "darwin")
     assert bare is not None and bare.compose == () and bare.start == ("podman", "machine", "start")
     full = detect(fake_run(), which_only("podman", "podman-compose"), "linux")
-    assert full is not None and full.compose == ("podman", "compose") and full.start is None
+    assert full is not None and full.compose == ("podman", "compose")
+    assert full.start == ("systemctl", "--user", "start", "podman.socket")  # rootless: no elevation
+
+
+def test_podman_docker_shim_is_podman():
+    run = fake_run({("docker", "--version"): (0, "podman version 5.4.0"), **context("default")})
+    engine = detect(run, which_only("docker", "podman", "podman-compose"), "linux")
+    assert engine is not None and engine.name == "podman" and engine.start is not None
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Job Object breakaway is Windows-only")
+def test_launch_retries_without_breakaway(monkeypatch):
+    assert sys.platform == "win32"  # skipif is invisible to pyright
+    flags: list[int] = []
+
+    def popen(cmd, **kwargs):
+        flags.append(kwargs["creationflags"])
+        if kwargs["creationflags"] & subprocess.CREATE_BREAKAWAY_FROM_JOB:
+            raise PermissionError(5, "Access is denied")  # the CLI's own Job Object forbids breakaway
+
+    monkeypatch.setattr(subprocess, "Popen", popen)
+    launch(["colima", "start"])
+    assert len(flags) == 2 and not flags[1] & subprocess.CREATE_BREAKAWAY_FROM_JOB
 
 
 COLIMA = Engine("colima", "docker", ("docker", "compose"), ("colima", "start"))

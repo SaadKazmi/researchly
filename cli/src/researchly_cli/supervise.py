@@ -37,16 +37,23 @@ def detached() -> dict[str, Any]:
 def spawn(cmd: Sequence[str], log: Path, env: dict[str, str] | None = None) -> psutil.Process:
     """Start `cmd` detached, appending its output to `log`."""
     log.parent.mkdir(parents=True, exist_ok=True)
-    kwargs = detached()
     with log.open("ab") as out:
-        try:
-            child = subprocess.Popen(list(cmd), stdin=subprocess.DEVNULL, stdout=out, stderr=out, env=env, **kwargs)  # noqa: S603
-        except PermissionError:  # the CLI's own Job Object forbids breakaway (some terminals and CI hosts)
-            if sys.platform != "win32" or "creationflags" not in kwargs:
-                raise
-            kwargs["creationflags"] &= ~subprocess.CREATE_BREAKAWAY_FROM_JOB
-            child = subprocess.Popen(list(cmd), stdin=subprocess.DEVNULL, stdout=out, stderr=out, env=env, **kwargs)  # noqa: S603
+        child = popen_detached(cmd, stdin=subprocess.DEVNULL, stdout=out, stderr=out, env=env)
     return psutil.Process(child.pid)
+
+
+def popen_detached(cmd: Sequence[str], **kwargs: Any) -> subprocess.Popen[Any]:
+    """Popen with `detached()`, retrying without breakaway when the CLI's own Job Object forbids it (some terminals
+    and CI hosts). Without breakaway the child stays in the CLI's kill-on-close job only if one exists; the CLI
+    itself creates none."""
+    flags = detached()
+    try:
+        return subprocess.Popen(list(cmd), **kwargs, **flags)  # noqa: S603
+    except PermissionError:
+        if sys.platform != "win32" or "creationflags" not in flags:
+            raise
+        flags["creationflags"] &= ~subprocess.CREATE_BREAKAWAY_FROM_JOB
+        return subprocess.Popen(list(cmd), **kwargs, **flags)  # noqa: S603
 
 
 def supervisor_cmd(log: Path, cmd: Sequence[str]) -> list[str]:
@@ -101,7 +108,9 @@ def terminate_tree(pid: int, created: float | None = None, timeout: float = 10.0
     for p in alive:
         with contextlib.suppress(psutil.NoSuchProcess):
             p.kill()
-    if sys.platform != "win32":  # orphans of a crashed supervisor are still in its process group
+    # A supervisor from before the last boot took its group with it; the ID may now lead an unrelated group.
+    rebooted = proc is None and created is not None and created < psutil.boot_time()
+    if sys.platform != "win32" and not rebooted:  # orphans of a crashed supervisor are still in its process group
         # Even with the supervisor gone this is safe: POSIX never hands out a PID still in use as a process
         # group ID, and the PID is free, so any group with this ID is the supervisor's own.
         with contextlib.suppress(ProcessLookupError, PermissionError):
