@@ -113,8 +113,12 @@ def start(secrets: state.Secrets, searxng_home: Path | None = None) -> state.Sta
 
 
 def stop(run: state.State, secrets: state.Secrets) -> None:
-    if run.supervisor_pid is not None and run.supervisor_created is not None:  # a PID alone may have been reused
-        terminate_tree(run.supervisor_pid, run.supervisor_created)
-    if run.searxng_pid is not None and run.searxng_created is not None:
-        terminate_tree(run.searxng_pid, run.searxng_created)
-    NativePostgres(state.data_dir(), secrets.pg_superuser).stop()
+    try:
+        if run.supervisor_pid is not None and run.supervisor_created is not None:  # a PID alone may have been reused
+            terminate_tree(run.supervisor_pid, run.supervisor_created)
+    finally:  # a failure stopping one part must not leave the others running
+        try:
+            if run.searxng_pid is not None and run.searxng_created is not None:
+                terminate_tree(run.searxng_pid, run.searxng_created)
+        finally:
+            NativePostgres(state.data_dir(), secrets.pg_superuser).stop()

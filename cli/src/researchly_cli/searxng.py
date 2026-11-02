@@ -5,13 +5,14 @@ talked to over HTTP only. Never import `searx` here and never vendor its source 
 """
 
 import hashlib
+import http.client
 import os
 import shutil
 import subprocess
 import sys
 import tarfile
 import urllib.request
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from researchly_cli import state
 
@@ -105,7 +106,7 @@ def healthy(port: int) -> bool:
     try:
         with urllib.request.urlopen(f"http://127.0.0.1:{port}/healthz", timeout=2) as response:  # noqa: S310 - fixed local URL
             return response.status == 200
-    except OSError:
+    except (OSError, http.client.HTTPException):
         return False
 
 
@@ -143,7 +144,10 @@ def _extract(tarball: Path, src: Path) -> None:
             keep = (
                 rest.startswith("searx/") or rest == "LICENSE" or (rest.startswith("requirements") and "/" not in rest)
             )
-            if keep and member.name.startswith(prefix) and not (member.issym() or member.islnk()):
+            safe = (
+                member.name.startswith(prefix) and ".." not in PurePosixPath(rest).parts
+            )  # one bad member must not abort
+            if keep and safe and not (member.issym() or member.islnk()):
                 member.name = rest  # drop the top directory: shorter paths on Windows
                 members.append(member)
         tar.extractall(src, members=members, filter="data")
@@ -157,9 +161,6 @@ def _run(cmd: list[str]) -> None:
 
 
 def _install(home: Path) -> None:
-    uv = os.environ.get("UV") or shutil.which("uv")
-    if not uv:
-        raise SearxngError("uv not found")
     tarball = home.parent / "searxng.tar.gz"
     try:
         _download(URL, tarball)
@@ -168,6 +169,9 @@ def _install(home: Path) -> None:
         _extract(tarball, home / "src")
     finally:
         tarball.unlink(missing_ok=True)
+    uv = os.environ.get("UV") or shutil.which("uv")
+    if not uv:
+        raise SearxngError("uv not found")
     python = _venv_bin(home, "python")
     _run([uv, "venv", "--python", "3.12", str(home / "venv")])
     _run([uv, "pip", "install", "--python", str(python), "--require-hashes", "-r", str(REQUIREMENTS)])

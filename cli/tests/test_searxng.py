@@ -1,6 +1,9 @@
+import http.client
+import io
 import json
 import subprocess
 import sys
+import tarfile
 import threading
 import urllib.request
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -42,12 +45,72 @@ def test_env_carries_the_secret_outside_argv(tmp_path):
 
 
 def test_install_rejects_a_tampered_download(tmp_path, monkeypatch):
+    def never(*args):
+        raise AssertionError("extraction must not be reached")
+
     monkeypatch.setattr(searxng, "_download", lambda url, dest: dest.write_bytes(b"not the tarball"))
+    monkeypatch.setattr(searxng, "_extract", never)
+    monkeypatch.setenv("UV", "")  # even without uv the tampered download is what gets reported
+    monkeypatch.setattr(searxng.shutil, "which", lambda name: None)
     home = tmp_path / "searxng" / "abc"
     with pytest.raises(searxng.SearxngError, match="sha256"):
         searxng.install(home)
     assert not (home / "ready").exists()
     assert "sha256" in (home.parent / "error.txt").read_text("utf-8")
+
+
+def test_a_failed_install_can_be_retried(tmp_path, monkeypatch):
+    attempts = []
+
+    def flaky(home):
+        attempts.append(home)
+        if len(attempts) == 1:
+            raise OSError("network down")
+
+    monkeypatch.setattr(searxng, "_install", flaky)
+    home = tmp_path / "searxng" / "abc"
+    with pytest.raises(searxng.SearxngError, match="network down"):
+        searxng.install(home)
+    assert not (home / "ready").exists() and "network down" in (home.parent / "error.txt").read_text("utf-8")
+    searxng.install(home)
+    assert (home / "ready").exists() and not (home.parent / "error.txt").exists()
+    searxng.install(home)
+    assert len(attempts) == 2  # ready: nothing runs again
+
+
+def test_extract_keeps_only_allowed_regular_files(tmp_path):
+    top = f"searxng-{searxng.COMMIT}/"
+    tarball = tmp_path / "t.tar.gz"
+    with tarfile.open(tarball, "w:gz") as tar:
+
+        def add(name, data=b"x", kind=None, link=""):
+            info = tarfile.TarInfo(top + name)
+            if kind:
+                info.type, info.linkname = kind, link
+            else:
+                info.size = len(data)
+            tar.addfile(info, None if kind else io.BytesIO(data))
+
+        add("searx/webapp.py")
+        add("requirements.txt")
+        add("LICENSE")
+        add("searx/link", kind=tarfile.SYMTYPE, link="/etc/passwd")
+        add("searx/hard", kind=tarfile.LNKTYPE, link=top + "LICENSE")
+        add("searx/../../evil.txt")
+        add("docs/x.txt")
+    home = tmp_path / "home"
+    searxng._extract(tarball, home / "src")
+    found = {p.relative_to(home / "src").as_posix() for p in (home / "src").rglob("*") if p.is_file()}
+    assert found == {"searx/webapp.py", "requirements.txt", "LICENSE"}
+    assert {p.name for p in tmp_path.iterdir()} == {"t.tar.gz", "home"}  # nothing escaped (evil.txt would be here)
+
+
+def test_healthy_is_false_when_the_server_speaks_garbage(monkeypatch):
+    def garbage(*args, **kwargs):
+        raise http.client.BadStatusLine("junk")
+
+    monkeypatch.setattr(searxng.urllib.request, "urlopen", garbage)
+    assert searxng.healthy(1) is False
 
 
 def test_status_reports_ready_error_or_pending():
