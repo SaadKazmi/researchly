@@ -62,7 +62,7 @@ def test_secrets_are_generated_once_and_distinct():
     assert state.load_secrets() == first
     values = [first.pg_superuser, first.db_app, first.db_ro, first.local_token, first.searxng]
     assert len(set(values)) == 5
-    assert all(len(v) == 43 for v in values)
+    assert all(len(v) == 64 for v in values)
 
 
 def test_free_port_prefers_requested_then_falls_back():

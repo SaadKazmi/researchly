@@ -15,7 +15,8 @@ from researchly.db import migrate
 
 APP_ROLE = "researchly_app"
 RO_ROLE = "researchly_ro"
-_PASSWORD = re.compile(r"[A-Za-z0-9_-]{16,}")  # token_urlsafe output; DDL cannot take bind parameters
+# ensure_secret output (hex; older urlsafe ones still match); DDL cannot take bind parameters
+_PASSWORD = re.compile(r"[A-Za-z0-9_-]{16,}")
 _DATABASE = re.compile(r"[a-z_][a-z0-9_]{0,62}")
 
 

@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -72,7 +73,7 @@ def test_os_keychain_store_name():
 
 def test_ensure_secret_generates_once():
     first = keychain.ensure_secret("db-app-password")
-    assert len(first) == 43
+    assert re.fullmatch(r"[0-9a-f]{64}", first)  # never a leading "-": pg0 passes the password as a CLI argument
     assert keychain.ensure_secret("db-app-password") == first
 
 

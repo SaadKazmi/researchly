@@ -143,7 +143,7 @@ def ensure_secret(name: str) -> str:
     """Read a secret, generating a random one on first use."""
     value = get_secret(name)
     if value is None:
-        value = secrets.token_urlsafe(32)
+        value = secrets.token_hex(32)  # hex: no leading "-" (argv), safe in URLs and DDL
         set_secret(name, value)
     return value
 
