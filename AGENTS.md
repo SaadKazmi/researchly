@@ -29,6 +29,9 @@ Researchly is an open-source, local-first, multi-agent research assistant: chat 
 | Backend tests | `uv run --directory backend pytest -q` |
 | Backend lint/format | `uv run --directory backend ruff check` · `uv run --directory backend ruff format` |
 | Backend types | `uv run --directory backend pyright` |
+| CLI tests | `uv run --directory cli pytest -q` (starts real pg0 Postgres; Docker-mode E2E: prefix `RESEARCHLY_TEST_DOCKER=1`, ~10 min cold) |
+| CLI lint/types | `uv run --directory cli ruff check` · `uv run --directory cli ruff format` · `uv run --directory cli pyright` |
+| Run locally | `uv run --directory cli researchly start` · `status` · `doctor` · `stop` |
 | Frontend tests | `pnpm -C frontend test` |
 | Frontend types/lint | `pnpm -C frontend exec tsc --noEmit` · `pnpm -C frontend lint` |
 | E2E smoke | `pnpm -C e2e exec playwright test --grep @smoke` |
@@ -58,6 +61,8 @@ The default `python` on dev machines may be old; always go through `uv`.
 - `docs/features.json` edits other than `passes` require user approval (hook asks).
 - Docker may be installed but stopped; the CLI starts it — don't assume either runtime in tests; both modes are in CI.
 - Windows asyncio: psycopg async needs `SelectorEventLoop` (tests set it via `anyio_backend`); the dev `claude-code` provider runs the Agent SDK in its own thread on a Proactor loop.
+- Pyright picks the repo-root `pyrightconfig.json` over a project's `pyproject.toml`, so the root config excludes `cli/` and the CLI has its own `cli/pyrightconfig.json`. A new Python project needs the same.
+- Native mode: `pg0.Pg0.drop()` deletes the data dir; only test teardown may call it. In a Windows venv, `sys.executable` is a launcher whose child is the real interpreter (the supervisor's PID is the launcher's; kill-on-close jobs chain).
 
 ## Compact instructions
 When compacting, keep: current plan path and task number, failing test names and errors, files changed this session, decisions made and why. Drop: full file dumps, passing test output, exploration dead ends.
