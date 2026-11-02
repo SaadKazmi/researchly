@@ -234,6 +234,8 @@ def probe_windows(checks: dict, notes: list[str]) -> dict[str, str]:
     k32.TerminateProcess.argtypes = [ctypes.c_void_p, w.UINT]
     adv = ctypes.WinDLL("advapi32")
     adv.FreeSid.argtypes = [ctypes.c_void_p]
+    adv.ConvertSidToStringSidW.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_wchar_p)]
+    k32.LocalFree.argtypes = [ctypes.c_void_p]
     py = getattr(sys, "_base_executable", sys.executable)  # the real interpreter, not a venv launcher
     name = f"researchly.probe.{os.getpid()}"
     sid = ctypes.c_void_p()
@@ -243,9 +245,19 @@ def probe_windows(checks: dict, notes: list[str]) -> dict[str, str]:
         if ue.DeriveAppContainerSidFromAppContainerName(name, ctypes.byref(sid)) != 0:
             notes.append("could not obtain an AppContainer SID")
             return deny_tests(None, False, checks, notes)
+    sid_str = ctypes.c_wchar_p()
+    adv.ConvertSidToStringSidW(sid, ctypes.byref(sid_str))
+    sid_text = sid_str.value
+    k32.LocalFree(sid_str)
+    granted: set[str] = set()
     try:
 
         def sandboxed(code: str, outside: str = "", work: str = "") -> tuple[int, str]:
+            if work and work not in granted:  # full access on the probe's own temp work dir only
+                granted.add(work)
+                g = subprocess.run(["icacls", work, "/grant", f"*{sid_text}:(OI)(CI)F"], capture_output=True, text=True)
+                if g.returncode != 0:
+                    notes.append(f"icacls grant on the work dir failed: {(g.stdout + g.stderr).strip()[-200:]}")
             sc = SC(sid, None, 0, 0)
             size = ctypes.c_size_t()
             k32.InitializeProcThreadAttributeList(None, 1, 0, ctypes.byref(size))
