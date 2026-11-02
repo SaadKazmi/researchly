@@ -109,10 +109,16 @@ def _login_url(run: state.State, secrets: state.Secrets) -> str:
     return f"{run.url}/?token={secrets.local_token}"
 
 
+def _pnpm() -> str | None:
+    # on Windows an extensionless `pnpm` shell shim sits beside pnpm.cmd (npm) or pnpm.exe (standalone);
+    # CPython 3.12.0's shutil.which returns the shim, which is not a Win32 executable
+    names = ("pnpm.cmd", "pnpm.exe") if sys.platform == "win32" else ("pnpm",)
+    return next((path for name in names if (path := shutil.which(name))), None)
+
+
 def _ensure_web_ui() -> None:
     """Native mode serves the SPA from the backend package; a source checkout builds it on first start."""
-    # on Windows an extensionless `pnpm` shell shim sits beside pnpm.cmd and is not a Win32 executable
-    pnpm = shutil.which("pnpm.cmd" if sys.platform == "win32" else "pnpm")
+    pnpm = _pnpm()
     if not WEB_DIR.is_dir() and pnpm and (FRONTEND_DIR / "package.json").is_file():
         typer.echo("Building the web UI (first start only)...")
         for args in (["install", "--frozen-lockfile"], ["build"]):

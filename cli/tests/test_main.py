@@ -92,6 +92,21 @@ def test_start_native_survives_a_failed_web_build(monkeypatch, healthy, tmp_path
     assert result.exit_code == 0 and len(calls) == 1 and "not built" in result.output
 
 
+@pytest.mark.parametrize(
+    ("platform", "found", "expected"),
+    [
+        ("win32", {"pnpm": "shim", "pnpm.cmd": "pnpm.cmd"}, "pnpm.cmd"),
+        ("win32", {"pnpm": "shim", "pnpm.exe": "pnpm.exe"}, "pnpm.exe"),
+        ("win32", {"pnpm": "shim"}, None),
+        ("linux", {"pnpm": "pnpm"}, "pnpm"),
+    ],
+)
+def test_pnpm_lookup_skips_the_windows_shell_shim(monkeypatch, platform, found, expected):
+    monkeypatch.setattr(main.sys, "platform", platform)
+    monkeypatch.setattr(main.shutil, "which", found.get)
+    assert main._pnpm() == expected
+
+
 def test_auto_runtime_switch_warns_about_the_separate_database(monkeypatch, healthy):
     state.save_config({"last_mode": "native"})
     monkeypatch.setattr(main, "_select", lambda: engines.Selection("docker", "colima is ready", DESKTOP))

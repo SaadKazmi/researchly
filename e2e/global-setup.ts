@@ -25,7 +25,7 @@ export default function globalSetup() {
   mkdirSync(artifacts, { recursive: true })
   researchly("config", "set", "runtime", "native") // CI runners have Docker; E2E pins native mode
   const out = researchly("start")
-  console.log(out.replace(/token=[0-9a-f]+/, "token=[REDACTED]"))
+  console.log(out.replace(/token=[0-9a-f]+/g, "token=[REDACTED]"))
   const login = out.match(/http:\/\/127\.0\.0\.1:\d+\/\?token=[0-9a-f]+/)?.[0]
   if (!login) {
     researchly("stop")
