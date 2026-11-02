@@ -24,12 +24,16 @@ dependencies = [
   "transformers>=4.50,<5",  # Heron image processor; 5.x refuses it without torchvision
   "onnxruntime==1.23.2; sys_platform == 'darwin' and platform_machine == 'x86_64'",  # last Intel-Mac wheel
   "onnxruntime>=1.23; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+  "httpx==0.28.1",  # PoliteClient's guarded transport replaces a private attribute (connectors/ssrf.py)
+  "httpcore==1.0.9",
+  "defusedxml>=0.7.1",  # untrusted XML (arXiv, PubMed)
 ]
 
 [dependency-groups]
 dev = [
   "pytest>=8.4",
-  "httpx>=0.28",
+  "vcrpy>=9.2",
+  "pytest-recording>=0.14",
   "testcontainers[postgres]>=4.10",
   "ruff>=0.14",
   "pyright>=1.1.405",
@@ -66,9 +70,10 @@ venv = ".venv"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-m 'not live and not platform'"
+addopts = "-m 'not live and not platform and not nightly'"
 markers = [
   "db: needs Postgres 18 + pgvector",
   "live: calls a real model; opt-in, never in CI",
   "platform: downloads real models or runtimes; runs in the CI platform job (all five OS)",
+  "nightly: calls real keyless scholarly APIs; runs in the nightly workflow",
 ]
