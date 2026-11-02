@@ -8,7 +8,7 @@ must exit 0, and the sandbox must still start the interpreter, or the result is 
 This is a probe, not the sandbox: the real one is built at step 7/10.
 """
 
-# ruff: noqa: S603, S607, E501  (a probe: fixed commands, long one-liners)
+# ruff: noqa: S603, S607  (fixed argv built in-script, no user input)
 import ctypes
 import errno
 import json
@@ -25,49 +25,73 @@ EXIT_OP_FAILED = 7
 SPAWN_CMD = [os.environ.get("COMSPEC", "cmd.exe"), "/c", "exit 0"] if os.name == "nt" else ["/bin/sh", "-c", "true"]
 
 
-def test_code(op: str, outside: str, port: int) -> str:
+def child_code(op: str, outside: str, port: int, work: str) -> str:
     body = {
         "write_outside": f"open({os.path.join(outside, 'w.txt')!r}, 'w').write('x')",
         "read_decoy": f"open({os.path.join(outside, 'decoy.txt')!r}).read()",
-        "network": f"__import__('socket').create_connection(('127.0.0.1', {port}), 3)",
-        "spawn": f"__import__('subprocess').run({SPAWN_CMD!r}, check=True, capture_output=True)",
+        "network": f"socket.create_connection(('127.0.0.1', {port}), 3)",
+        "spawn": f"subprocess.run({SPAWN_CMD!r}, check=True, capture_output=True)",
+        "work_write": f"open({os.path.join(work, 'ok.txt')!r}, 'w').write('x')",
     }[op]
-    return f"import sys\ntry:\n    {body}\nexcept Exception as e:\n    print(repr(e), file=sys.stderr)\n    sys.exit({EXIT_OP_FAILED})\n"
+    # Only OSError/SubprocessError mean "the operation was refused"; anything else (ImportError...) exits 1.
+    return (
+        "import socket, subprocess, sys\n"
+        f"try:\n    {body}\n"
+        "except (OSError, subprocess.SubprocessError) as e:\n"
+        f"    print(repr(e), file=sys.stderr)\n    sys.exit({EXIT_OP_FAILED})\n"
+    )
+
+
+SANITY = "import socket, subprocess"  # the sandboxed interpreter must at least start and import these
+
+
+def stdout(cmd: list[str]) -> str:
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=10).stdout.strip()
+    except subprocess.TimeoutExpired:
+        return "timeout"
 
 
 def run(cmd: list[str]) -> tuple[int, str]:
-    p = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+    try:
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+    except subprocess.TimeoutExpired:
+        return -1, "timeout"
     return p.returncode, p.stderr.strip()[-300:]
 
 
-def deny_tests(sandboxed, sanity_ok: bool, notes: list[str]) -> dict[str, str]:
-    """sandboxed(code, outside) -> (exit_code, stderr_tail). Runs the controls and the sandboxed children."""
-    results = dict.fromkeys(("write_outside", "read_decoy", "network", "spawn"), "skipped")
+def deny_tests(sandboxed, sanity_ok: bool, checks: dict, notes: list[str]) -> dict[str, str]:
+    """sandboxed(code, outside, work) -> (exit_code, stderr_tail). Runs the controls and the sandboxed children."""
+    results: dict[str, str] = dict.fromkeys(("write_outside", "read_decoy", "network", "spawn"), "skipped")
     if not sanity_ok:
         notes.append("sandboxed interpreter could not start; all deny tests skipped")
         return results
     with tempfile.TemporaryDirectory(prefix="rprobe-") as tmp:
         outside = os.path.realpath(os.path.join(tmp, "outside"))
+        work = os.path.realpath(os.path.join(tmp, "work"))
         os.mkdir(outside)
+        os.mkdir(work)
         Path(outside, "decoy.txt").write_text("decoy")
         with socket.socket() as srv:
             srv.bind(("127.0.0.1", 0))
             srv.listen(8)  # backlog completes the handshake, no accept thread needed
             port = srv.getsockname()[1]
+            rc, _ = sandboxed(child_code("work_write", outside, port, work), outside, work)
+            checks["work_writable"] = rc == 0
+            if rc != 0:
+                notes.append(f"work dir not writable under the sandbox (exit {rc}); denials may be over-broad")
             for op in results:
-                code = test_code(op, outside, port)
+                code = child_code(op, outside, port, work)
                 rc, err = run([sys.executable, "-c", code])
                 if rc != 0:
                     notes.append(f"{op}: positive control failed (exit {rc}): {err}")
                     continue
-                rc, err = sandboxed(code, outside)
+                rc, err = sandboxed(code, outside, work)
                 results[op] = "allowed" if rc == 0 else "denied" if rc == EXIT_OP_FAILED else "skipped"
                 if results[op] == "skipped":
                     notes.append(f"{op}: sandboxed child failed unrelated to the operation (exit {rc}): {err}")
                 elif results[op] == "denied":
-                    notes.append(
-                        f"{op}: denied: {err or 'exit 7 = the operation raised (Windows child stderr goes to the console, not captured)'}"
-                    )
+                    notes.append(f"{op}: denied (exit 7, OSError raised): {err or 'stderr not captured'}")
     return results
 
 
@@ -115,34 +139,34 @@ def probe_linux(checks: dict, notes: list[str]) -> dict[str, str]:
     )
     bwrap = shutil.which("bwrap")
     if bwrap:
-        checks["bwrap_version"] = subprocess.run([bwrap, "--version"], capture_output=True, text=True).stdout.strip()
+        checks["bwrap_version"] = stdout([bwrap, "--version"])
         rc, err = run([bwrap, "--ro-bind", "/", "/", "--dev", "/dev", "--unshare-all", "--die-with-parent", "true"])
         checks["bwrap_runs"] = {"ok": rc == 0, "stderr": err}
     else:
         checks["bwrap_version"] = None
     if not (isinstance(abi, int) and abi >= 1):
-        return deny_tests(None, False, notes)
-    with tempfile.TemporaryDirectory(prefix="rprobe-work-") as work:
+        return deny_tests(None, False, checks, notes)
 
-        def sandboxed(code: str, outside: str = "") -> tuple[int, str]:
-            return run([sys.executable, "-c", LANDLOCK_BOOT, str(abi), os.path.realpath(work), code])
+    def sandboxed(code: str, outside: str, work: str) -> tuple[int, str]:
+        return run([sys.executable, "-c", LANDLOCK_BOOT, str(abi), work, code])
 
-        rc, err = sandboxed("pass")
-        if rc != 0:
-            notes.append(f"landlock bootstrap failed (exit {rc}): {err}")
-        return deny_tests(sandboxed, rc == 0, notes)
+    with tempfile.TemporaryDirectory(prefix="rprobe-sanity-") as w0:
+        rc, err = sandboxed(SANITY, "", os.path.realpath(w0))
+    if rc != 0:
+        notes.append(f"landlock bootstrap failed (exit {rc}): {err}")
+    return deny_tests(sandboxed, rc == 0, checks, notes)
 
 
 # ---------------------------------------------------------------- macOS
 
 
 def probe_macos(checks: dict, notes: list[str]) -> dict[str, str]:
-    checks["macos"] = subprocess.run(["sw_vers", "-productVersion"], capture_output=True, text=True).stdout.strip()
+    checks["macos"] = stdout(["sw_vers", "-productVersion"])
     checks["sandbox_exec"] = shutil.which("sandbox-exec")
     if not checks["sandbox_exec"]:
-        return deny_tests(None, False, notes)
+        return deny_tests(None, False, checks, notes)
 
-    def sandboxed(code: str, outside: str = "") -> tuple[int, str]:
+    def sandboxed(code: str, outside: str, work: str) -> tuple[int, str]:
         profile = (
             "(version 1)(allow default)(deny network*)"
             f'(deny file-write* (subpath "{outside}"))(deny file-read* (subpath "{outside}"))'
@@ -152,7 +176,8 @@ def probe_macos(checks: dict, notes: list[str]) -> dict[str, str]:
 
     return deny_tests(
         sandboxed,
-        run(["sandbox-exec", "-p", "(version 1)(allow default)", sys.executable, "-c", "pass"])[0] == 0,
+        run(["sandbox-exec", "-p", "(version 1)(allow default)", sys.executable, "-c", SANITY])[0] == 0,
+        checks,
         notes,
     )
 
@@ -206,6 +231,9 @@ def probe_windows(checks: dict, notes: list[str]) -> dict[str, str]:
     k32.WaitForSingleObject.argtypes = [ctypes.c_void_p, w.DWORD]
     k32.GetExitCodeProcess.argtypes = [ctypes.c_void_p, ctypes.POINTER(w.DWORD)]
     k32.CloseHandle.argtypes = [ctypes.c_void_p]
+    k32.TerminateProcess.argtypes = [ctypes.c_void_p, w.UINT]
+    adv = ctypes.WinDLL("advapi32")
+    adv.FreeSid.argtypes = [ctypes.c_void_p]
     py = getattr(sys, "_base_executable", sys.executable)  # the real interpreter, not a venv launcher
     name = f"researchly.probe.{os.getpid()}"
     sid = ctypes.c_void_p()
@@ -214,10 +242,10 @@ def probe_windows(checks: dict, notes: list[str]) -> dict[str, str]:
         notes.append(f"CreateAppContainerProfile hr={hr & 0xFFFFFFFF:#x}; deriving the existing SID")
         if ue.DeriveAppContainerSidFromAppContainerName(name, ctypes.byref(sid)) != 0:
             notes.append("could not obtain an AppContainer SID")
-            return deny_tests(None, False, notes)
+            return deny_tests(None, False, checks, notes)
     try:
 
-        def sandboxed(code: str, outside: str = "") -> tuple[int, str]:
+        def sandboxed(code: str, outside: str = "", work: str = "") -> tuple[int, str]:
             sc = SC(sid, None, 0, 0)
             size = ctypes.c_size_t()
             k32.InitializeProcThreadAttributeList(None, 1, 0, ctypes.byref(size))
@@ -236,7 +264,11 @@ def probe_windows(checks: dict, notes: list[str]) -> dict[str, str]:
                     None, cmd, None, None, False, 0x80000, None, sys.base_prefix, ctypes.byref(si), ctypes.byref(pi)
                 ):
                     return -1, f"CreateProcessW failed, GetLastError={ctypes.get_last_error()}"
-                k32.WaitForSingleObject(pi.hProcess, 30000)
+                if k32.WaitForSingleObject(pi.hProcess, 30000) == 0x102:  # WAIT_TIMEOUT: never read 259 as a result
+                    k32.TerminateProcess(pi.hProcess, 1)
+                    k32.CloseHandle(pi.hProcess)
+                    k32.CloseHandle(pi.hThread)
+                    return -1, "timeout (child terminated)"
                 code_out = w.DWORD()
                 k32.GetExitCodeProcess(pi.hProcess, ctypes.byref(code_out))
                 k32.CloseHandle(pi.hProcess)
@@ -245,21 +277,20 @@ def probe_windows(checks: dict, notes: list[str]) -> dict[str, str]:
             finally:
                 k32.DeleteProcThreadAttributeList(buf)
 
-        rc, err = sandboxed("pass")
-        if (
-            rc != 0
-        ):  # interpreter not readable by the container: grant read+execute (never write) on the base prefix only
+        rc, err = sandboxed(SANITY)
+        if rc != 0:  # interpreter not readable by the container: grant read+execute (never write) on base prefix only
             grant = subprocess.run(
                 ["icacls", sys.base_prefix, "/grant", "*S-1-15-2-1:(OI)(CI)(RX)"], capture_output=True, text=True
             )
             checks["icacls_grant"] = {"rc": grant.returncode, "out": (grant.stdout + grant.stderr).strip()[-200:]}
-            rc, err = sandboxed("pass")
+            rc, err = sandboxed(SANITY)
         checks["child_starts"] = rc == 0
         if rc != 0:
             notes.append(f"AppContainer child could not start python (exit {rc}): {err}")
-        return deny_tests(sandboxed, rc == 0, notes)
+        return deny_tests(sandboxed, rc == 0, checks, notes)
     finally:
         ue.DeleteAppContainerProfile(name)
+        adv.FreeSid(sid)
 
 
 def main() -> None:
@@ -271,7 +302,7 @@ def main() -> None:
         "Darwin": ("seatbelt", probe_macos),
         "Windows": ("appcontainer", probe_windows),
     }.get(system, ("none", None))
-    tests = fn(checks, notes) if fn else deny_tests(None, False, notes)
+    tests = fn(checks, notes) if fn else deny_tests(None, False, checks, notes)
     print(
         json.dumps(
             {
