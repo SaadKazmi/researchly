@@ -22,14 +22,74 @@ def healthy(monkeypatch):
     return ports
 
 
-def test_start_native_writes_state_and_prints_url(monkeypatch, healthy):
+@pytest.fixture(autouse=True)
+def web_built(monkeypatch, tmp_path):
+    """Default: the web UI counts as built, so no test ever runs a real pnpm build."""
+    monkeypatch.setattr(main, "WEB_DIR", tmp_path)
+
+
+def _native_start(monkeypatch):
     monkeypatch.setattr(main, "_select", lambda: engines.Selection("native", "runtime pinned to native"))
     monkeypatch.setattr(native, "start", lambda secrets: state.State(mode="native", port=9999))
+
+
+def test_start_native_writes_state_and_prints_url(monkeypatch, healthy):
+    _native_start(monkeypatch)
     result = runner.invoke(app, ["start"])
     assert result.exit_code == 0, result.output
-    assert "http://127.0.0.1:9999" in result.stdout
+    assert f"http://127.0.0.1:9999/?token={state.load_secrets().local_token}" in result.stdout
+    assert "not built" not in result.output
     assert state.read_state() == state.State(mode="native", port=9999)
     assert state.load_config()["last_mode"] == "native"
+
+
+def test_start_native_warns_when_the_web_ui_is_not_built(monkeypatch, healthy, tmp_path):
+    monkeypatch.setattr(main, "WEB_DIR", tmp_path / "missing")
+    monkeypatch.setattr(main.shutil, "which", lambda name: None)
+    _native_start(monkeypatch)
+    result = runner.invoke(app, ["start"])
+    assert result.exit_code == 0 and "pnpm -C frontend build" in result.output
+
+
+def _fake_pnpm(monkeypatch, tmp_path, failing=()):
+    web, frontend = tmp_path / "web", tmp_path / "frontend"
+    frontend.mkdir()
+    (frontend / "package.json").write_text("{}")
+    monkeypatch.setattr(main, "WEB_DIR", web)
+    monkeypatch.setattr(main, "FRONTEND_DIR", frontend)
+    monkeypatch.setattr(main.shutil, "which", lambda name: "pnpm")
+    calls: list[list[str]] = []
+
+    def run(argv, check):
+        calls.append(argv)
+        step = argv[-1] if argv[-1] == "build" else "install"
+        if step in failing:
+            return type("R", (), {"returncode": 1})()
+        if step == "build":
+            web.mkdir()
+        return type("R", (), {"returncode": 0})()
+
+    monkeypatch.setattr(main.subprocess, "run", run)
+    return calls, frontend
+
+
+def test_start_native_builds_the_web_ui_once(monkeypatch, healthy, tmp_path):
+    calls, frontend = _fake_pnpm(monkeypatch, tmp_path)
+    _native_start(monkeypatch)
+    result = runner.invoke(app, ["start"])
+    assert result.exit_code == 0, result.output
+    assert calls == [
+        ["pnpm", "-C", str(frontend), "install", "--frozen-lockfile"],
+        ["pnpm", "-C", str(frontend), "build"],
+    ]
+    assert "Building the web UI" in result.output and "not built" not in result.output
+
+
+def test_start_native_survives_a_failed_web_build(monkeypatch, healthy, tmp_path):
+    calls, _ = _fake_pnpm(monkeypatch, tmp_path, failing=("install",))
+    _native_start(monkeypatch)
+    result = runner.invoke(app, ["start"])
+    assert result.exit_code == 0 and len(calls) == 1 and "not built" in result.output
 
 
 def test_auto_runtime_switch_warns_about_the_separate_database(monkeypatch, healthy):
@@ -113,6 +173,21 @@ def test_start_is_a_noop_when_already_healthy(monkeypatch, healthy):
     monkeypatch.setattr(main, "_select", boom)
     result = runner.invoke(app, ["start"])
     assert result.exit_code == 0 and "Already running" in result.stdout
+    assert f"/?token={state.load_secrets().local_token}" in result.stdout
+
+
+def test_status_never_prints_the_token(healthy):
+    state.write_state(state.State(mode="native", port=9999))
+    healthy.add(9999)
+    result = runner.invoke(app, ["status"])
+    assert "http://127.0.0.1:9999" in result.stdout and "token" not in result.stdout
+
+
+@pytest.mark.parametrize(("built", "expected"), [(True, "web ui: built"), (False, "web ui: not built")])
+def test_doctor_reports_the_web_ui_build(monkeypatch, tmp_path, built, expected):
+    monkeypatch.setattr(engines, "detect", lambda: None)
+    monkeypatch.setattr(main, "WEB_DIR", tmp_path if built else tmp_path / "missing")
+    assert expected in runner.invoke(app, ["doctor"]).stdout
 
 
 def test_start_cleans_up_a_crashed_run_first(monkeypatch, healthy):

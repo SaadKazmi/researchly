@@ -1,9 +1,13 @@
 """`researchly` command line (spec F10.1, §4)."""
 
 import os
+import shutil
+import subprocess
+from pathlib import Path
 from typing import NoReturn
 
 import typer
+from researchly.app import WEB_DIR
 from researchly.security.keychain import KeychainUnavailable, store_name
 
 from researchly_cli import docker, engines, native, state
@@ -17,6 +21,9 @@ LICENCE_NOTE = (
     "Note: Docker Desktop needs a paid subscription for companies with 250+ employees or $10M+ revenue. "
     "Researchly never requires it; any engine or native mode works."
 )
+
+BUILD_HINT = "run `pnpm -C frontend install` and `pnpm -C frontend build`"
+FRONTEND_DIR = Path(__file__).resolve().parents[3] / "frontend"  # source checkouts only; release wheels ship the build
 
 app = typer.Typer(no_args_is_help=True, add_completion=False, help="Researchly: a local-first research assistant.")
 config_app = typer.Typer(no_args_is_help=True, help="Read or change CLI settings.")
@@ -96,6 +103,23 @@ def _warn_on_runtime_switch(mode: str) -> None:
         )
 
 
+def _login_url(run: state.State, secrets: state.Secrets) -> str:
+    """The one-time link: opening it sets the browser's auth cookie (ADR 0003). Only `start` prints it."""
+    return f"{run.url}/?token={secrets.local_token}"
+
+
+def _ensure_web_ui() -> None:
+    """Native mode serves the SPA from the backend package; a source checkout builds it on first start."""
+    pnpm = shutil.which("pnpm")
+    if not WEB_DIR.is_dir() and pnpm and (FRONTEND_DIR / "package.json").is_file():
+        typer.echo("Building the web UI (first start only)...")
+        for args in (["install", "--frozen-lockfile"], ["build"]):
+            if subprocess.run([pnpm, "-C", str(FRONTEND_DIR), *args], check=False).returncode:  # noqa: S603 - fixed argv
+                break
+    if not WEB_DIR.is_dir():
+        typer.secho(f"warning: the web UI is not built; {BUILD_HINT}", err=True)
+
+
 def _secrets() -> state.Secrets:
     try:
         return state.load_secrets()
@@ -134,7 +158,7 @@ def start() -> None:
     secrets = _secrets()
     if current is not None:
         if state.healthy(current.port):
-            typer.echo(f"Already running ({current.mode}) at {current.url}")
+            typer.echo(f"Already running ({current.mode}) at {_login_url(current, secrets)}")
             return
         if (error := _stop(current, secrets)) is not None:  # leftovers of a crashed run
             typer.secho(f"warning: could not stop the previous {current.mode} run ({error}); starting anyway", err=True)
@@ -142,6 +166,8 @@ def start() -> None:
     selection = _select()
     _announce(selection)
     _warn_on_runtime_switch(selection.mode)
+    if selection.mode == "native":
+        _ensure_web_ui()  # the Docker image builds its own copy
     try:
         if selection.mode == "docker" and selection.engine is not None:
             run = docker.start(secrets, selection.engine.compose)
@@ -151,7 +177,7 @@ def start() -> None:
         _fail(str(exc))
     state.write_state(run)
     state.save_config({**state.load_config(), "last_mode": run.mode})
-    typer.echo(f"Researchly is running at {run.url}")
+    typer.echo(f"Researchly is running at {_login_url(run, secrets)}")
 
 
 @app.command()
@@ -199,6 +225,7 @@ def doctor() -> None:
     typer.echo(f"secrets store: {store_name()}")
     typer.echo(f"data dir: {state.data_dir()}")
     typer.echo(f"logs: {state.log_dir()}")
+    typer.echo(f"web ui: {'built' if WEB_DIR.is_dir() else f'not built (native mode; {BUILD_HINT})'}")
     current = state.read_state()
     if current is None:
         typer.echo("status: stopped")
