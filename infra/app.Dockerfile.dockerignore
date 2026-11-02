@@ -3,5 +3,5 @@
 .pytest_cache
 .ruff_cache
 tests
-.env*
-*.pem
+**/.env*
+**/*.pem
