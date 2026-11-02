@@ -20,6 +20,7 @@ dev = [
   "pytest>=8.4",
   "ruff>=0.14",
   "pyright>=1.1.405",
+  "pyyaml>=6.0",  # test_searxng compares the native SearXNG settings with the Docker ones
 ]
 
 [build-system]
@@ -48,5 +49,6 @@ ignore = ["S101"]
 testpaths = ["tests"]
 markers = [
   "native: starts a real pg0 PostgreSQL (spec §26 risk 1 spike)",
+  "searxng: installs and runs the pinned SearXNG (downloads ~7 MB + Python deps)",
   "docker: needs a running container engine; runs only with RESEARCHLY_TEST_DOCKER=1",
 ]

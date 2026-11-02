@@ -11,11 +11,10 @@ import typer
 from researchly.security.keychain import KeychainUnavailable, store_name
 from researchly.spa import BUILD_HINT, WEB_DIR
 
-from researchly_cli import docker, engines, native, state
+from researchly_cli import docker, engines, native, searxng, state
 
 DEGRADED_NATIVE = (
     "keyword search uses tsvector (pg_textsearch BM25 needs Docker mode)",
-    "web search is not available natively yet (native SearXNG spike, plan 1e)",
     "GROBID reference parsing needs Docker mode",
 )
 LICENCE_NOTE = (
@@ -137,6 +136,19 @@ def _ensure_web_ui() -> None:
         typer.secho(f"warning: the web UI is not built; {BUILD_HINT}", err=True)
 
 
+def _ensure_web_search() -> Path | None:
+    """Install the pinned SearXNG on the first native start; None (web search off) when that fails."""
+    home = searxng.home()
+    if not (home / "ready").exists():
+        typer.echo("Installing web search (SearXNG)...")
+    try:
+        searxng.install(home)
+    except searxng.SearxngError as exc:
+        typer.secho(f"warning: web search is off: {exc}", err=True)
+        return None
+    return home
+
+
 def _secrets() -> state.Secrets:
     try:
         return state.load_secrets()
@@ -183,17 +195,22 @@ def start() -> None:
     selection = _select()
     _announce(selection)
     _warn_on_runtime_switch(selection.mode)
+    search_home = None
     if selection.mode == "native":
         _ensure_web_ui()  # the Docker image builds its own copy
+        search_home = _ensure_web_search()  # so does the compose stack's searxng service
     try:
         if selection.mode == "docker" and selection.engine is not None:
             run = docker.start(secrets, selection.engine.compose)
         else:
-            run = native.start(secrets)
+            run = native.start(secrets, searxng_home=search_home)
     except (docker.DockerStartError, native.NativeStartError) as exc:
         _fail(str(exc))
     state.write_state(run)
     state.save_config({**state.load_config(), "last_mode": run.mode})
+    sx_port = run.searxng_port
+    if sx_port is not None and not state.wait_until(lambda: searxng.healthy(sx_port), 60):
+        typer.secho(f"warning: web search is still starting or failed; see {state.log_dir() / 'searxng.log'}", err=True)
     typer.echo(f"Researchly is running at {_login_url(run, secrets)}")
 
 
@@ -253,6 +270,7 @@ def doctor() -> None:
         )
         mode = current.mode
     if mode == "native":
+        typer.echo(f"web search: {searxng.status()}")
         typer.echo("degraded in native mode:")
         for line in DEGRADED_NATIVE:
             typer.echo(f"  - {line}")

@@ -5,7 +5,7 @@ import pytest
 from researchly.security.keychain import KeychainUnavailable
 from typer.testing import CliRunner
 
-from researchly_cli import docker, engines, main, native, state
+from researchly_cli import docker, engines, main, native, searxng, state
 from researchly_cli.main import app
 
 runner = CliRunner()
@@ -31,9 +31,15 @@ def web_built(monkeypatch, tmp_path):
     monkeypatch.setattr(main, "FRONTEND_DIR", tmp_path / "no-frontend")
 
 
+@pytest.fixture(autouse=True)
+def no_web_search(monkeypatch):
+    """No test installs SearXNG; test_searxng.py covers it."""
+    monkeypatch.setattr(searxng, "install", lambda home: None)
+
+
 def _native_start(monkeypatch):
     monkeypatch.setattr(main, "_select", lambda: engines.Selection("native", "runtime pinned to native"))
-    monkeypatch.setattr(native, "start", lambda secrets: state.State(mode="native", port=9999))
+    monkeypatch.setattr(native, "start", lambda secrets, searxng_home=None: state.State(mode="native", port=9999))
 
 
 def test_start_native_writes_state_and_prints_url(monkeypatch, healthy):
@@ -141,7 +147,7 @@ def test_auto_runtime_switch_warns_about_the_separate_database(monkeypatch, heal
 def test_no_runtime_switch_warning_on_first_run_same_mode_or_a_pin(monkeypatch, healthy, config):
     state.save_config(config)
     monkeypatch.setattr(main, "_select", lambda: engines.Selection("native", "pinned"))
-    monkeypatch.setattr(native, "start", lambda secrets: state.State(mode="native", port=9999))
+    monkeypatch.setattr(native, "start", lambda secrets, searxng_home=None: state.State(mode="native", port=9999))
     result = runner.invoke(app, ["start"])
     assert result.exit_code == 0 and result.stderr == ""
 
@@ -180,7 +186,7 @@ def test_start_continues_past_a_leftover_run_that_cannot_be_stopped(monkeypatch,
 
     monkeypatch.setattr(docker, "stop", engine_gone)
     monkeypatch.setattr(main, "_select", lambda: engines.Selection("native", "pinned"))
-    monkeypatch.setattr(native, "start", lambda secrets: state.State(mode="native", port=9997))
+    monkeypatch.setattr(native, "start", lambda secrets, searxng_home=None: state.State(mode="native", port=9997))
     result = runner.invoke(app, ["start"])
     assert result.exit_code == 0, result.output
     assert "could not stop" in result.stderr
@@ -229,7 +235,9 @@ def test_start_cleans_up_a_crashed_run_first(monkeypatch, healthy):
     monkeypatch.setattr(native, "stop", lambda run, secrets: calls.append(("stop", run.port)))
     monkeypatch.setattr(main, "_select", lambda: engines.Selection("native", "pinned"))
     monkeypatch.setattr(
-        native, "start", lambda secrets: calls.append(("start", 0)) or state.State(mode="native", port=9997)
+        native,
+        "start",
+        lambda secrets, searxng_home=None: calls.append(("start", 0)) or state.State(mode="native", port=9997),
     )
     assert runner.invoke(app, ["start"]).exit_code == 0
     assert calls == [("stop", 9999), ("start", 0)]
@@ -238,7 +246,7 @@ def test_start_cleans_up_a_crashed_run_first(monkeypatch, healthy):
 def test_start_reports_a_failed_start(monkeypatch, healthy):
     monkeypatch.setattr(main, "_select", lambda: engines.Selection("native", "pinned"))
 
-    def fail(secrets):
+    def fail(secrets, searxng_home=None):
         raise native.NativeStartError("the app did not become healthy within 60 s")
 
     monkeypatch.setattr(native, "start", fail)
