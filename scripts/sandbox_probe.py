@@ -186,6 +186,7 @@ def probe_macos(checks: dict, notes: list[str]) -> dict[str, str]:
 
 
 def probe_windows(checks: dict, notes: list[str]) -> dict[str, str]:
+    assert sys.platform == "win32"  # also tells pyright on other OSes that the ctypes Windows API exists here
     import ctypes.wintypes as w
 
     k32 = ctypes.WinDLL("kernel32", use_last_error=True)
