@@ -36,7 +36,9 @@ def _compose(compose: Sequence[str], args: Sequence[str], env: dict[str, str]) -
             f"{COMPOSE_FILE} not found: Docker mode needs a source checkout until release images ship"
         )
     cmd = [*compose, "-f", str(COMPOSE_FILE), *args]
-    if subprocess.run(cmd, env=env, check=False).returncode != 0:  # noqa: S603 - fixed argv; output streams to the user
+    # cwd: compose bake reads build files only inside its working directory, and they span backend/ and infra/
+    done = subprocess.run(cmd, env=env, cwd=COMPOSE_FILE.parents[1], check=False)  # noqa: S603 - fixed argv
+    if done.returncode != 0:  # output streams to the user
         raise DockerStartError(f"`{' '.join(cmd)}` failed")
 
 

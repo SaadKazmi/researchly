@@ -1,4 +1,9 @@
 import os
+import shutil
+import sys
+import tempfile
+import uuid
+from pathlib import Path
 
 import keyring
 import pytest
@@ -28,12 +33,20 @@ class MemoryKeyring(KeyringBackend):
 @pytest.fixture(autouse=True)
 def _isolated(tmp_path, monkeypatch):
     """Each test gets its own data and log dirs and an in-memory keychain."""
-    monkeypatch.setenv("RESEARCHLY_DATA_DIR", str(tmp_path / "data"))
-    monkeypatch.setenv("RESEARCHLY_LOG_DIR", str(tmp_path / "logs"))
+    base = tmp_path
+    if sys.platform == "win32":
+        # pytest's temp root has an owner-only ACL (CPython >= 3.12.4 mkdir mode=0o700) that initdb's restricted
+        # token cannot read when the owner is BUILTIN\Administrators (elevated CI runners): use a default-mode dir.
+        base = Path(tempfile.gettempdir()) / f"researchly-test-{uuid.uuid4().hex[:8]}"
+        base.mkdir()
+    monkeypatch.setenv("RESEARCHLY_DATA_DIR", str(base / "data"))
+    monkeypatch.setenv("RESEARCHLY_LOG_DIR", str(base / "logs"))
     previous = keyring.get_keyring()
     keyring.set_keyring(MemoryKeyring())
     yield
     keyring.set_keyring(previous)
+    if base != tmp_path:
+        shutil.rmtree(base, ignore_errors=True)
 
 
 def pytest_collection_modifyitems(config, items):

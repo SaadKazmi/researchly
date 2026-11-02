@@ -67,6 +67,7 @@ def test_terminate_tree_ignores_a_reused_pid(start):
 
 @pytest.mark.skipif(sys.platform != "win32", reason="console windows are a Windows concern")
 def test_supervisor_tree_shows_no_console_window(start):
+    assert sys.platform == "win32"  # skipif is invisible to pyright
     import ctypes
     from ctypes import wintypes
 

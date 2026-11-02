@@ -19,6 +19,24 @@ def test_compose_file_pins_every_image():
         assert image.endswith(":dev") or re.search(r":\d", image), image  # local builds or pinned tags, never latest
 
 
+@pytest.fixture
+def runs(monkeypatch):
+    """A fake `subprocess.run` that records every compose call."""
+    calls: list[tuple[list[str], dict]] = []
+
+    def fake(cmd, **kwargs):
+        calls.append((cmd, kwargs))
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(subprocess, "run", fake)
+    return calls
+
+
+def test_compose_runs_from_the_repo_root(runs):
+    docker.build(state.load_secrets(), ("docker", "compose"))
+    assert runs[0][1]["cwd"] == docker.COMPOSE_FILE.parents[1]  # bake reads only inside its cwd
+
+
 @pytest.mark.docker
 def test_docker_stack_serves_health_with_bm25(monkeypatch):
     monkeypatch.setenv("COMPOSE_PROJECT_NAME", f"researchly-test-{uuid.uuid4().hex[:6]}")

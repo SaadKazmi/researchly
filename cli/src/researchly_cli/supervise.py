@@ -42,7 +42,7 @@ def spawn(cmd: Sequence[str], log: Path, env: dict[str, str] | None = None) -> p
         try:
             child = subprocess.Popen(list(cmd), stdin=subprocess.DEVNULL, stdout=out, stderr=out, env=env, **kwargs)  # noqa: S603
         except PermissionError:  # the CLI's own Job Object forbids breakaway (some terminals and CI hosts)
-            if "creationflags" not in kwargs:
+            if sys.platform != "win32" or "creationflags" not in kwargs:
                 raise
             kwargs["creationflags"] &= ~subprocess.CREATE_BREAKAWAY_FROM_JOB
             child = subprocess.Popen(list(cmd), stdin=subprocess.DEVNULL, stdout=out, stderr=out, env=env, **kwargs)  # noqa: S603
@@ -110,6 +110,7 @@ def terminate_tree(pid: int, created: float | None = None, timeout: float = 10.0
 
 def kill_on_close_job() -> None:
     """Put this process in a Job Object that kills every member when its last handle closes (Windows)."""
+    assert sys.platform == "win32"
     import ctypes
     from ctypes import wintypes
 
