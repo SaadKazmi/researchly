@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from researchly.sandbox.light import CellResult, run_cell, warm_up
+from researchly.sandbox.light import CellResult, _deno, run_cell, warm_up
 
 from .conftest import report
 
@@ -78,13 +78,27 @@ def test_network_is_denied(cache: Path, workdir: Path) -> None:
 def test_ctypes_system_cannot_spawn(cache: Path, workdir: Path, outside: Path) -> None:
     target = outside / "pwn.txt"
     cmd = f"echo pwned > {_p(target)}"
-    run_cell(f"import ctypes\nctypes.CDLL(None).system({cmd.encode()!r})\n", workdir, cache)
+    code = (
+        "import ctypes\n"
+        "open('/work/reached', 'w').close()\n"  # a file, because a fatal Pyodide error loses buffered stdout
+        f"print('rc', ctypes.CDLL(None).system({cmd.encode()!r}))\n"
+    )
+    result = run_cell(code, workdir, cache)
+    assert (workdir / "reached").exists(), (result.stdout, result.error)  # the cell got as far as system()
     assert not target.exists()
+    text = result.stdout + (result.error or "")
+    if sys.platform == "win32":  # Pyodide routes system() to Deno's spawnSync, which needs env COMSPEC
+        assert "NotCapable" in text
+    else:  # observed in CI: wasm system() returns non-zero or Deno refuses
+        assert "NotCapable" in text or ("rc " in text and "rc 0" not in text), text
 
 
 def test_deno_command_is_denied(cache: Path, workdir: Path) -> None:
-    result = run_cell('import js\njs.Deno.Command.new("deno", ["--version"]).outputSync()\n', workdir, cache)
-    assert not result.ok
+    # absolute path, so the run permission check is what refuses it, not a PATH lookup
+    deno = Path(_deno()).as_posix()
+    result = run_cell(_host_js(f"new Deno.Command('{deno}', {{args: ['--version']}}).outputSync()"), workdir, cache)
+    assert "NotCapable" in result.stdout + (result.error or "")
+    assert "run access" in result.stdout + (result.error or "")
 
 
 def test_host_js_cannot_read_outside(cache: Path, workdir: Path, outside: Path) -> None:
@@ -113,9 +127,12 @@ def test_env_and_ffi_are_denied(cache: Path, workdir: Path) -> None:
 
 @pytest.mark.skipif(sys.platform == "win32", reason="creating symlinks needs a privilege on Windows")
 def test_symlink_out_of_the_workdir_is_denied(cache: Path, workdir: Path, outside: Path) -> None:
-    code = f"import os\nos.symlink('{_p(outside / 'secret.txt')}', '/work/l')\nprint(open('/work/l').read())\n"
-    result = run_cell(code, workdir, cache)
-    assert "decoy-secret" not in result.stdout
+    (workdir / "mine.txt").write_text("my-content", encoding="utf-8")
+    link = "import os\nos.symlink('{}', '/work/{}')\nprint('READ', open('/work/{}').read())\n"
+    control = run_cell(link.format(_p(workdir / "mine.txt"), "ok", "ok"), workdir, cache)
+    assert "READ my-content" in control.stdout, (control.stdout, control.error)  # symlinks work in the harness
+    result = run_cell(link.format(_p(outside / "secret.txt"), "l", "l"), workdir, cache)
+    assert "decoy-secret" not in result.stdout + (result.error or "")
 
 
 def test_runaway_cell_is_killed(cache: Path, workdir: Path) -> None:

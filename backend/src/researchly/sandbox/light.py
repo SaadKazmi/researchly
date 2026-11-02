@@ -35,9 +35,15 @@ def _p(path: Path) -> str:
 
 def _env(cache: Path) -> dict[str, str]:
     env = {"DENO_DIR": _p(cache / "deno"), "DENO_NO_UPDATE_CHECK": "1", "NO_COLOR": "1"}
-    if sys.platform == "win32":
-        env["SYSTEMROOT"] = os.environ["SYSTEMROOT"]  # Windows DLL loading needs it
+    if sys.platform == "win32" and (root := os.environ.get("SYSTEMROOT")):
+        env["SYSTEMROOT"] = root  # Windows DLL loading needs it
     return env
+
+
+def _check_paths(*paths: Path) -> None:
+    for path in paths:
+        if "," in str(path):  # Deno's --allow-read/--allow-write lists are comma-separated
+            raise ValueError(f"path must not contain a comma: {path}")
 
 
 def _pyodide_dir(cache: Path) -> Path:
@@ -68,6 +74,7 @@ def warm_up(cache: Path) -> None:
 
 
 def run_cell(code: str, workdir: Path, cache: Path, *, timeout: float = 60.0) -> CellResult:
+    _check_paths(workdir, cache)
     read = ",".join(_p(p) for p in (_pyodide_dir(cache), cache / "pyodide", workdir))
     args = [
         _deno(),
