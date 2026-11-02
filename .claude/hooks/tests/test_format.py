@@ -29,6 +29,13 @@ def test_tsx_in_frontend(tmp_path):
     ]
 
 
+def test_ts_in_e2e(tmp_path):
+    make(tmp_path, "e2e/package.json")
+    assert fmt.commands_for("e2e/specs/smoke.spec.ts", tmp_path) == [
+        ["pnpm", "-C", "e2e", "exec", "prettier", "--write", "specs/smoke.spec.ts"]
+    ]
+
+
 def test_other_files_skipped(tmp_path):
     make(tmp_path, "backend/pyproject.toml")
     assert fmt.commands_for("docs/progress.md", tmp_path) == []

@@ -6,6 +6,8 @@ x-app: &app
   build:
     context: ../backend
     dockerfile: ../infra/app.Dockerfile
+    additional_contexts:
+      frontend: ../frontend
   image: researchly-app:dev
 
 services:

@@ -1,0 +1,15 @@
+packages: []
+
+# Supply chain (spec §19.7): nothing younger than 7 days; no trust downgrades
+minimumReleaseAge: 10080
+trustPolicy: no-downgrade
+trustPolicyExclude:
+  - semver@6.3.1 # last 6.x (2023 ReDoS fix) shipped without provenance after 7.x had it; @babel/core 7 needs ^6.3.1
+
+allowBuilds:
+  esbuild: true
+  msw: false
+
+peerDependencyRules:
+  allowedVersions:
+    openapi-typescript>typescript: "6" # works on TS 6 (verified); its peer range still says ^5

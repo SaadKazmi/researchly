@@ -1,0 +1,5 @@
+packages: []
+
+# Supply chain (spec §19.7)
+minimumReleaseAge: 10080
+trustPolicy: no-downgrade

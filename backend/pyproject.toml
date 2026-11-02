@@ -35,6 +35,7 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/researchly"]
+artifacts = ["src/researchly/web/**"]  # the built SPA is gitignored, but it ships in the wheel
 exclude = ["src/researchly/llm/dev"]  # spec §7.7: the dev provider is excluded from release builds
 
 [tool.uv]

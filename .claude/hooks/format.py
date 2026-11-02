@@ -21,8 +21,9 @@ def commands_for(rel: str, root: Path) -> list[list[str]]:
                 ["uv", "run", "--directory", pkg, "ruff", "format", rel.removeprefix(f"{pkg}/")],
                 ["uv", "run", "--directory", pkg, "ruff", "check", "--fix", rel.removeprefix(f"{pkg}/")],
             ]
-    if rel.startswith("frontend/") and rel.endswith(_FRONTEND_EXT) and (root / "frontend/package.json").exists():
-        return [["pnpm", "-C", "frontend", "exec", "prettier", "--write", rel.removeprefix("frontend/")]]
+    for pkg in ("frontend", "e2e"):
+        if rel.startswith(f"{pkg}/") and rel.endswith(_FRONTEND_EXT) and (root / pkg / "package.json").exists():
+            return [["pnpm", "-C", pkg, "exec", "prettier", "--write", rel.removeprefix(f"{pkg}/")]]
     return []
 
 

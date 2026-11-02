@@ -24,6 +24,13 @@ def test_logging_filter_redacts_args():
     assert record.getMessage() == "key [REDACTED]"
 
 
+def test_logging_filter_drops_uvicorns_color_message():
+    record = logging.LogRecord("x", logging.INFO, __file__, 1, "on %s", ("http",), None)
+    record.__dict__["color_message"] = "on %s"  # uvicorn's coloured formatter prefers this, unformatted
+    RedactingFilter().filter(record)
+    assert "color_message" not in record.__dict__ and record.getMessage() == "on http"
+
+
 def test_overlapping_secrets_redact_longest_first():
     register_secret("overlap-secret-AAAA")
     register_secret("overlap-secret-AAAA-and-more-BBBB")

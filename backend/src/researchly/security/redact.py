@@ -29,6 +29,7 @@ class RedactingFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         record.msg = redact(record.getMessage())
         record.args = None
+        record.__dict__.pop("color_message", None)  # uvicorn's coloured formatter would print it unformatted
         if record.exc_info:
             record.exc_text = logging.Formatter().formatException(record.exc_info)
             record.exc_info = None  # formatters must use the redacted exc_text, never re-render the traceback
@@ -36,4 +37,13 @@ class RedactingFilter(logging.Filter):
             record.exc_text = redact(record.exc_text)
         if record.stack_info:
             record.stack_info = redact(record.stack_info)
+        return True
+
+
+class RedactingArgsFilter(logging.Filter):
+    """For formatters that unpack `record.args` (uvicorn's AccessFormatter): redact each string argument in place."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if isinstance(record.args, tuple):
+            record.args = tuple(redact(a) if isinstance(a, str) else a for a in record.args)
         return True

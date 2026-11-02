@@ -1,10 +1,15 @@
 """`researchly` command line (spec F10.1, §4)."""
 
 import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
 from typing import NoReturn
 
 import typer
 from researchly.security.keychain import KeychainUnavailable, store_name
+from researchly.spa import BUILD_HINT, WEB_DIR
 
 from researchly_cli import docker, engines, native, state
 
@@ -17,6 +22,8 @@ LICENCE_NOTE = (
     "Note: Docker Desktop needs a paid subscription for companies with 250+ employees or $10M+ revenue. "
     "Researchly never requires it; any engine or native mode works."
 )
+
+FRONTEND_DIR = Path(__file__).resolve().parents[3] / "frontend"  # source checkouts only; release wheels ship the build
 
 app = typer.Typer(no_args_is_help=True, add_completion=False, help="Researchly: a local-first research assistant.")
 config_app = typer.Typer(no_args_is_help=True, help="Read or change CLI settings.")
@@ -96,6 +103,40 @@ def _warn_on_runtime_switch(mode: str) -> None:
         )
 
 
+def _login_url(run: state.State, secrets: state.Secrets) -> str:
+    """The one-time link: opening it sets the browser's auth cookie (ADR 0003). Only `start` prints it."""
+    return f"{run.url}/?token={secrets.local_token}"
+
+
+def _pnpm() -> str | None:
+    # on Windows an extensionless `pnpm` shell shim sits beside pnpm.cmd (npm) or pnpm.exe (standalone);
+    # CPython 3.12.0's shutil.which returns the shim, which is not a Win32 executable
+    names = ("pnpm.cmd", "pnpm.exe") if sys.platform == "win32" else ("pnpm",)
+    return next((path for name in names if (path := shutil.which(name))), None)
+
+
+def _web_ui_stale() -> bool:
+    """No build yet, or the checkout's frontend sources changed since (e.g. after `git pull`)."""
+    built = WEB_DIR / "index.html"
+    if not built.is_file():
+        return True
+    sources = [*FRONTEND_DIR.glob("*.*"), *FRONTEND_DIR.glob("src/**/*"), *FRONTEND_DIR.glob("public/**/*")]
+    return any(path.stat().st_mtime > built.stat().st_mtime for path in sources)
+
+
+def _ensure_web_ui() -> None:
+    """Native mode serves the SPA from the backend package; a source checkout (re)builds it when it is stale."""
+    pnpm = _pnpm()
+    if pnpm and (FRONTEND_DIR / "package.json").is_file() and _web_ui_stale():
+        typer.echo("Building the web UI...")
+        for args in (["install", "--frozen-lockfile"], ["build"]):
+            if subprocess.run([pnpm, "-C", str(FRONTEND_DIR), *args], check=False).returncode:  # noqa: S603 - fixed argv
+                typer.secho("warning: the web UI build failed (see above)", err=True)
+                break
+    if not WEB_DIR.is_dir():
+        typer.secho(f"warning: the web UI is not built; {BUILD_HINT}", err=True)
+
+
 def _secrets() -> state.Secrets:
     try:
         return state.load_secrets()
@@ -134,7 +175,7 @@ def start() -> None:
     secrets = _secrets()
     if current is not None:
         if state.healthy(current.port):
-            typer.echo(f"Already running ({current.mode}) at {current.url}")
+            typer.echo(f"Already running ({current.mode}) at {_login_url(current, secrets)}")
             return
         if (error := _stop(current, secrets)) is not None:  # leftovers of a crashed run
             typer.secho(f"warning: could not stop the previous {current.mode} run ({error}); starting anyway", err=True)
@@ -142,6 +183,8 @@ def start() -> None:
     selection = _select()
     _announce(selection)
     _warn_on_runtime_switch(selection.mode)
+    if selection.mode == "native":
+        _ensure_web_ui()  # the Docker image builds its own copy
     try:
         if selection.mode == "docker" and selection.engine is not None:
             run = docker.start(secrets, selection.engine.compose)
@@ -151,7 +194,7 @@ def start() -> None:
         _fail(str(exc))
     state.write_state(run)
     state.save_config({**state.load_config(), "last_mode": run.mode})
-    typer.echo(f"Researchly is running at {run.url}")
+    typer.echo(f"Researchly is running at {_login_url(run, secrets)}")
 
 
 @app.command()
@@ -199,6 +242,7 @@ def doctor() -> None:
     typer.echo(f"secrets store: {store_name()}")
     typer.echo(f"data dir: {state.data_dir()}")
     typer.echo(f"logs: {state.log_dir()}")
+    typer.echo(f"web ui: {'built' if WEB_DIR.is_dir() else f'not built (native mode; {BUILD_HINT})'}")
     current = state.read_state()
     if current is None:
         typer.echo("status: stopped")

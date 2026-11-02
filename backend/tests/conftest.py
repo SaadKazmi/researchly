@@ -44,6 +44,12 @@ def _memory_keyring(tmp_path, monkeypatch):
     keyring.set_keyring(previous)
 
 
+@pytest.fixture(autouse=True)
+def _no_built_frontend(tmp_path, monkeypatch):
+    """Tests never depend on whether `pnpm -C frontend build` ran in this checkout."""
+    monkeypatch.setattr("researchly.app.WEB_DIR", tmp_path / "no-web")
+
+
 @pytest.fixture
 def anyio_backend():
     # psycopg's async driver cannot run on Windows' default Proactor loop.

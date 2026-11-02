@@ -43,10 +43,11 @@ def checks_for(changed: list[str], root: Path) -> list[list[str]]:
             root / pkg / "pyproject.toml"
         ).exists():
             cmds.append(["uv", "run", "--directory", pkg, "pyright"])
-    if any(p.startswith("frontend/") and p.endswith((".ts", ".tsx")) for p in changed) and (
-        root / "frontend/package.json"
-    ).exists():
-        cmds.append(["pnpm", "-C", "frontend", "exec", "tsc", "--noEmit"])
+    for pkg in ("frontend", "e2e"):
+        if any(p.startswith(f"{pkg}/") and p.endswith((".ts", ".tsx")) for p in changed) and (
+            root / pkg / "package.json"
+        ).exists():
+            cmds.append(["pnpm", "-C", pkg, "typecheck"])
     return cmds
 
 
