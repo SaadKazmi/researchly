@@ -35,8 +35,8 @@ def test_setup_creates_database_owned_and_migrated_by_app_role(db_url, target):
 
 
 def test_setup_is_idempotent(db_url, target):
-    provision.setup(db_url, APP_PW, RO_PW, database=target)
-    provision.setup(db_url, APP_PW, RO_PW, database=target)
+    first = provision.setup(db_url, APP_PW, RO_PW, database=target)
+    assert provision.setup(db_url, APP_PW, RO_PW, database=target) == first
 
 
 def test_read_only_role_reads_but_cannot_write(db_url, target):
@@ -61,3 +61,20 @@ def test_rejects_unsafe_passwords(db_url, target, bad):
 def test_rejects_unsafe_database_name(db_url):
     with pytest.raises(ValueError):
         provision.provision(db_url, APP_PW, RO_PW, database='x"; DROP DATABASE postgres; --')
+
+
+def test_role_failure_does_not_leak_passwords(db_url, target):
+    weak = f"p_weak_{uuid.uuid4().hex[:8]}"
+    admin = create_engine(db_url, isolation_level="AUTOCOMMIT")
+    with admin.connect() as conn:
+        conn.execute(text(f"CREATE ROLE {weak} LOGIN PASSWORD '{'w' * 20}'"))
+    try:
+        weak_url = make_url(db_url).set(username=weak, password="w" * 20).render_as_string(hide_password=False)
+        with pytest.raises(RuntimeError) as info:
+            provision.provision(weak_url, APP_PW, RO_PW, database=target)
+        assert APP_PW not in str(info.value) and RO_PW not in str(info.value)
+        assert info.value.__suppress_context__ is True
+    finally:
+        with admin.connect() as conn:
+            conn.execute(text(f"DROP ROLE {weak}"))
+        admin.dispose()

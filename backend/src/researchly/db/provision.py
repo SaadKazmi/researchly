@@ -9,6 +9,7 @@ import re
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
+from sqlalchemy.exc import DBAPIError
 
 from researchly.db import migrate
 
@@ -29,7 +30,11 @@ def provision(superuser_url: str, app_password: str, ro_password: str, database:
         with admin.connect() as conn:
             for role, password in ((APP_ROLE, app_password), (RO_ROLE, ro_password)):
                 exists = conn.scalar(text("SELECT 1 FROM pg_roles WHERE rolname = :r"), {"r": role})
-                conn.execute(text(f"{'ALTER' if exists else 'CREATE'} ROLE {role} LOGIN PASSWORD '{password}'"))
+                try:
+                    conn.execute(text(f"{'ALTER' if exists else 'CREATE'} ROLE {role} LOGIN PASSWORD '{password}'"))
+                except DBAPIError as exc:
+                    # SQLAlchemy's message embeds the statement, i.e. the password: keep only the driver's first line.
+                    raise RuntimeError(f"provisioning role {role} failed: {str(exc.orig).splitlines()[0]}") from None
             conn.execute(text(f"GRANT pg_read_all_data TO {RO_ROLE}"))
             if not conn.scalar(text("SELECT 1 FROM pg_database WHERE datname = :d"), {"d": database}):
                 conn.execute(text(f'CREATE DATABASE "{database}" OWNER {APP_ROLE}'))
