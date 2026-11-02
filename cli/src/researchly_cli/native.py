@@ -60,9 +60,9 @@ class NativePostgres:
 
 def start(secrets: state.Secrets) -> state.State:
     pg = NativePostgres(state.data_dir(), secrets.pg_superuser)
-    superuser_url, pg_port = pg.start()
     supervisor = None
     try:
+        superuser_url, pg_port = pg.start()
         app_url = setup_database(superuser_url, secrets.db_app, secrets.db_ro)
         port = state.free_port(APP_PORT)
         uvicorn = [

@@ -51,6 +51,16 @@ def test_failed_provisioning_stops_postgres_and_hides_detail(fakes, monkeypatch)
     assert fakes == ["pg start", "pg stop"]
 
 
+def test_failed_pg0_start_is_a_native_start_error(fakes, monkeypatch):
+    def fail(self):
+        raise RuntimeError("Error: initdb failed\ndetail")
+
+    monkeypatch.setattr(native.NativePostgres, "start", fail)
+    with pytest.raises(native.NativeStartError, match="^RuntimeError: Error: initdb failed$"):
+        native.start(state.load_secrets())
+    assert fakes == ["pg stop"]
+
+
 def test_interrupted_health_wait_stops_everything(fakes, monkeypatch):
     def interrupted(check, timeout):
         raise KeyboardInterrupt
