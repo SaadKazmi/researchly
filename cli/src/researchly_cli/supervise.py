@@ -42,6 +42,8 @@ def spawn(cmd: Sequence[str], log: Path, env: dict[str, str] | None = None) -> p
         try:
             child = subprocess.Popen(list(cmd), stdin=subprocess.DEVNULL, stdout=out, stderr=out, env=env, **kwargs)  # noqa: S603
         except PermissionError:  # the CLI's own Job Object forbids breakaway (some terminals and CI hosts)
+            if "creationflags" not in kwargs:
+                raise
             kwargs["creationflags"] &= ~subprocess.CREATE_BREAKAWAY_FROM_JOB
             child = subprocess.Popen(list(cmd), stdin=subprocess.DEVNULL, stdout=out, stderr=out, env=env, **kwargs)  # noqa: S603
     return psutil.Process(child.pid)
@@ -53,7 +55,8 @@ def supervisor_cmd(log: Path, cmd: Sequence[str]) -> list[str]:
 
 def rotate(log: Path, max_bytes: int = MAX_LOG_BYTES) -> None:
     if log.exists() and log.stat().st_size > max_bytes:
-        log.replace(log.with_name(log.name + ".1"))
+        with contextlib.suppress(OSError):  # held open elsewhere (Windows): try again at the next restart
+            log.replace(log.with_name(log.name + ".1"))
 
 
 def run_forever(
@@ -81,8 +84,12 @@ def terminate_tree(pid: int, created: float | None = None, timeout: float = 10.0
         proc = psutil.Process(pid)
     except psutil.NoSuchProcess:
         proc = None
-    if proc is not None and created is not None and proc.create_time() != created:
-        return  # the PID now belongs to an unrelated process
+    if proc is not None and created is not None:
+        try:
+            if abs(proc.create_time() - created) > 1:  # tolerance: clock steps shift psutil's derived create time
+                return  # the PID now belongs to an unrelated process
+        except psutil.AccessDenied:
+            return  # another user's process: not ours
     procs: list[psutil.Process] = []
     if proc is not None:
         with contextlib.suppress(psutil.NoSuchProcess):
@@ -95,6 +102,8 @@ def terminate_tree(pid: int, created: float | None = None, timeout: float = 10.0
         with contextlib.suppress(psutil.NoSuchProcess):
             p.kill()
     if sys.platform != "win32":  # orphans of a crashed supervisor are still in its process group
+        # Even with the supervisor gone this is safe: POSIX never hands out a PID still in use as a process
+        # group ID, and the PID is free, so any group with this ID is the supervisor's own.
         with contextlib.suppress(ProcessLookupError, PermissionError):
             os.killpg(pid, signal.SIGKILL)
 
