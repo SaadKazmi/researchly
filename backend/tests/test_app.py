@@ -34,9 +34,9 @@ async def test_env_token_is_used_without_the_keychain(monkeypatch):
     monkeypatch.setenv("RESEARCHLY_LOCAL_TOKEN", "e" * 43)
     app = create_app(Settings(env="test"))
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://127.0.0.1") as client:
-        allowed = await client.get("/nope", headers={TOKEN_HEADER: "e" * 43})
-        denied = await client.get("/nope")
-    assert (allowed.status_code, denied.status_code) == (404, 403)
+        allowed = await client.get("/api/nope", headers={TOKEN_HEADER: "e" * 43})
+        denied = await client.get("/api/nope")
+    assert (allowed.status_code, denied.status_code) == (404, 401)
     assert "e" * 43 not in redact(f"token={'e' * 43}")
 
 

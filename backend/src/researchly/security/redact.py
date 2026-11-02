@@ -37,3 +37,12 @@ class RedactingFilter(logging.Filter):
         if record.stack_info:
             record.stack_info = redact(record.stack_info)
         return True
+
+
+class RedactingArgsFilter(logging.Filter):
+    """For formatters that unpack `record.args` (uvicorn's AccessFormatter): redact each string argument in place."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if isinstance(record.args, tuple):
+            record.args = tuple(redact(a) if isinstance(a, str) else a for a in record.args)
+        return True
