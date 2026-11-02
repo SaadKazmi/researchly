@@ -239,7 +239,7 @@ When Docker Desktop is the engine, a one-time informational note mentions its co
   - Start at login is opt-in and needs no admin: `systemd --user`, `~/Library/LaunchAgents`, or the HKCU Run key.
 
 ### 4.3 Localhost guard
-The app binds to `127.0.0.1` by default. Cross-origin requests are rejected. A random per-install token is issued at `onboard`, stored in the OS keychain, and required in a header. This protects against other local sites calling the API (CSRF/DNS-rebinding). The `Host` header must be `localhost` or `127.0.0.1`.
+The app binds to `127.0.0.1` by default. Cross-origin requests are rejected. A random per-install token is issued at `onboard`, stored in the OS keychain, and required in a header, or in an HttpOnly SameSite=Strict cookie that the one-time login link printed by `researchly start` sets (ADR 0003). Token failures answer 401. This protects against other local sites calling the API (CSRF/DNS-rebinding). The `Host` header must be `localhost` or `127.0.0.1`.
 
 ---
 
