@@ -1,5 +1,6 @@
 import re
 import subprocess
+import urllib.request
 import uuid
 
 import pytest
@@ -61,6 +62,11 @@ def test_failed_start_takes_the_stack_down(monkeypatch):
     assert calls[-1] == ["--profile", "*", "down"]
 
 
+def test_app_image_builds_the_frontend():
+    text = docker.COMPOSE_FILE.read_text("utf-8")
+    assert "additional_contexts" in text and "frontend: ../frontend" in text
+
+
 @pytest.mark.docker
 def test_docker_stack_serves_health_with_bm25(monkeypatch):
     monkeypatch.setenv("COMPOSE_PROJECT_NAME", f"researchly-test-{uuid.uuid4().hex[:6]}")
@@ -70,6 +76,8 @@ def test_docker_stack_serves_health_with_bm25(monkeypatch):
     run = docker.start(secrets, engine.compose)
     try:
         assert state.healthy(run.port)
+        with urllib.request.urlopen(f"{run.url}/") as page:  # noqa: S310 - fixed local URL
+            assert page.status == 200 and b'<div id="root">' in page.read()
 
         def psql(sql: str) -> str:
             cmd = [
