@@ -141,7 +141,7 @@ def test_planted_link_out_of_the_workdir_is_refused(cache: Path, workdir: Path, 
     plant_dir_link(workdir / "j", outside)
     result = run_cell("print('READ', open('/work/j/secret.txt').read())\n", workdir, cache)
     assert "decoy-secret" not in result.stdout + (result.error or "")
-    assert "is a link out of the workdir" in (result.error or "")
+    assert "is a link" in (result.error or "")
 
 
 def test_runaway_cell_is_killed(cache: Path, workdir: Path) -> None:

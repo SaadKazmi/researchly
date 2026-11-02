@@ -76,7 +76,7 @@ def _converter(ocr: bool) -> DocumentConverter:
     options = PdfPipelineOptions(
         do_table_structure=False,
         do_ocr=ocr,
-        ocr_options=RapidOcrOptions(backend="onnxruntime", mode=OcrMode.FULL_PAGE),
+        ocr_options=RapidOcrOptions(backend="onnxruntime", mode=OcrMode.DEFAULT),
         layout_options=layout,
         accelerator_options=AcceleratorOptions(device=AcceleratorDevice.CPU),
     )

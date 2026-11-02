@@ -34,7 +34,7 @@ def _p(path: Path) -> str:
 
 
 def _env(cache: Path) -> dict[str, str]:
-    env = {"DENO_DIR": _p(cache / "deno"), "DENO_NO_UPDATE_CHECK": "1", "NO_COLOR": "1"}
+    env = {"DENO_DIR": _p(cache / "deno"), "DENO_NO_PACKAGE_JSON": "1", "DENO_NO_UPDATE_CHECK": "1", "NO_COLOR": "1"}
     if sys.platform == "win32" and (root := os.environ.get("SYSTEMROOT")):
         env["SYSTEMROOT"] = root  # Windows DLL loading needs it
     return env
@@ -42,14 +42,15 @@ def _env(cache: Path) -> dict[str, str]:
 
 def _check_paths(*paths: Path) -> None:
     for path in paths:
-        if "," in str(path):  # Deno's --allow-read/--allow-write lists are comma-separated
+        if "," in _p(path):  # Deno's --allow-read/--allow-write lists are comma-separated, and it gets resolved paths
             raise ValueError(f"path must not contain a comma: {path}")
 
 
 def _first_link(workdir: Path) -> Path | None:
-    """Deno checks a link's own path, not its target, so a link in the workdir would lead outside it.
+    """Deno checks a link's own path, not its target, so a link in the workdir could lead outside it.
 
-    A cell cannot create links (Deno stats the target first), so this only catches links the host put there.
+    A cell cannot create symlinks (Deno stats the target first), but it can hard-link two of its own files; that
+    only locks the cell out of its own workdir, since a hard link to a file outside cannot be told apart.
     """
     for root, dirs, files in os.walk(workdir):  # top-down: a linked dir is seen before anything inside it
         for name in dirs + files:
@@ -72,6 +73,7 @@ def warm_up(cache: Path) -> None:
             _deno(),
             "run",
             "--no-prompt",
+            "--no-config",  # a deno.json above the runner would remap its imports
             "--allow-net=cdn.jsdelivr.net",
             f"--allow-read={_p(cache)}",
             f"--allow-write={_p(pkgs)}",
@@ -90,13 +92,16 @@ def run_cell(code: str, workdir: Path, cache: Path, *, timeout: float = 60.0) ->
     _check_paths(workdir, cache)
     if link := _first_link(workdir):
         return CellResult(
-            ok=False, stdout="", error=f"refused: {link.relative_to(workdir)} is a link out of the workdir"
+            ok=False,
+            stdout="",
+            error=f"refused: {link.relative_to(workdir)} is a link; the workdir takes plain files only",
         )
     read = ",".join(_p(p) for p in (_pyodide_dir(cache), cache / "pyodide", workdir))
     args = [
         _deno(),
         "run",
         "--no-prompt",
+        "--no-config",
         "--cached-only",
         f"--allow-read={read}",
         f"--allow-write={_p(workdir)}",
@@ -111,8 +116,10 @@ def run_cell(code: str, workdir: Path, cache: Path, *, timeout: float = 60.0) ->
     except subprocess.TimeoutExpired:
         return CellResult(ok=False, stdout="", error=f"timed out after {timeout:g} s")
     lines = proc.stdout.strip().splitlines()
-    try:
+    try:  # the cell can write its own last line, so the result is untrusted
         result = json.loads(lines[-1])
-    except (IndexError, ValueError):
+        return CellResult(
+            ok=result["ok"] is True, stdout=str(result["stdout"]), error=result["error"] and str(result["error"])
+        )
+    except (IndexError, ValueError, KeyError, TypeError):
         return CellResult(ok=False, stdout=proc.stdout, error=proc.stderr.strip() or f"exit code {proc.returncode}")
-    return CellResult(ok=bool(result["ok"]), stdout=result["stdout"], error=result["error"])

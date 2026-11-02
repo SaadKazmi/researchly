@@ -59,6 +59,12 @@ def test_install_rejects_a_tampered_download(tmp_path, monkeypatch):
     assert "sha256" in (home.parent / "error.txt").read_text("utf-8")
 
 
+def test_an_unwritable_home_turns_web_search_off_instead_of_crashing(tmp_path):
+    (tmp_path / "searxng").write_text("a file where the dir should be", "utf-8")
+    with pytest.raises(searxng.SearxngError):
+        searxng.install(tmp_path / "searxng" / "abc")
+
+
 def test_a_failed_install_can_be_retried(tmp_path, monkeypatch):
     attempts = []
 
@@ -102,7 +108,7 @@ def test_extract_keeps_only_allowed_regular_files(tmp_path):
     searxng._extract(tarball, home / "src")
     found = {p.relative_to(home / "src").as_posix() for p in (home / "src").rglob("*") if p.is_file()}
     assert found == {"searx/webapp.py", "requirements.txt", "LICENSE"}
-    assert {p.name for p in tmp_path.iterdir()} == {"t.tar.gz", "home"}  # nothing escaped (evil.txt would be here)
+    assert not (home / "evil.txt").exists()  # where searx/../../evil.txt would land
 
 
 def test_healthy_is_false_when_the_server_speaks_garbage(monkeypatch):

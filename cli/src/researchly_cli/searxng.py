@@ -4,6 +4,7 @@ SearXNG is AGPL-3.0: it is downloaded from upstream at install time, run unmodif
 talked to over HTTP only. Never import `searx` here and never vendor its source (ADR 0004).
 """
 
+import contextlib
 import hashlib
 import http.client
 import os
@@ -191,13 +192,14 @@ def install(home: Path) -> None:
     if (home / "ready").exists():
         return
     error = home.parent / "error.txt"
-    shutil.rmtree(home, ignore_errors=True)  # a half-finished earlier attempt
-    home.mkdir(parents=True)
     try:
+        shutil.rmtree(home, ignore_errors=True)  # a half-finished earlier attempt
+        home.mkdir(parents=True, exist_ok=True)
         _install(home)
     except Exception as exc:
         first = next(iter(str(exc).splitlines()), "")
-        error.write_text(f"{type(exc).__name__}: {first}\n", "utf-8")
+        with contextlib.suppress(OSError):
+            error.write_text(f"{type(exc).__name__}: {first}\n", "utf-8")
         raise exc if isinstance(exc, SearxngError) else SearxngError(f"{type(exc).__name__}: {first}") from exc
     error.unlink(missing_ok=True)
     (home / "ready").touch()

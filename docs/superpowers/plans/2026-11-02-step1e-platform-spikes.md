@@ -811,7 +811,7 @@ After CI is green on the branch, with the platform job's step summaries and the 
 - Wiring into the product (step 2):
   - embedder/reranker into hybrid search;
   - `convert_pdf` into ingestion;
-  - model dir under `data_dir/models`;
+  - model dir under `data_dir/models`, including RapidOCR's models (they default to `site-packages/rapidocr/models`);
   - `RESEARCHLY_SEARXNG_URL` passed to the app in both modes;
   - first-use model download progress in the UI.
 - TableFormer ONNX (community export) or upstream ONNX: step 2/4 bake-off against GROBID tables.
@@ -823,3 +823,4 @@ After CI is green on the branch, with the platform job's step summaries and the 
 - Warm Pyodide per notebook session (step 7/10): a fresh Deno + Pyodide per cell costs 6–22 s for a numpy/pandas/matplotlib cell on CI runners (ADR 0006).
 - First HF model download on Windows hit WinError 1314 (symlink privilege) once: the step 2 download path retries and falls back to copying.
 - Concurrent first `researchly start` calls can race on the SearXNG install (start lock, step 9).
+- Supervisors and uvicorn run as `python -m` from the user's cwd, so the cwd is on `sys.path` (pre-existing): spawn with `-P` or a fixed `cwd` (step 9).

@@ -17,7 +17,7 @@ Web search is keyless through SearXNG. Docker mode runs the `searxng/searxng` im
 - **Extraction:** Python `tarfile` with `filter="data"`. Only `searx/**`, `requirements*.txt` and `LICENSE` are extracted, and links are skipped.
 - **Install:** an app-private venv at `<data_dir>/searxng/<sha12>/venv`, made by `uv`, with dependencies from the committed hash-locked `cli/src/researchly_cli/searxng-requirements.txt` (`--require-hashes`). `searx/version_frozen.py` is written from the commit's date and SHA.
 - **Windows:** a `pwd.py` shim that we author goes into the venv's site-packages. The AGPL files stay unmodified.
-- **Running:** `granian --interface wsgi --host 127.0.0.1 --workers 1 --blocking-threads 4 searx.webapp:app` runs under the existing supervisor, as a second tree beside the app. It uses port 8766 or the next free one. The secret reaches it only as `SEARXNG_SECRET` in the env.
+- **Running:** `granian --interface wsgi --host 127.0.0.1 --workers 1 --blocking-threads 4 searx.webapp:app` runs under the existing supervisor, as a second tree beside the app. It uses port 8766, or any free port when 8766 is taken. The secret reaches it only as `SEARXNG_SECRET` in the env.
 - **Settings:** `settings_text()` holds the native settings, the same as `infra/searxng/settings.yml`; a test keeps the two equal.
 - **Failure:** web search is off, `start` warns with the reason, and `doctor` prints `web search: off: <reason>`. The app still starts.
 

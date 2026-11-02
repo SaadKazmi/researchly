@@ -17,7 +17,9 @@ Pyodide-level escapes (ctypes, `emscripten_run_script`) reach Deno's JS, where o
 - **Deno flags:** `--no-prompt --cached-only`, with read access to the Pyodide package dir, the package cache and the workdir, and write access to the workdir only. There is no net, run, FFI, env or sys access.
 - **Environment:** the Deno env is `DENO_DIR`, `DENO_NO_UPDATE_CHECK` and `NO_COLOR`, plus `SYSTEMROOT` on Windows. Nothing else is inherited.
 - **Paths:** on Windows they are passed resolved and with forward slashes, because Deno denies 8.3 short names.
-- **Links:** `run_cell` refuses a workdir that contains a symlink, junction or hard link. Deno checks a link's own path, not its target. On windows-2025, a planted symlink let a cell read a file outside the workdir, and a junction does the same on a normal non-admin Windows account. A cell cannot create links itself, because Deno stats the target first and gets NotCapable.
+- **Links:** `run_cell` refuses a workdir that contains a symlink, junction or hard link. Deno checks a link's own path, not its target. On windows-2025, a planted symlink let a cell read a file outside the workdir, and a junction does the same on a normal non-admin Windows account. A cell cannot create a symlink, because Deno stats the target first and gets NotCapable. It can hard-link two of its own files (`Deno.linkSync` needs write access to both paths), which only locks it out of its own workdir.
+- **Config:** Deno runs with `--no-config` and `DENO_NO_PACKAGE_JSON=1`, so a `deno.json` or `package.json` above the runner cannot remap its imports. A cell's output is untrusted: a malformed result line is reported as a failed cell.
+- **Commas:** Deno's permission lists are comma-separated, so a path that resolves to one containing a comma is rejected.
 - **Timeout:** the default is 60 s per cell, and the Deno process is killed when it expires. With no run permission, there are no grandchildren.
 - **Escape tests:** every escape test has a positive control and runs on all five OS in the `platform` CI job:
   - fetch;
@@ -40,7 +42,7 @@ Pyodide-level escapes (ctypes, `emscripten_run_script`) reach Deno's JS, where o
 - **Spawn:** a plain AppContainer and the probe's Landlock ruleset still allow starting a readable executable. The kernel step must add the Job Object limit on Windows and a no-exec rule (or seccomp) on Linux.
 - **Windows network denial:** AppContainer loopback denial shows up as a connect timeout, not a refusal. Tests must allow for the wait.
 - **CI is admin on Windows:** windows-2025 runs as admin, so a Windows check that depends on being unprivileged must also run on a non-admin account. The dev box is one.
-- **The probe's ACL grant is permanent:** when the probe has to grant RX on the Python install (it did on the windows-2025 runner's tool cache), the grant is not reverted. The kernel step should grant on its own runtime copy only.
+- **The probe's ACL grant:** when the probe has to grant RX on the Python install (it did on the windows-2025 runner's tool cache), it removes the grant when it finishes. The kernel step should grant on its own runtime copy only.
 
 ## Evidence
 **Light cells (CI run 41532022092, platform job; timings in seconds):**

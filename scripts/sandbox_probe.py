@@ -251,6 +251,7 @@ def probe_windows(checks: dict, notes: list[str]) -> dict[str, str]:
     sid_text = sid_str.value
     k32.LocalFree(sid_str)
     granted: set[str] = set()
+    prefix_granted = False
     try:
 
         def sandboxed(code: str, outside: str = "", work: str = "") -> tuple[int, str]:
@@ -296,12 +297,18 @@ def probe_windows(checks: dict, notes: list[str]) -> dict[str, str]:
                 ["icacls", sys.base_prefix, "/grant", "*S-1-15-2-1:(OI)(CI)(RX)"], capture_output=True, text=True
             )
             checks["icacls_grant"] = {"rc": grant.returncode, "out": (grant.stdout + grant.stderr).strip()[-200:]}
+            prefix_granted = grant.returncode == 0
             rc, err = sandboxed(SANITY)
         checks["child_starts"] = rc == 0
         if rc != 0:
             notes.append(f"AppContainer child could not start python (exit {rc}): {err}")
         return deny_tests(sandboxed, rc == 0, checks, notes)
     finally:
+        if prefix_granted:  # never leave the developer's Python install changed
+            revert = subprocess.run(
+                ["icacls", sys.base_prefix, "/remove:g", "*S-1-15-2-1"], capture_output=True, text=True
+            )
+            checks["icacls_revert"] = {"rc": revert.returncode}
         ue.DeleteAppContainerProfile(name)
         adv.FreeSid(sid)
 
