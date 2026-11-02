@@ -33,8 +33,12 @@ def web_built(monkeypatch, tmp_path):
 
 @pytest.fixture(autouse=True)
 def no_web_search(monkeypatch):
-    """No test installs SearXNG; test_searxng.py covers it."""
-    monkeypatch.setattr(searxng, "install", lambda home: None)
+    """No test installs or runs SearXNG (test_searxng.py covers it): web search is off unless a test says otherwise."""
+
+    def off(home):
+        raise searxng.SearxngError("off in tests")
+
+    monkeypatch.setattr(searxng, "install", off)
 
 
 def _native_start(monkeypatch):
@@ -147,6 +151,7 @@ def test_auto_runtime_switch_warns_about_the_separate_database(monkeypatch, heal
 def test_no_runtime_switch_warning_on_first_run_same_mode_or_a_pin(monkeypatch, healthy, config):
     state.save_config(config)
     monkeypatch.setattr(main, "_select", lambda: engines.Selection("native", "pinned"))
+    monkeypatch.setattr(searxng, "install", lambda home: None)
     monkeypatch.setattr(native, "start", lambda secrets, searxng_home=None: state.State(mode="native", port=9999))
     result = runner.invoke(app, ["start"])
     assert result.exit_code == 0 and result.stderr == ""

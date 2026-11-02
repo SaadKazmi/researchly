@@ -819,3 +819,7 @@ After CI is green on the branch, with the platform job's step summaries and the 
 - Kernel sandbox, CPython full kernel (step 7/10): AppContainer + Job Object (Windows), bwrap+seccomp / Landlock (Linux), Seatbelt (macOS). Light-cell memory ceiling via the OS (Job Object / RLIMIT_AS) arrives with it.
 - Windows arm64 (no `deno` wheel): out of the CI matrix; use the official zip if it is ever added.
 - SearXNG engine selection for scholarly search (`engines=` per query): step 2 connectors.
+- Rerank depth and passage truncation (step 4): 50 int8 pairs take 11–51 s on CI runners. Benchmark bge-reranker-v2-m3-int8 against smaller Apache/MIT cross-encoders on scholarly queries (relevance vs latency) and set the depth (ADR 0007).
+- Warm Pyodide per notebook session (step 7/10): a fresh Deno + Pyodide per cell costs 6–22 s for a numpy/pandas/matplotlib cell on CI runners (ADR 0006).
+- First HF model download on Windows hit WinError 1314 (symlink privilege) once: the step 2 download path retries and falls back to copying.
+- Concurrent first `researchly start` calls can race on the SearXNG install (start lock, step 9).
