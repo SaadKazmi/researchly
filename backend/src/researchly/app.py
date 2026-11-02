@@ -2,6 +2,7 @@
 
 import logging
 from importlib.metadata import version
+from pathlib import Path
 
 from fastapi import FastAPI
 
@@ -10,6 +11,10 @@ from researchly.config import Settings
 from researchly.security.keychain import ensure_local_token
 from researchly.security.localhost_guard import LocalhostGuard
 from researchly.security.redact import RedactingArgsFilter, RedactingFilter, register_secret
+from researchly.spa import SPAStaticFiles
+
+WEB_DIR = Path(__file__).parent / "web"  # `pnpm -C frontend build` writes the SPA here
+logger = logging.getLogger(__name__)
 
 
 def _redact_server_logs() -> None:
@@ -41,4 +46,8 @@ def create_app(settings: Settings | None = None, *, token: str | None = None) ->
         return {"status": "ok"}
 
     app.include_router(system.router)
+    if WEB_DIR.is_dir():
+        app.mount("/", SPAStaticFiles(directory=WEB_DIR, html=True), name="spa")  # last: the routes above win
+    else:
+        logger.warning("frontend not built (%s is missing): run `pnpm -C frontend build`", WEB_DIR)
     return app
