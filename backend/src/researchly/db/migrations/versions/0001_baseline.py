@@ -17,15 +17,13 @@ depends_on = None
 
 
 def upgrade() -> None:
-    available = set(op.get_bind().scalars(sa.text("SELECT name FROM pg_available_extensions")))
     # Provisioning creates the untrusted extensions (vector, pg_textsearch) as superuser, so these are no-ops for
     # the non-superuser schema owner (spec §16.1); pg_trgm is trusted. Extensions belong to provisioning, so
     # downgrade never drops them.
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
     op.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
-    bm25 = "pg_textsearch" if "pg_textsearch" in available else "tsvector"  # spec §16.1
-    if bm25 == "pg_textsearch":
-        op.execute("CREATE EXTENSION IF NOT EXISTS pg_textsearch")
+    installed = set(op.get_bind().scalars(sa.text("SELECT extname FROM pg_extension")))
+    bm25 = "pg_textsearch" if "pg_textsearch" in installed else "tsvector"  # spec §16.1
 
     op.create_table(
         "setting", sa.Column("key", sa.String(), primary_key=True), sa.Column("value", JSONB(), nullable=False)

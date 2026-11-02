@@ -43,15 +43,15 @@ def test_models_match_migrations(db_url):
 
 def test_migrations_run_as_non_superuser_owner(db_url):
     # spec §16.1: researchly_app owns the schema; provisioning creates the untrusted `vector` as superuser
+    role = f"owner_{make_url(db_url).database}"  # unique per test database; never collides across runs
     admin = create_engine(db_url, isolation_level="AUTOCOMMIT")
     with admin.connect() as conn:
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-        conn.execute(text("DROP ROLE IF EXISTS app_owner"))
-        conn.execute(text("CREATE ROLE app_owner LOGIN PASSWORD 'app'"))
-        conn.execute(text(f'ALTER DATABASE "{make_url(db_url).database}" OWNER TO app_owner'))
-        conn.execute(text("ALTER SCHEMA public OWNER TO app_owner"))
+        conn.execute(text(f"CREATE ROLE {role} LOGIN PASSWORD 'app'"))
+        conn.execute(text(f'ALTER DATABASE "{make_url(db_url).database}" OWNER TO {role}'))
+        conn.execute(text(f"ALTER SCHEMA public OWNER TO {role}"))
     admin.dispose()
-    owner_url = make_url(db_url).set(username="app_owner", password="app").render_as_string(hide_password=False)  # noqa: S106
+    owner_url = make_url(db_url).set(username=role, password="app").render_as_string(hide_password=False)  # noqa: S106
     migrate.upgrade(owner_url)
     migrate.downgrade(owner_url)
     migrate.upgrade(owner_url)
