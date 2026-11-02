@@ -2,6 +2,7 @@
 
 - Harness control plane (.claude/settings*.json, hooks/, agents/, skills/, statusline, .mcp.json, scripts/repo_checks.py): ask.
 - .github/workflows/*: ask (CI changes need the user's eye).
+  Both rules are skipped in auto mode, where the auto-mode classifier reviews these edits.
 - Existing Alembic revisions: ask (add a new revision instead).
 - docs/features.json: deny invalid content; ask for anything beyond flipping `passes`.
 """
@@ -16,7 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.append(str(Path(__file__).resolve().parents[2] / "scripts"))  # append: the hooks dir must win
 
-from _common import project_root, read_payload, rel_path  # noqa: E402
+from _common import locate, project_root, read_payload  # noqa: E402
 from repo_checks import check_features  # noqa: E402
 
 _CONTROL_PLANE = {".claude/settings.json", ".claude/settings.local.json", ".claude/statusline.py", ".mcp.json", "scripts/repo_checks.py"}
@@ -61,14 +62,16 @@ def _check_features_change(payload: dict, path: Path) -> tuple[str, str] | None:
 
 
 def decide(payload: dict, root: Path) -> tuple[str, str] | None:
-    file_path = payload.get("tool_input", {}).get("file_path", "")
-    rel = rel_path(file_path, root)
-    if rel is None:
+    located = locate(payload.get("tool_input", {}).get("file_path", ""), root)
+    if located is None:
         return None
+    root, rel = located
     key = rel.casefold()  # NTFS is case-insensitive; resolve() only fixes case of segments that exist
-    if key in _CONTROL_PLANE or key.startswith(_CONTROL_PLANE_DIRS):
+    # In auto mode the classifier already guards harness and CI edits; asking again only interrupts the user.
+    auto = payload.get("permission_mode") == "auto"
+    if not auto and (key in _CONTROL_PLANE or key.startswith(_CONTROL_PLANE_DIRS)):
         return ("ask", "Harness control-plane file (executed by Claude Code): confirm this edit with the user.")
-    if key.startswith(".github/workflows/"):
+    if not auto and key.startswith(".github/workflows/"):
         return ("ask", "CI workflow change: confirm with the user before editing.")
     if _MIGRATION_RE.match(key) and (root / rel).exists():
         return ("ask", "Editing an existing Alembic revision; add a new revision unless the user confirms.")

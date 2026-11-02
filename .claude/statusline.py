@@ -7,11 +7,11 @@ import sys
 
 
 def render(payload: dict) -> str:
-    model = payload.get("model", {}).get("display_name", "?")
-    used = payload.get("context_window", {}).get("used_percentage")
+    model = (payload.get("model") or {}).get("display_name", "?")
+    used = (payload.get("context_window") or {}).get("used_percentage")
     ctx = f"{round(used)}%" if isinstance(used, (int, float)) else "?%"
-    cost = payload.get("cost", {}).get("total_cost_usd") or 0.0
-    effort = payload.get("effort", {}).get("level", "?")
+    cost = (payload.get("cost") or {}).get("total_cost_usd") or 0.0
+    effort = (payload.get("effort") or {}).get("level", "?")
     return f"{model} | ctx {ctx} | ${cost:.2f} | effort {effort}"
 
 

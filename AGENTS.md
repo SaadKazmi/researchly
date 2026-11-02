@@ -57,6 +57,7 @@ The default `python` on dev machines may be old; always go through `uv`.
 - Windows dev box: PowerShell 5.1 has no `&&`; use `;` with `if ($?)`. Hooks are Python scripts launched via `uv run` (Claude Code runs hook commands through Git Bash on Windows).
 - `docs/features.json` edits other than `passes` require user approval (hook asks).
 - Docker may be installed but stopped; the CLI starts it — don't assume either runtime in tests; both modes are in CI.
+- Windows asyncio: psycopg async needs `SelectorEventLoop` (tests set it via `anyio_backend`); the dev `claude-code` provider runs the Agent SDK in its own thread on a Proactor loop.
 
 ## Compact instructions
 When compacting, keep: current plan path and task number, failing test names and errors, files changed this session, decisions made and why. Drop: full file dumps, passing test output, exploration dead ends.

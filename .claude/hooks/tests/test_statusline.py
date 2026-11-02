@@ -28,3 +28,7 @@ def test_main_decodes_utf8_stdin_under_cp1252_text_wrapper(monkeypatch, capsys):
     monkeypatch.setattr(sys, "stdin", stdin)
     statusline.main()
     assert "Opus ”" in capsys.readouterr().out
+
+
+def test_render_tolerates_null_fields():
+    assert statusline.render({"model": None, "context_window": None, "cost": None, "effort": None}) == "? | ctx ?% | $0.00 | effort ?"

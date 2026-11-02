@@ -1,0 +1,11 @@
+{
+  "pythonVersion": "3.12",
+  "venvPath": "backend",
+  "venv": ".venv",
+  "executionEnvironments": [
+    { "root": ".claude/hooks", "extraPaths": [".claude/hooks", "scripts"] },
+    { "root": "scripts", "extraPaths": ["scripts"] },
+    { "root": "backend/src" },
+    { "root": "backend/tests", "extraPaths": ["backend/src"] }
+  ]
+}

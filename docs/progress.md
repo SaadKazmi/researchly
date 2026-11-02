@@ -17,15 +17,18 @@ Newest entries at the bottom. Each session appends: date, plan + task, what chan
 - Step 1a complete: harness, hooks (fail-closed, UTF-8, control-plane guard), agents, plugins, CI repo-checks green on PR #1. Next: docs/superpowers/plans/2026-10-28-step1b-backend-core.md
 - Final review fixes (c4963ad, 7da4386): per-agent models now effective (CLAUDE_CODE_SUBAGENT_MODEL removed — it overrides frontmatter); hook subprocess output decoded UTF-8; protect guards scripts/repo_checks.py and imports hooks dir first; LangChain MIT license added; .claude/worktrees/ ignored. 56 tests passing; CI green.
 
-### Carried into step 1b (must-do before dependent work)
-- Task 0: make hooks worktree-aware (strip `.claude/worktrees/<name>/`, use that worktree as effective root) and verify with a real `isolation: worktree` implementer dispatch both CLAUDE_PROJECT_DIR and the worktree base branch (docs: defaults to the default branch, not session HEAD) — before any worktree implementer task.
-- Ratify or remove backend/AGENTS.md conventions without spec basis (pyright strict, researchly.errors/RFC 9457, pytest-asyncio, PoliteClient at connectors/http.py).
-- Add pyrightconfig (extraPaths for .claude/hooks and scripts) so the IDE resolves hook/test imports; pin pytest + uv version in CI once backend lockfile exists; setup-uv enable-cache per lockfile.
-- Hook hardening backlog: wrap format/typecheck/session_context mains (exit 0 on error), subprocess timeouts, `git status -z` parsing, statusline null-field tolerance, Bash-matcher guard for control-plane paths when Bash allow rules are added.
-- Spec §23.2 still says the data plugin "is disabled"; it is not (see below).
+### Carried into step 1b
+- All resolved in step 1b (Task 0 hooks, conventions, pyrightconfig, CI pins/cache, data plugin) except: Bash-matcher guard for control-plane paths, due when Bash allow rules are added.
 
 ### User actions outstanding
-- `claude update` (2.1.77 is old; then confirm `/hooks` lists 4 events and `/agents` lists 9 agents with opus/sonnet/haiku models).
-- Authenticate context7 (`claude mcp list` shows "Needs authentication").
+- Done 2026-10-28: `claude update` → 2.1.312; context7 authenticated (`claude mcp list` → Connected).
+- Optional: approve project MCP `docs-langchain` in an interactive `claude` session (CLI shows "Pending approval"; the VS Code session already loads it).
 - Done 2026-10-28: `data` plugin (synced from claude.ai, `data@knowledge-work-plugins`) disabled for this project via gitignored `.claude/settings.local.json`; global pyright 1.1.414 restored to a complete install after a second EBUSY (a running pyright-langserver locks `dist`).
 - Note: run `claude update` (and any `npm i -g` of a tool that is currently running) only with all Claude Code sessions closed — npm cannot replace locked files on Windows and leaves a broken install.
+
+## 2026-11-02 — Step 1b backend core (plan docs/superpowers/plans/2026-10-28-step1b-backend-core.md)
+- Done (feat/step1b-backend-core, PR below): worktree-aware hooks; FastAPI app + Settings; Postgres/pgvector schema via Alembic baseline (testcontainers locally, service container in CI); OS keychain secrets, local token, secret redaction (longest-first, tracebacks); localhost guard (host allowlist, same-origin, token, WS 1008); capability table + role routing + LiteLLM registry (keys excluded from model dumps); LLM ledger (one llm_call row per call, error rows); RecordReplay fixtures (canonical key, leaf-level scrubbing, diff on miss); dev-only claude-code provider (tool emulation, gated to env=development, excluded from the wheel); CI backend job (ruff, pyright, pytest on pgvector:pg18), uv 0.12.10 and pytest 9.1.1 pinned.
+- Tests: 48 backend passed (+1 live deselected), 64 hook/script passed; ruff/pyright clean.
+- Live smoke (`RESEARCHLY_LIVE_DEV_PROVIDER=1`, -m live): first hit `error_max_turns` — structured output spends a CLI turn, and "you can call these tools" made the model try native tool_use. Fixed with max_turns=2 + a catalogue that routes tools through the structured reply (5/5 probes, 3/3 live); spec §7.7 updated.
+- Deferred: keychain encrypted-file fallback (1c); SPA token delivery (1d); dev-provider streaming; fixture secret-scan CI check (with the first committed fixtures); ledger raise_error policy (decide retry vs. original-error-wins when the ledger is wired into agents); WS 1008 / host-case / `/health/` regression test (first WebSocket route, step 3); tool_choice in the fixture key (if a collision appears).
+- Next: plan 1c (CLI, runtime selection, spikes).

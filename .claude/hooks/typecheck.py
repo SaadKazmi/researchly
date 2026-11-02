@@ -24,14 +24,15 @@ class CompletedLike(Protocol):
 
 
 def parse_porcelain(text: str) -> list[str]:
-    paths = []
-    for line in text.splitlines():
-        if len(line) < 4:
+    """Parse `git status --porcelain=v1 -z` output: NUL-separated, a rename's source path in its own field."""
+    paths: list[str] = []
+    fields = iter(text.split("\0"))
+    for entry in fields:
+        if len(entry) < 4:
             continue
-        path = line[3:]
-        if " -> " in path:
-            path = path.split(" -> ", 1)[1]
-        paths.append(path.strip('"'))
+        paths.append(entry[3:])
+        if entry[0] in "RC":
+            next(fields, None)
     return paths
 
 
@@ -64,7 +65,10 @@ def decide(
 def _run(root: Path) -> Callable[[list[str]], CompletedLike]:
     def run(cmd: list[str]) -> CompletedLike:
         exe = shutil.which(cmd[0]) or cmd[0]
-        return subprocess.run([exe, *cmd[1:]], cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace", check=False)
+        try:
+            return subprocess.run([exe, *cmd[1:]], cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace", check=False, timeout=600)
+        except subprocess.TimeoutExpired:
+            return subprocess.CompletedProcess(cmd, 1, "", f"timed out after 600s: {' '.join(cmd)}")
 
     return run
 
@@ -72,7 +76,7 @@ def _run(root: Path) -> Callable[[list[str]], CompletedLike]:
 def main() -> int:
     root = project_root()
     status = subprocess.run(
-        ["git", "status", "--porcelain=v1", "-uall"], cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace", check=False
+        ["git", "status", "--porcelain=v1", "-z", "-uall"], cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace", check=False, timeout=30
     ).stdout
     result = decide(read_payload(), root, parse_porcelain(status), _run(root))
     if result:

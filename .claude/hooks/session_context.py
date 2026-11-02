@@ -32,15 +32,18 @@ def build_context(root: Path, git_status: str, limit: int = 10_000) -> str:
 
 
 def main() -> int:
-    root = project_root()
-    status = subprocess.run(
-        ["git", "status", "--short"], cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace", check=False
-    ).stdout
-    print(
-        json.dumps(
-            {"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": build_context(root, status)}}
+    try:
+        root = project_root()
+        status = subprocess.run(
+            ["git", "status", "--short"], cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace", check=False, timeout=10
+        ).stdout
+        print(
+            json.dumps(
+                {"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": build_context(root, status)}}
+            )
         )
-    )
+    except Exception:  # context injection is best-effort; never break session start
+        pass
     return 0
 
 

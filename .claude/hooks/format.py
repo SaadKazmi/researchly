@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _common import project_root, read_payload, rel_path  # noqa: E402
+from _common import locate, project_root, read_payload  # noqa: E402
 
 _FRONTEND_EXT = (".ts", ".tsx", ".css", ".json")
 
@@ -26,11 +26,15 @@ def commands_for(rel: str, root: Path) -> list[list[str]]:
 
 
 def main() -> int:
-    root = project_root()
-    rel = rel_path(read_payload().get("tool_input", {}).get("file_path", ""), root)
-    for cmd in commands_for(rel, root) if rel else []:
-        exe = shutil.which(cmd[0]) or cmd[0]
-        subprocess.run([exe, *cmd[1:]], cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace", check=False)
+    try:
+        located = locate(read_payload().get("tool_input", {}).get("file_path", ""), project_root())
+        if located:
+            root, rel = located
+            for cmd in commands_for(rel, root):
+                exe = shutil.which(cmd[0]) or cmd[0]
+                subprocess.run([exe, *cmd[1:]], cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace", check=False, timeout=60)
+    except Exception:  # formatting is best-effort; never block an edit
+        pass
     return 0
 
 
