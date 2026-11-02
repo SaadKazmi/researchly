@@ -1,11 +1,15 @@
+import asyncio
+import time
 from datetime import UTC, datetime, timedelta
 from email.utils import format_datetime
+from types import SimpleNamespace
 
 import httpx
 import pytest
 
+from researchly.connectors import http
 from researchly.connectors.base import QuotaExhausted, ResponseTooLarge, SourceUnavailable
-from researchly.connectors.http import Breaker, PoliteClient, retry_after
+from researchly.connectors.http import Breaker, HostLimit, PoliteClient, retry_after
 
 pytestmark = pytest.mark.anyio
 
@@ -139,3 +143,138 @@ async def test_buckets_and_hosts_are_paced_separately():
         assert client.limit_for("https://api.example.org/x", None).interval == 10.0
         assert client.limit_for("https://api.example.org/x", "api.example.org/list").interval == 0.0
         assert client.limit_for("https://other.example.org/x", None).interval == 0.0
+
+
+async def test_breaker_probe_is_released_when_the_probe_raises_a_non_transport_error():
+    now = [0.0]
+    big = [False]
+
+    def handler(request):
+        return httpx.Response(200, content=b"x" * 2048) if big[0] else httpx.Response(500)
+
+    async def sleep(seconds: float) -> None:
+        pass
+
+    async with PoliteClient(
+        transport=httpx.MockTransport(handler), sleep=sleep, clock=lambda: now[0], limits={"default": (0.0, 1)}
+    ) as client:
+        for _ in range(5):
+            with pytest.raises(SourceUnavailable):
+                await client.get("https://api.example.org/x", source="t")
+        with pytest.raises(SourceUnavailable, match="circuit"):
+            await client.get("https://api.example.org/x", source="t")
+        now[0] = 61.0
+        big[0] = True
+        with pytest.raises(ResponseTooLarge):
+            await client.get("https://api.example.org/x", source="t", max_bytes=1024)
+        assert (await client.get("https://api.example.org/x", source="t")).status == 200
+
+
+async def test_host_limit_releases_its_permit_when_cancelled_while_waiting():
+    limit = HostLimit(10.0, 1, clock=lambda: 0.0)
+    async with limit:
+        pass  # next slot is 10 s away
+    task = asyncio.create_task(limit.__aenter__())
+    await asyncio.sleep(0.05)
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    assert not limit._sem.locked()
+
+
+async def test_host_limit_spaces_slots_by_the_interval():
+    slept: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        slept.append(seconds)
+
+    limit = HostLimit(2.0, 1, sleep=sleep, clock=lambda: 0.0)
+    for _ in range(3):
+        async with limit:
+            pass
+    assert slept == [2.0, 4.0]
+
+
+async def test_long_retry_after_blocks_the_host_for_other_sources():
+    slept: list[float] = []
+    requests: list[str] = []
+
+    def handler(request):
+        requests.append("x")
+        return httpx.Response(429, headers={"retry-after": "3600"})
+
+    async with client_for(handler, slept) as client:
+        with pytest.raises(QuotaExhausted):
+            await client.get("https://api.example.org/x", source="t")
+        with pytest.raises(QuotaExhausted):
+            await client.get("https://api.example.org/y", source="u")
+    assert slept == [] and len(requests) == 1
+
+
+async def test_a_huge_retry_after_is_clamped():
+    async with client_for(lambda r: httpx.Response(429, headers={"retry-after": "99999999"}), []) as client:
+        with pytest.raises(QuotaExhausted):
+            await client.get("https://api.example.org/x", source="t")
+        limit = client.limit_for("https://api.example.org/x", None)
+        assert limit.blocked_until <= time.monotonic() + http.MAX_BLOCK
+
+
+async def test_short_retry_after_is_waited_out_instead_of_jitter():
+    calls = iter([503, 200])
+    slept: list[float] = []
+
+    def handler(request):
+        status = next(calls)
+        return httpx.Response(status, headers={"retry-after": "5"} if status == 503 else {})
+
+    async with client_for(handler, slept) as client:
+        assert (await client.get("https://api.example.org/x", source="t")).status == 200
+    assert len(slept) == 1 and 4.5 <= slept[0] <= 5.0
+
+
+async def test_retry_after_on_the_final_attempt_keeps_the_host_deferred():
+    async with client_for(lambda r: httpx.Response(503, headers={"retry-after": "30"}), []) as client:
+        with pytest.raises(SourceUnavailable):
+            await client.get("https://api.example.org/x", source="t")
+        ahead = client.limit_for("https://api.example.org/x", None)._next_at - time.monotonic()
+    assert 25 <= ahead <= 30
+
+
+async def test_a_hung_request_times_out_and_is_retried(monkeypatch):
+    monkeypatch.setattr(http, "TOTAL_TIMEOUT", 0.05)
+
+    async def handler(request):
+        await asyncio.sleep(3600)
+
+    async with client_for(handler, []) as client:
+        with pytest.raises(SourceUnavailable):
+            await client.get("https://api.example.org/x", source="t")
+
+
+async def test_if_none_match_is_dropped_on_redirect_hops():
+    seen: list[str | None] = []
+
+    class FakeCache:
+        async def get(self, key):
+            return SimpleNamespace(fresh=False, etag='"e"', fetched=http.Fetched(200, {}, b"old", "u"))
+
+        async def refresh(self, key, ttl):
+            pass
+
+    def handler(request):
+        seen.append(request.headers.get("if-none-match"))
+        if request.url.path == "/a":
+            return httpx.Response(302, headers={"location": "/b"})
+        return httpx.Response(304)
+
+    async with PoliteClient(
+        transport=httpx.MockTransport(handler), cache=FakeCache(), limits={"default": (0.0, 1)}
+    ) as client:
+        fetched = await client.get("https://api.example.org/a", source="t", cache_key="k")
+    assert seen == ['"e"', None] and fetched.body == b"old"
+
+
+async def test_a_first_url_with_a_bad_scheme_is_refused():
+    async with client_for(lambda r: httpx.Response(200), []) as client:
+        with pytest.raises(SourceUnavailable, match="scheme"):
+            await client.get("file:///etc/passwd", source="t")

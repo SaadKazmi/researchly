@@ -33,6 +33,8 @@ TTL_SEARCH = timedelta(hours=24)
 RETRY_STATUS = frozenset({429, 500, 502, 503, 504})
 MAX_ATTEMPTS = 4
 LONG_WAIT = 120.0  # a longer Retry-After is a quota, not a hiccup
+MAX_BLOCK = 3600.0  # cap on how long a server's Retry-After can lock a host out
+TOTAL_TIMEOUT = 120.0  # per attempt, whatever the server drips
 MAX_REDIRECTS = 5
 LIMITS_FILE = Path(__file__).with_name("limits.yaml")
 
@@ -66,21 +68,34 @@ def retry_after(value: str | None) -> float | None:
 class HostLimit:
     """One request per `interval` seconds, at most `concurrency` in flight; `defer` pushes the next slot."""
 
-    def __init__(self, interval: float, concurrency: int) -> None:
+    def __init__(
+        self,
+        interval: float,
+        concurrency: int,
+        *,
+        sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None:
         self.interval = interval
+        self.blocked_until = 0.0  # a quota-length Retry-After: callers fail fast until then
         self._sem = asyncio.Semaphore(concurrency)
         self._next_at = 0.0
+        self._sleep, self._clock = sleep, clock
 
     def defer(self, seconds: float) -> None:
-        self._next_at = max(self._next_at, time.monotonic() + seconds)
+        self._next_at = max(self._next_at, self._clock() + min(seconds, LONG_WAIT))
 
     async def __aenter__(self) -> None:
         await self._sem.acquire()
-        now = time.monotonic()
-        wait = self._next_at - now
-        self._next_at = max(now, self._next_at) + self.interval  # reserve the slot before sleeping
-        if wait > 0:
-            await asyncio.sleep(wait)
+        try:
+            now = self._clock()
+            wait = self._next_at - now
+            self._next_at = max(now, self._next_at) + self.interval  # reserve the slot before sleeping
+            if wait > 0:
+                await self._sleep(wait)
+        except BaseException:
+            self._sem.release()  # cancelled while waiting: never leak the permit
+            raise
 
     async def __aexit__(self, *exc: object) -> None:
         self._sem.release()
@@ -109,6 +124,10 @@ class Breaker:
             raise SourceUnavailable(source, "circuit open after repeated failures")
         self._probing = True
 
+    def release(self) -> None:
+        """Give up a half-open probe without counting an outcome (cancellation, unexpected exit)."""
+        self._probing = False
+
     def success(self) -> None:
         self._failures, self._cooldown, self._probing = 0, self._base, False
 
@@ -135,6 +154,7 @@ class PoliteClient:
         limits: dict[str, tuple[float, int]] | None = None,
         sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
         rand: Callable[[], float] = random.random,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         from researchly.connectors.ssrf import GuardedTransport
 
@@ -150,8 +170,8 @@ class PoliteClient:
         self._cache = cache
         self._limit_specs = limits or _load_limits()
         self._limits: dict[str, HostLimit] = {}
-        self._breakers: defaultdict[str, Breaker] = defaultdict(Breaker)
-        self._sleep, self._rand = sleep, rand
+        self._breakers: defaultdict[str, Breaker] = defaultdict(lambda: Breaker(clock=clock))
+        self._sleep, self._rand, self._clock = sleep, rand, clock
 
     async def __aenter__(self) -> "PoliteClient":
         return self
@@ -167,7 +187,7 @@ class PoliteClient:
         if key not in self._limit_specs:
             key = "default"
         if key not in self._limits:
-            self._limits[key] = HostLimit(*self._limit_specs[key])
+            self._limits[key] = HostLimit(*self._limit_specs[key], sleep=self._sleep, clock=self._clock)
         return self._limits[key]
 
     async def get(
@@ -181,60 +201,80 @@ class PoliteClient:
         ttl: timedelta | None = None,
         max_bytes: int = 5_000_000,
     ) -> Fetched:
+        if urlsplit(url).scheme not in ("http", "https"):
+            raise SourceUnavailable(source, f"disallowed scheme: {urlsplit(url).scheme or url}")
         cached = await self._cache.get(cache_key) if self._cache and cache_key else None
         if cached and cached.fresh:
             return cached.fetched
         headers = {"If-None-Match": cached.etag} if cached and cached.etag else {}
+        limit = self.limit_for(url, bucket)
+        if limit.blocked_until > self._clock():
+            raise QuotaExhausted(source, f"{urlsplit(url).hostname} is rate limited; try again later")
         breaker = self._breakers[source]
         breaker.before(source)
-        limit = self.limit_for(url, bucket)
-        for attempt in range(MAX_ATTEMPTS):
-            wait: float | None = None
-            try:
-                async with limit:
-                    fetched = await self._send(url, params, headers, max_bytes, source)
-            except httpx.TransportError:
-                fetched = None
-            if fetched is not None and fetched.status not in RETRY_STATUS:
-                breaker.success()
-                if cached and fetched.status == 304 and self._cache and cache_key and ttl:
-                    await self._cache.refresh(cache_key, ttl)
-                    return cached.fetched
-                if self._cache and cache_key and ttl and fetched.status == 200:
-                    await self._cache.put(cache_key, fetched, ttl)
-                return fetched
-            if fetched is not None:
-                wait = retry_after(fetched.headers.get("retry-after"))
-                if wait is not None and wait > LONG_WAIT:
-                    limit.defer(wait)
-                    breaker.failure(until=time.monotonic() + wait)
-                    raise QuotaExhausted(source, f"rate limited; retry after {wait:.0f} s")
-            if attempt == MAX_ATTEMPTS - 1:
-                break
-            if wait is not None:
-                limit.defer(wait)  # the next `async with limit` waits it out
-            else:
-                await self._sleep(self._rand() * min(60.0, 2.0**attempt))
-        breaker.failure()
-        raise SourceUnavailable(source, f"no answer from {urlsplit(url).hostname} after {MAX_ATTEMPTS} attempts")
+        try:
+            for attempt in range(MAX_ATTEMPTS):
+                wait: float | None = None
+                try:
+                    async with limit:
+                        async with asyncio.timeout(TOTAL_TIMEOUT):
+                            fetched = await self._send(url, params, headers, max_bytes, source)
+                except (httpx.TransportError, TimeoutError):
+                    fetched = None
+                except Exception:  # the server answered (too big, bad redirect, bad body): not an outage
+                    breaker.success()
+                    raise
+                if fetched is not None and fetched.status not in RETRY_STATUS:
+                    breaker.success()
+                    if cached and fetched.status == 304:
+                        if self._cache and cache_key and ttl:
+                            await self._cache.refresh(cache_key, ttl)
+                        return cached.fetched
+                    if self._cache and cache_key and ttl and fetched.status == 200:
+                        await self._cache.put(cache_key, fetched, ttl)
+                    return fetched
+                if fetched is not None:
+                    wait = retry_after(fetched.headers.get("retry-after"))
+                    if wait is not None and wait > LONG_WAIT:
+                        block = min(wait, MAX_BLOCK)
+                        limit.blocked_until = self._clock() + block  # fail fast, never sleep
+                        breaker.failure(until=self._clock() + block)
+                        raise QuotaExhausted(source, f"rate limited; retry after {wait:.0f} s")
+                if wait is not None:
+                    limit.defer(wait)  # the next `async with limit` waits it out
+                if attempt == MAX_ATTEMPTS - 1:
+                    break
+                if wait is None:
+                    await self._sleep(self._rand() * min(60.0, 2.0**attempt))
+            breaker.failure()
+            raise SourceUnavailable(source, f"no answer from {urlsplit(url).hostname} after {MAX_ATTEMPTS} attempts")
+        finally:
+            breaker.release()  # a half-open probe is never left held (cancellation, unexpected exit)
 
     async def _send(
         self, url: str, params: Mapping[str, str | int] | None, headers: dict[str, str], max_bytes: int, source: str
     ) -> Fetched:
         request = self._http.build_request("GET", url, params=params, headers=headers)
+        # ponytail: hops are paced by the first host's limit; Tier-1 APIs do not redirect cross-host.
+        # Per-hop limits arrive with full-text fetch (step 2b).
         for _ in range(MAX_REDIRECTS + 1):
             try:
                 response = await self._http.send(request, stream=True)
             except httpx.UnsupportedProtocol as exc:  # httpx refuses a redirect to file://, ftp:// … while building it
-                raise SourceUnavailable(source, f"redirect to a disallowed scheme: {exc}") from exc
+                raise SourceUnavailable(source, f"disallowed scheme: {exc}") from exc
             try:
                 if response.next_request is not None:  # set for every redirect because follow_redirects=False
                     request = response.next_request
+                    request.headers.pop("if-none-match", None)  # a validator for the first URL, not the hop
                     if request.url.scheme not in ("http", "https"):  # explicit: a mock transport would not refuse it
-                        raise SourceUnavailable(source, f"redirect to a disallowed scheme: {request.url.scheme}")
+                        raise SourceUnavailable(source, f"disallowed scheme: {request.url.scheme}")
                     continue
-                if int(response.headers.get("content-length") or 0) > max_bytes:
-                    raise ResponseTooLarge(source, f"{response.headers['content-length']} bytes > {max_bytes}")
+                try:
+                    declared = int(response.headers.get("content-length") or 0)
+                except ValueError:
+                    declared = 0  # malformed: ignore it, the streamed cap still applies
+                if declared > max_bytes:
+                    raise ResponseTooLarge(source, f"{declared} bytes > {max_bytes}")
                 body = bytearray()
                 async for chunk in response.aiter_bytes():  # decoded bytes, so a gzip bomb is capped too
                     body += chunk
