@@ -268,7 +268,9 @@ async def test_if_none_match_is_dropped_on_redirect_hops():
         return httpx.Response(304)
 
     async with PoliteClient(
-        transport=httpx.MockTransport(handler), cache=FakeCache(), limits={"default": (0.0, 1)}
+        transport=httpx.MockTransport(handler),
+        cache=FakeCache(),  # type: ignore[arg-type]
+        limits={"default": (0.0, 1)},
     ) as client:
         fetched = await client.get("https://api.example.org/a", source="t", cache_key="k")
     assert seen == ['"e"', None] and fetched.body == b"old"
