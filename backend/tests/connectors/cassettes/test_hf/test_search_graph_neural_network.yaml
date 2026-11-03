@@ -1,0 +1,298 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - huggingface.co
+    method: GET
+    uri: https://huggingface.co/api/papers/search?limit=3&q=graph+neural+network
+  response:
+    body:
+      string: '[{"paper":{"id":"2511.18404","authors":[{"_id":"6abb52569e8c2556a1025a13","name":"Van
+        Thuy Hoang","hidden":false},{"_id":"6abb52569e8c2556a1025a14","user":{"_id":"68675f194c598dd0977e8150","avatarUrl":"/avatars/3d16939a8c653e59655875cb7722fc5a.svg","isPro":false,"fullname":"O-Joun
+        Lee","user":"ojlee","type":"user","name":"ojlee"},"name":"O-Joun Lee","status":"claimed_verified","statusLastChangedAt":"2026-09-29T08:45:06.441Z","hidden":false}],"publishedAt":"2025-11-23T00:00:00.000Z","title":"Pre-training
+        Graph Neural Networks on 2D and 3D Molecular Structures by using Multi-View
+        Conditional Information Bottleneck","summary":"Recent pre-training strategies
+        for molecular graphs have attempted to use 2D and 3D molecular views as both
+        inputs and self-supervised signals, primarily aligning graph-level representations.
+        However, existing studies remain limited in addressing two main challenges
+        of multi-view molecular learning: (1) discovering shared information between
+        two views while diminishing view-specific information and (2) identifying
+        and aligning important substructures, e.g., functional groups, which are crucial
+        for enhancing cross-view consistency and model expressiveness. To solve these
+        challenges, we propose a Multi-View Conditional Information Bottleneck framework,
+        called MVCIB, for pre-training graph neural networks on 2D and 3D molecular
+        structures in a self-supervised setting. Our idea is to discover the shared
+        information while minimizing irrelevant features from each view under the
+        MVCIB principle, which uses one view as a contextual condition to guide the
+        representation learning of its counterpart. To enhance semantic and structural
+        consistency across views, we utilize key substructures, e.g., functional groups
+        and ego-networks, as anchors between the two views. Then, we propose a cross-attention
+        mechanism that captures fine-grained correlations between the substructures
+        to achieve subgraph alignment across views. Extensive experiments in four
+        molecular domains demonstrated that MVCIB consistently outperforms baselines
+        in both predictive performance and interpretability. Moreover, MVCIB achieved
+        the 3d Weisfeiler-Lehman expressiveness power to distinguish not only non-isomorphic
+        graphs but also different 3D geometries that share identical 2D connectivity,
+        such as isomers.","upvotes":1,"discussionId":"6abb52579e8c2556a1025a15","projectPage":"https://nslab-cuk.github.io/2025/11/22/MVCIB/","githubRepo":"https://github.com/NSLab-CUK/MVCIB","githubRepoAddedBy":"user","ai_summary":"A
+        multi-view conditional information bottleneck framework pre-trains graph neural
+        networks on 2D and 3D molecular structures by aligning key substructures across
+        views to improve predictive performance and 3D expressiveness.","ai_keywords":["multi-view
+        conditional information bottleneck","MVCIB","graph neural networks","2D and
+        3D molecular structures","self-supervised pre-training","cross-attention mechanism","subgraph
+        alignment","functional groups","ego-networks","3D Weisfeiler-Lehman expressiveness"],"ai_summary_model":"thinkingmachines/Inkling-Small","githubStars":5,"organization":{"_id":"686760618c2a156f92644ebb","name":"NSLab-CUK","fullname":"Network
+        Science Lab @ CUK","avatar":"https://cdn-avatars.huggingface.co/v1/production/uploads/68675f194c598dd0977e8150/vGx3D3WLIccyEYi-OnEjA.png"}},"publishedAt":"2025-11-22T19:00:00.000Z","title":"Pre-training
+        Graph Neural Networks on 2D and 3D Molecular Structures by using Multi-View
+        Conditional Information Bottleneck","summary":"Recent pre-training strategies
+        for molecular graphs have attempted to use 2D and 3D molecular views as both
+        inputs and self-supervised signals, primarily aligning graph-level representations.
+        However, existing studies remain limited in addressing two main challenges
+        of multi-view molecular learning: (1) discovering shared information between
+        two views while diminishing view-specific information and (2) identifying
+        and aligning important substructures, e.g., functional groups, which are crucial
+        for enhancing cross-view consistency and model expressiveness. To solve these
+        challenges, we propose a Multi-View Conditional Information Bottleneck framework,
+        called MVCIB, for pre-training graph neural networks on 2D and 3D molecular
+        structures in a self-supervised setting. Our idea is to discover the shared
+        information while minimizing irrelevant features from each view under the
+        MVCIB principle, which uses one view as a contextual condition to guide the
+        representation learning of its counterpart. To enhance semantic and structural
+        consistency across views, we utilize key substructures, e.g., functional groups
+        and ego-networks, as anchors between the two views. Then, we propose a cross-attention
+        mechanism that captures fine-grained correlations between the substructures
+        to achieve subgraph alignment across views. Extensive experiments in four
+        molecular domains demonstrated that MVCIB consistently outperforms baselines
+        in both predictive performance and interpretability. Moreover, MVCIB achieved
+        the 3d Weisfeiler-Lehman expressiveness power to distinguish not only non-isomorphic
+        graphs but also different 3D geometries that share identical 2D connectivity,
+        such as isomers.","thumbnail":"https://cdn-thumbnails.huggingface.co/social-thumbnails/papers/2511.18404.png","numComments":0,"upvoted":false,"organization":{"_id":"686760618c2a156f92644ebb","name":"NSLab-CUK","fullname":"Network
+        Science Lab @ CUK","avatar":"https://cdn-avatars.huggingface.co/v1/production/uploads/68675f194c598dd0977e8150/vGx3D3WLIccyEYi-OnEjA.png"},"isAuthorParticipating":false,"highlightedTitle":[{"type":"text","text":"Pre-training
+        "},{"type":"highlight","text":"Graph"},{"type":"text","text":" "},{"type":"highlight","text":"Neural"},{"type":"text","text":"
+        "},{"type":"highlight","text":"Network"},{"type":"text","text":"s on 2D and
+        3D Molecular Structures by using Multi-View Conditional Information Bottleneck"}],"highlightedSummary":[{"type":"text","text":"Recent
+        pre-training strategies for molecular "},{"type":"highlight","text":"graphs"},{"type":"text","text":"
+        have attempted to use 2D and 3D molecular views as both inputs and self-supervised
+        signals, primarily aligning "},{"type":"highlight","text":"graph"},{"type":"text","text":"-level
+        representations. However, existing studies remain limited in addressing two
+        main challenges of multi-view molecular learning: (1) discovering shared information
+        between two views while diminishing view-specific information and (2) identifying
+        and aligning important substructures, e.g., functional groups, which are crucial
+        for enhancing cross-view consistency and model expressiveness. To solve these
+        challenges, we propose a Multi-View Conditional Information Bottleneck framework,
+        called MVCIB, for pre-training graph neural networks on 2D and 3D molecular
+        structures in a self-supervised setting. Our idea is to discover the shared
+        information while minimizing irrelevant features from each view under the
+        MVCIB principle, which uses one view as a contextual condition to guide the
+        representation learning of its counterpart. To enhance semantic and structural
+        consistency across views, we utilize key substructures, e.g., functional groups
+        and ego-networks, as anchors between the two views. Then, we propose a cross-attention
+        mechanism that captures fine-grained correlations between the substructures
+        to achieve subgraph alignment across views. Extensive experiments in four
+        molecular domains demonstrated that MVCIB consistently outperforms baselines
+        in both predictive performance and interpretability. Moreover, MVCIB achieved
+        the 3d Weisfeiler-Lehman expressiveness power to distinguish not only non-isomorphic
+        graphs but also different 3D geometries that share identical 2D connectivity,
+        such as isomers."}]},{"paper":{"id":"2412.15589","authors":[{"_id":"6abb52999e8c2556a1025a37","name":"Van
+        Thuy Hoang","hidden":false},{"_id":"6abb52999e8c2556a1025a38","user":{"_id":"68675f194c598dd0977e8150","avatarUrl":"/avatars/3d16939a8c653e59655875cb7722fc5a.svg","isPro":false,"fullname":"O-Joun
+        Lee","user":"ojlee","type":"user","name":"ojlee"},"name":"O-Joun Lee","status":"claimed_verified","statusLastChangedAt":"2026-09-29T08:45:06.476Z","hidden":false}],"publishedAt":"2024-12-20T00:00:00.000Z","title":"Pre-training
+        Graph Neural Networks on Molecules by Using Subgraph-Conditioned Graph Information
+        Bottleneck","summary":"This study aims to build a pre-trained Graph Neural
+        Network (GNN) model on molecules without human annotations or prior knowledge.
+        Although various attempts have been proposed to overcome limitations in acquiring
+        labeled molecules, the previous pre-training methods still rely on semantic
+        subgraphs, i.e., functional groups. Only focusing on the functional groups
+        could overlook the graph-level distinctions. The key challenge to build a
+        pre-trained GNN on molecules is how to (1) generate well-distinguished graph-level
+        representations and (2) automatically discover the functional groups without
+        prior knowledge. To solve it, we propose a novel Subgraph-conditioned Graph
+        Information Bottleneck, named S-CGIB, for pre-training GNNs to recognize core
+        subgraphs (graph cores) and significant subgraphs. The main idea is that the
+        graph cores contain compressed and sufficient information that could generate
+        well-distinguished graph-level representations and reconstruct the input graph
+        conditioned on significant subgraphs across molecules under the S-CGIB principle.
+        To discover significant subgraphs without prior knowledge about functional
+        groups, we propose generating a set of functional group candidates, i.e.,
+        ego networks, and using an attention-based interaction between the graph core
+        and the candidates. Despite being identified from self-supervised learning,
+        our learned subgraphs match the real-world functional groups. Extensive experiments
+        on molecule datasets across various domains demonstrate the superiority of
+        S-CGIB.","upvotes":1,"discussionId":"6abb52999e8c2556a1025a39","projectPage":"https://nslab-cuk.github.io/2024/12/19/SCGIB/","githubRepo":"https://github.com/NSLab-CUK/S-CGIB","githubRepoAddedBy":"user","ai_summary":"S-CGIB
+        pre-trains graph neural networks to learn core and significant molecular subgraphs
+        without human annotations, improving graph-level representations and matching
+        real functional groups.","ai_keywords":["Graph Neural Network","GNN","pre-training","subgraph-conditioned
+        graph information bottleneck","S-CGIB","graph cores","ego networks","attention-based
+        interaction","self-supervised learning"],"ai_summary_model":"thinkingmachines/Inkling-Small","githubStars":15,"organization":{"_id":"686760618c2a156f92644ebb","name":"NSLab-CUK","fullname":"Network
+        Science Lab @ CUK","avatar":"https://cdn-avatars.huggingface.co/v1/production/uploads/68675f194c598dd0977e8150/vGx3D3WLIccyEYi-OnEjA.png"}},"publishedAt":"2024-12-19T19:00:00.000Z","title":"Pre-training
+        Graph Neural Networks on Molecules by Using Subgraph-Conditioned Graph Information
+        Bottleneck","summary":"This study aims to build a pre-trained Graph Neural
+        Network (GNN) model on molecules without human annotations or prior knowledge.
+        Although various attempts have been proposed to overcome limitations in acquiring
+        labeled molecules, the previous pre-training methods still rely on semantic
+        subgraphs, i.e., functional groups. Only focusing on the functional groups
+        could overlook the graph-level distinctions. The key challenge to build a
+        pre-trained GNN on molecules is how to (1) generate well-distinguished graph-level
+        representations and (2) automatically discover the functional groups without
+        prior knowledge. To solve it, we propose a novel Subgraph-conditioned Graph
+        Information Bottleneck, named S-CGIB, for pre-training GNNs to recognize core
+        subgraphs (graph cores) and significant subgraphs. The main idea is that the
+        graph cores contain compressed and sufficient information that could generate
+        well-distinguished graph-level representations and reconstruct the input graph
+        conditioned on significant subgraphs across molecules under the S-CGIB principle.
+        To discover significant subgraphs without prior knowledge about functional
+        groups, we propose generating a set of functional group candidates, i.e.,
+        ego networks, and using an attention-based interaction between the graph core
+        and the candidates. Despite being identified from self-supervised learning,
+        our learned subgraphs match the real-world functional groups. Extensive experiments
+        on molecule datasets across various domains demonstrate the superiority of
+        S-CGIB.","thumbnail":"https://cdn-thumbnails.huggingface.co/social-thumbnails/papers/2412.15589.png","numComments":0,"upvoted":false,"organization":{"_id":"686760618c2a156f92644ebb","name":"NSLab-CUK","fullname":"Network
+        Science Lab @ CUK","avatar":"https://cdn-avatars.huggingface.co/v1/production/uploads/68675f194c598dd0977e8150/vGx3D3WLIccyEYi-OnEjA.png"},"isAuthorParticipating":false,"highlightedTitle":[{"type":"text","text":"Pre-training
+        "},{"type":"highlight","text":"Graph"},{"type":"text","text":" "},{"type":"highlight","text":"Neural"},{"type":"text","text":"
+        "},{"type":"highlight","text":"Network"},{"type":"text","text":"s on Molecules
+        by Using Subgraph-Conditioned "},{"type":"highlight","text":"Graph"},{"type":"text","text":"
+        Information Bottleneck"}],"highlightedSummary":[{"type":"text","text":"This
+        study aims to build a pre-trained "},{"type":"highlight","text":"Graph"},{"type":"text","text":"
+        "},{"type":"highlight","text":"Neural"},{"type":"text","text":" "},{"type":"highlight","text":"Network"},{"type":"text","text":"
+        (GNN) model on molecules without human annotations or prior knowledge. Although
+        various attempts have been proposed to overcome limitations in acquiring labeled
+        molecules, the previous pre-training methods still rely on semantic subgraphs,
+        i.e., functional groups. Only focusing on the functional groups could overlook
+        the graph-level distinctions. The key challenge to build a pre-trained GNN
+        on molecules is how to (1) generate well-distinguished graph-level representations
+        and (2) automatically discover the functional groups without prior knowledge.
+        To solve it, we propose a novel Subgraph-conditioned Graph Information Bottleneck,
+        named S-CGIB, for pre-training GNNs to recognize core subgraphs (graph cores)
+        and significant subgraphs. The main idea is that the graph cores contain compressed
+        and sufficient information that could generate well-distinguished graph-level
+        representations and reconstruct the input graph conditioned on significant
+        subgraphs across molecules under the S-CGIB principle. To discover significant
+        subgraphs without prior knowledge about functional groups, we propose generating
+        a set of functional group candidates, i.e., ego networks, and using an attention-based
+        interaction between the graph core and the candidates. Despite being identified
+        from self-supervised learning, our learned subgraphs match the real-world
+        functional groups. Extensive experiments on molecule datasets across various
+        domains demonstrate the superiority of S-CGIB."}]},{"paper":{"id":"2204.11142","authors":[{"_id":"64b7611e90b38df8338028d2","user":{"_id":"649202ba2a903a52366ad5ec","avatarUrl":"/avatars/38bed38b714b912200b58feeca6af70b.svg","isPro":false,"fullname":"Yizhan
+        Niu","user":"Jonathaniu","type":"user","name":"Jonathaniu"},"name":"Yizhan
+        Niu","status":"claimed_verified","statusLastChangedAt":"2023-07-19T06:26:56.577Z","hidden":false},{"_id":"64b7611e90b38df8338028d3","name":"Jinglong
+        Liu","hidden":false},{"_id":"64b7611e90b38df8338028d4","name":"Yuhao Shi","hidden":false},{"_id":"64b7611e90b38df8338028d5","name":"Jiren
+        Zhu","hidden":false}],"publishedAt":"2022-04-23T21:26:00.000Z","title":"Graph
+        Neural Network based Agent in Google Research Football","summary":"Deep neural
+        networks (DNN) can approximate value functions or policies for\nreinforcement
+        learning, which makes the reinforcement learning algorithms more\npowerful.
+        However, some DNNs, such as convolutional neural networks (CNN),\ncannot extract
+        enough information or take too long to obtain enough features\nfrom the inputs
+        under specific circumstances of reinforcement learning. For\nexample, the
+        input data of Google Research Football, a reinforcement learning\nenvironment
+        which trains agents to play football, is the small map of players''\nlocations.
+        The information is contained not only in the coordinates of players,\nbut
+        also in the relationships between different players. CNNs can neither\nextract
+        enough information nor take too long to train. To address this issue,\nthis
+        paper proposes a deep q-learning network (DQN) with a graph neural network\n(GNN)
+        as its model. The GNN transforms the input data into a graph which better\nrepresents
+        the football players'' locations so that it extracts more information\nof
+        the interactions between different players. With two GNNs to approximate its\nlocal
+        and target value functions, this DQN allows players to learn from their\nexperience
+        by using value functions to see the prospective value of each\nintended action.
+        The proposed model demonstrated the power of GNN in the\nfootball game by
+        outperforming other DRL models with significantly fewer steps.","upvotes":0,"discussionId":"64b7611e90b38df8338028e7","ai_summary":"A
+        graph neural network (GNN) integrated into a deep q-learning network (DQN)
+        enhances reinforcement learning by better capturing player interactions in
+        sports simulations like Google Research Football.","ai_keywords":["deep neural
+        networks","reinforcement learning","convolutional neural networks","graph
+        neural network","deep q-learning network","value functions","target value
+        functions","player interactions"],"ai_summary_model":"Qwen/Qwen2.5-Coder-32B-Instruct"},"publishedAt":"2022-04-23T17:26:00.000Z","title":"Graph
+        Neural Network based Agent in Google Research Football","summary":"Deep neural
+        networks (DNN) can approximate value functions or policies for\nreinforcement
+        learning, which makes the reinforcement learning algorithms more\npowerful.
+        However, some DNNs, such as convolutional neural networks (CNN),\ncannot extract
+        enough information or take too long to obtain enough features\nfrom the inputs
+        under specific circumstances of reinforcement learning. For\nexample, the
+        input data of Google Research Football, a reinforcement learning\nenvironment
+        which trains agents to play football, is the small map of players''\nlocations.
+        The information is contained not only in the coordinates of players,\nbut
+        also in the relationships between different players. CNNs can neither\nextract
+        enough information nor take too long to train. To address this issue,\nthis
+        paper proposes a deep q-learning network (DQN) with a graph neural network\n(GNN)
+        as its model. The GNN transforms the input data into a graph which better\nrepresents
+        the football players'' locations so that it extracts more information\nof
+        the interactions between different players. With two GNNs to approximate its\nlocal
+        and target value functions, this DQN allows players to learn from their\nexperience
+        by using value functions to see the prospective value of each\nintended action.
+        The proposed model demonstrated the power of GNN in the\nfootball game by
+        outperforming other DRL models with significantly fewer steps.","thumbnail":"https://cdn-thumbnails.huggingface.co/social-thumbnails/papers/2204.11142.png","numComments":0,"upvoted":false,"isAuthorParticipating":false,"highlightedTitle":[{"type":"highlight","text":"Graph"},{"type":"text","text":"
+        "},{"type":"highlight","text":"Neural"},{"type":"text","text":" "},{"type":"highlight","text":"Network"},{"type":"text","text":"
+        based Agent in Google Research Football"}],"highlightedSummary":[{"type":"text","text":"Deep
+        "},{"type":"highlight","text":"neural"},{"type":"text","text":" "},{"type":"highlight","text":"network"},{"type":"text","text":"s
+        (DNN) can approximate value functions or policies for\nreinforcement learning,
+        which makes the reinforcement learning algorithms more\npowerful. However,
+        some DNNs, such as convolutional neural networks (CNN),\ncannot extract enough
+        information or take too long to obtain enough features\nfrom the inputs under
+        specific circumstances of reinforcement learning. For\nexample, the input
+        data of Google Research Football, a reinforcement learning\nenvironment which
+        trains agents to play football, is the small map of players''\nlocations.
+        The information is contained not only in the coordinates of players,\nbut
+        also in the relationships between different players. CNNs can neither\nextract
+        enough information nor take too long to train. To address this issue,\nthis
+        paper proposes a deep q-learning network (DQN) with a graph neural network\n(GNN)
+        as its model. The GNN transforms the input data into a graph which better\nrepresents
+        the football players'' locations so that it extracts more information\nof
+        the interactions between different players. With two GNNs to approximate its\nlocal
+        and target value functions, this DQN allows players to learn from their\nexperience
+        by using value functions to see the prospective value of each\nintended action.
+        The proposed model demonstrated the power of GNN in the\nfootball game by
+        outperforming other DRL models with significantly fewer steps."}]}]'
+    headers:
+      access-control-allow-origin:
+      - https://huggingface.co
+      access-control-expose-headers:
+      - X-Repo-Commit,X-HF-Warning,X-Request-Id,X-Error-Code,X-Error-Message,X-Total-Count,ETag,Link,Accept-Ranges,Content-Range,X-Linked-Size,X-Linked-ETag,X-Xet-Hash,RateLimit,RateLimit-Policy
+      access-control-max-age:
+      - '86400'
+      alt-svc:
+      - h3=":443"; ma=86400
+      connection:
+      - keep-alive
+      content-length:
+      - '21257'
+      content-type:
+      - application/json; charset=utf-8
+      cross-origin-opener-policy:
+      - same-origin
+      date:
+      - Tue, 03 Nov 2026 09:01:53 GMT
+      etag:
+      - W/"5309-pxb4HXVdUpkakl8sXIMKo+trbQQ"
+      ratelimit:
+      - '"search";r=49;t=139'
+      ratelimit-policy:
+      - '"fixed window";"search";q=50;w=300'
+      referrer-policy:
+      - strict-origin-when-cross-origin
+      strict-transport-security:
+      - max-age=31536000
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      - Accept-Encoding
+      via:
+      - 1.1 f73ce3a187e67c6b948cce90833d065c.cloudfront.net (CloudFront)
+      x-amz-cf-id:
+      - EX4vMeY4zyP2T9yhHJ_4s85l3Khr6AfuMbHGcwH3ZVIrwubUNAPong==
+      x-amz-cf-pop:
+      - MCT50-P3
+      x-cache:
+      - Miss from cloudfront
+      x-powered-by:
+      - huggingface-moon
+      x-request-id:
+      - Root=1-6ae9a301-04f7454236e468a1464036ab
+    status:
+      code: 200
+      message: OK
+version: 1
