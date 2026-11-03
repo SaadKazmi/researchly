@@ -1,0 +1,50 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - api.opencitations.net
+    method: GET
+    uri: https://api.opencitations.net/index/v2/citation-count/doi:10.1038/doesnotexist0000
+  response:
+    body:
+      string: "[\n    {\n        \"count\": \"0\"\n    }\n]"
+    headers:
+      accept-ranges:
+      - bytes
+      access-control-allow-headers:
+      - Accept, Authorization, Content-Type, Origin, X-Requested-With
+      access-control-allow-methods:
+      - GET, POST, HEAD, OPTIONS
+      access-control-allow-origin:
+      - '*'
+      access-control-expose-headers:
+      - Content-Length, Content-Range, X-Total-Count
+      access-control-max-age:
+      - '86400'
+      age:
+      - '0'
+      content-length:
+      - '36'
+      content-type:
+      - application/json
+      date:
+      - Tue, 03 Nov 2026 08:20:20 GMT
+      server:
+      - Apache/2.4.10 (Win32)
+      x-cache:
+      - MISS
+      x-redis-cache:
+      - MISS
+      x-varnish:
+      - '104236460'
+    status:
+      code: 200
+      message: OK
+version: 1
