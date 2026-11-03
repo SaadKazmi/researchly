@@ -1831,10 +1831,13 @@ source = { editable = "../backend" }
 dependencies = [
     { name = "alembic" },
     { name = "cryptography" },
+    { name = "defusedxml" },
     { name = "deno" },
     { name = "docling-slim", extra = ["convert-core", "feat-ocr-rapidocr-onnx", "format-pdf-pypdfium2"] },
     { name = "fastapi" },
     { name = "fastembed" },
+    { name = "httpcore" },
+    { name = "httpx" },
     { name = "keyring" },
     { name = "langchain-core" },
     { name = "langchain-litellm" },
@@ -1852,10 +1855,13 @@ dependencies = [
 requires-dist = [
     { name = "alembic", specifier = ">=1.16" },
     { name = "cryptography", specifier = ">=46" },
+    { name = "defusedxml", specifier = ">=0.7.1" },
     { name = "deno", specifier = "==2.9.8" },
     { name = "docling-slim", extras = ["format-pdf-pypdfium2", "convert-core", "feat-ocr-rapidocr-onnx"], specifier = "==2.142.1" },
     { name = "fastapi", specifier = ">=0.120" },
     { name = "fastembed", specifier = "==0.9.1" },
+    { name = "httpcore", specifier = "==1.0.9" },
+    { name = "httpx", specifier = "==0.28.1" },
     { name = "keyring", specifier = ">=25.6" },
     { name = "langchain-core", specifier = "==1.6.12" },
     { name = "langchain-litellm", specifier = "==0.11.1" },
@@ -1873,11 +1879,12 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "claude-agent-sdk", specifier = "==0.2.169" },
-    { name = "httpx", specifier = ">=0.28" },
     { name = "pyright", specifier = ">=1.1.405" },
     { name = "pytest", specifier = ">=8.4" },
+    { name = "pytest-recording", specifier = ">=0.14" },
     { name = "ruff", specifier = ">=0.14" },
     { name = "testcontainers", extras = ["postgres"], specifier = ">=4.10" },
+    { name = "vcrpy", specifier = ">=9.2" },
 ]
 
 [[package]]
