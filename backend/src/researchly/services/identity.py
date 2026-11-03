@@ -29,12 +29,12 @@ MERGED_FIELDS = (
 
 def normalize_title(title: str) -> str:
     folded = "".join(c for c in unicodedata.normalize("NFKD", title) if not unicodedata.combining(c))
-    return " ".join(re.sub(r"[^a-z0-9]+", " ", folded.lower()).split())
+    return " ".join(re.sub(r"[\W_]+", " ", folded.casefold()).split())
 
 
 def _trigrams(text: str) -> set[str]:
     grams: set[str] = set()
-    for word in re.findall(r"[a-z0-9]+", text.lower()):  # pg_trgm: words padded with two spaces before, one after
+    for word in re.findall(r"[^\W_]+", text.casefold()):  # pg_trgm: words padded with two spaces before, one after
         padded = f"  {word} "
         grams.update(padded[i : i + 3] for i in range(len(padded) - 2))
     return grams
@@ -46,9 +46,9 @@ def trigram_similarity(a: str, b: str) -> float:
 
 
 def surname(name: str) -> str | None:
-    name = name.strip()
-    last = name.split(",")[0] if "," in name else name.split()[-1] if name.split() else ""
-    return normalize_title(last) or None
+    family = name.split(",")[0] if "," in name else name
+    tokens = family.split()
+    return normalize_title(tokens[-1]) if tokens else None
 
 
 def first_surname(record: PaperRecord) -> str | None:
@@ -59,6 +59,11 @@ def _ids(record: PaperRecord) -> set[ExternalId]:
     return {n for i in record.ids if (n := idn.normalize(i))}
 
 
+def fuzzy_title_ok(norm_title: str) -> bool:
+    """Digits-only, empty and one-word titles are too weak to match on (spec §8.3)."""
+    return sum(any(c.isalpha() for c in t) for t in norm_title.split()) >= 2
+
+
 def same_paper(a: PaperRecord, b: PaperRecord) -> bool:
     if _ids(a) & _ids(b):
         return True
@@ -67,7 +72,8 @@ def same_paper(a: PaperRecord, b: PaperRecord) -> bool:
     sa, sb = first_surname(a), first_surname(b)
     if not sa or sa != sb:
         return False
-    return trigram_similarity(normalize_title(a.title), normalize_title(b.title)) >= TITLE_SIMILARITY
+    na, nb = normalize_title(a.title), normalize_title(b.title)
+    return fuzzy_title_ok(na) and trigram_similarity(na, nb) >= TITLE_SIMILARITY
 
 
 def source_rank(source: str) -> int:

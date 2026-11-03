@@ -14,9 +14,11 @@ from researchly.services.identity import (
     MERGED_FIELDS,
     TITLE_SIMILARITY,
     first_surname,
+    fuzzy_title_ok,
     normalize_title,
     source_rank,
     surname,
+    trigram_similarity,
 )
 
 _ARXIV_DOI_PREFIX = "10.48550/arxiv."
@@ -35,22 +37,36 @@ def _doi(ids: list[ExternalId]) -> str | None:
 async def _find(session: AsyncSession, record: PaperRecord, ids: list[ExternalId]) -> uuid.UUID | None:
     if ids:
         found = await session.scalar(
-            select(PaperId.paper_id).where(tuple_(PaperId.scheme, PaperId.value).in_([tuple(i) for i in ids])).limit(1)
+            select(PaperId.paper_id)
+            .join(Paper, Paper.id == PaperId.paper_id)
+            .where(tuple_(PaperId.scheme, PaperId.value).in_([tuple(i) for i in ids]))
+            .order_by(Paper.updated_at, Paper.id)
+            .limit(1)
         )  # ponytail: two stored papers sharing an ID are not merged here; a later merge job can
         if found:
             return found
+    norm = normalize_title(record.title)
     surname_ = first_surname(record)
-    if record.year is None or not surname_:
+    if record.year is None or not surname_ or not fuzzy_title_ok(norm):
         return None
     await session.execute(text(f"SET LOCAL pg_trgm.similarity_threshold = {TITLE_SIMILARITY}"))
     candidates = await session.execute(
-        select(Paper.id, Author.name)
+        select(Paper.id, Paper.title_norm, Author.name)
         .join(PaperAuthor, (PaperAuthor.paper_id == Paper.id) & (PaperAuthor.position == 0))
         .join(Author, Author.id == PaperAuthor.author_id)
-        .where(Paper.title_norm.op("%")(normalize_title(record.title)))
+        .where(Paper.title_norm.op("%")(norm))
         .where(Paper.year.between(record.year - 1, record.year + 1))
+        .order_by(Paper.updated_at, Paper.id)
     )
-    return next((pid for pid, name in candidates if surname(name) == surname_), None)
+    # Python is the arbiter: pg_trgm's word characters depend on the database locale
+    return next(
+        (
+            pid
+            for pid, title_norm, name in candidates
+            if surname(name) == surname_ and trigram_similarity(norm, title_norm) >= TITLE_SIMILARITY
+        ),
+        None,
+    )
 
 
 async def _venue_id(session: AsyncSession, name: str, venue_type: str | None) -> uuid.UUID:
@@ -85,19 +101,21 @@ async def upsert(session: AsyncSession, record: PaperRecord) -> uuid.UUID:
 
     sources = dict(paper.field_sources)
 
-    def wins(field: str, has_value: bool) -> bool:
-        return has_value and (field not in sources or source_rank(record.source) < source_rank(sources[field]))
+    def source_of(field: str) -> str:  # a merged record says where each field really came from
+        return record.field_sources.get(field, record.source)
+
+    def wins(field: str) -> bool:  # a source may refresh its own fields; null never overwrites
+        return field not in sources or source_rank(source_of(field)) <= source_rank(sources[field])
 
     for name in _PAPER_FIELDS:
         value = getattr(record, name)
-        if value not in (None, "") and (getattr(paper, name) is None or wins(name, True)):
+        if value not in (None, "") and (getattr(paper, name) is None or wins(name)):
             setattr(paper, name, value)
-            sources[name] = record.source
+            sources[name] = source_of(name)
     paper.title_norm = normalize_title(paper.title)
-    if record.venue and wins("venue", True):
+    if record.venue and wins("venue"):
         paper.venue_id = await _venue_id(session, record.venue, record.venue_type)
-        sources["venue"] = record.source
-    paper.field_sources = sources
+        sources["venue"] = source_of("venue")
     paper.license_source = sources.get("license")
     doi = _doi(ids)
     if doi and (
@@ -116,5 +134,8 @@ async def upsert(session: AsyncSession, record: PaperRecord) -> uuid.UUID:
     if not has_authors:
         for position, author in enumerate(record.authors):
             session.add(PaperAuthor(paper_id=paper.id, author_id=await _author_id(session, author), position=position))
+        if record.authors:
+            sources["authors"] = source_of("authors")
+    paper.field_sources = sources
     await session.flush()
     return paper.id

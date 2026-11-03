@@ -55,3 +55,29 @@ def test_dedupe_clusters_transitively():
     b = rec("hf", "Attention is all you need", ids=[ExternalId("arxiv", "1706.03762")])
     c = rec("crossref", "Deep learning", author="LeCun, Yann", year=2015)
     assert len(dedupe([a, b, c])) == 2
+
+
+def test_non_latin_titles_do_not_collapse_to_digits():
+    assert normalize_title("Квантовая механика 2020") == "квантовая механика 2020"
+    assert normalize_title("Réseaux") == "reseaux"
+    a = rec("crossref", "Квантовая механика 2020", author="Иван Петров")
+    b = rec("crossref", "Тепловые потоки 2020", author="Иван Петров")
+    assert not same_paper(a, b)
+    assert same_paper(a, rec("openalex", "Квантовая механика 2020", author="Иван Петров"))
+
+
+def test_fuzzy_needs_two_letter_tokens():
+    assert not same_paper(rec("a", "2020"), rec("b", "2020"))
+    assert not same_paper(rec("a", "Intro"), rec("b", "Intro"))
+    assert not same_paper(rec("a", ""), rec("b", ""))
+
+
+def test_surname_comma_form_takes_last_family_token():
+    a = rec("a", "Visualizing data using t-SNE", author="van der Maaten, Laurens")
+    b = rec("b", "Visualizing data using t-SNE", author="Laurens van der Maaten")
+    assert same_paper(a, b)
+
+
+def test_merge_keeps_falsy_values():
+    merged = merge([rec("openalex", "T", cited_by=0, is_oa=False), rec("crossref", "T", cited_by=5, is_oa=True)])
+    assert merged.cited_by == 0 and merged.is_oa is False
