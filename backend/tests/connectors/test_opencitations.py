@@ -131,11 +131,11 @@ async def test_reserved_characters_are_percent_encoded_in_the_path():
 
 
 async def test_cache_keys_and_ttls():
-    seen: list[tuple[str, object]] = []
+    seen: list[tuple[str, object, object]] = []
 
     class Spy(PoliteClient):
         async def get(self, url, **kwargs):
-            seen.append((kwargs["cache_key"], kwargs["ttl"]))
+            seen.append((kwargs["cache_key"], kwargs["ttl"], kwargs.get("max_bytes")))
             return await super().get(url, **kwargs)
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -151,10 +151,10 @@ async def test_cache_keys_and_ttls():
         await conn.citations(DOI, "out")
     d = "doi:10.1038/nature14539"
     assert seen == [
-        (f"opencitations:v1:citation-count:{d}", TTL_COUNTS),
-        (f"opencitations:v1:citations:{d}", TTL_COUNTS),
-        (f"opencitations:v1:reference-count:{d}", TTL_COUNTS),
-        (f"opencitations:v1:references:{d}", TTL_METADATA),
+        (f"opencitations:v1:citation-count:{d}", TTL_COUNTS, None),
+        (f"opencitations:v1:citations:{d}", TTL_COUNTS, 20_000_000),
+        (f"opencitations:v1:reference-count:{d}", TTL_COUNTS, None),
+        (f"opencitations:v1:references:{d}", TTL_METADATA, 20_000_000),
     ]
 
 
@@ -173,6 +173,11 @@ async def test_unreadable_count_is_source_unavailable(response):
     async with client_for(lambda r: response) as client:
         with pytest.raises(SourceUnavailable, match="unreadable response"):
             await OpenCitationsConnector(client).citations(DOI, "in")
+
+
+async def test_not_found_returns_empty():
+    async with client_for(lambda r: httpx.Response(404, text="")) as client:
+        assert await OpenCitationsConnector(client).citations(DOI, "in") == []
 
 
 async def test_unreadable_list_and_http_errors_are_source_unavailable():

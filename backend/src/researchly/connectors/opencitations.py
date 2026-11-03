@@ -76,6 +76,8 @@ class OpenCitationsConnector:
         counted = await self._client.get(
             f"{BASE}/{count_ep}/{path}", source=self.name, cache_key=f"{KEY}:{count_ep}:{ref}", ttl=TTL_COUNTS
         )
+        if counted.status == 404:
+            return []  # an answer, not an outage (shared rules); the live API says 200 with count 0 today
         try:
             count = int(self._rows(counted)[0]["count"])
         except (IndexError, KeyError, TypeError, ValueError) as exc:  # [], a row without count, "abc"
