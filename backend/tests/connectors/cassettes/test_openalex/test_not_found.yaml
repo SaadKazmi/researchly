@@ -1,0 +1,174 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - api.openalex.org
+    method: GET
+    uri: https://api.openalex.org/works/W1?select=id%2Cdoi%2Ctitle%2Cpublication_year%2Cabstract_inverted_index%2Cauthorships%2Cprimary_location%2Cbest_oa_location%2Copen_access%2Clocations%2Cids%2Ccited_by_count%2Cfwci%2Ccitation_normalized_percentile%2Cis_retracted%2Creferenced_works%2Ctopics
+  response:
+    body:
+      string: '<!doctype html>
+
+        <html lang=en>
+
+        <title>404 Not Found</title>
+
+        <h1>Not Found</h1>
+
+        <p>The requested URL was not found on the server. If you entered the URL manually
+        please check your spelling and try again.</p>
+
+        '
+    headers:
+      access-control-allow-headers:
+      - Accept, Accept-Language, Accept-Encoding, Authorization, Content-Type, X-OpenAlex-UI,
+        X-Impersonate-User
+      access-control-allow-methods:
+      - GET, HEAD, POST, PATCH, DELETE, OPTIONS
+      access-control-allow-origin:
+      - '*'
+      access-control-expose-headers:
+      - Cache-Control, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Onetime-Remaining,
+        X-RateLimit-Credits-Used, X-RateLimit-Credits-Required, X-RateLimit-Reset,
+        X-RateLimit-Limit-USD, X-RateLimit-Remaining-USD, X-RateLimit-Prepaid-Remaining-USD,
+        X-RateLimit-Cost-USD, X-RateLimit-Cost-Required-USD, Retry-After, Location,
+        Content-Disposition, X-OpenAlex-UI-Token
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a5473c70c9e333af-KHI
+      connection:
+      - keep-alive
+      content-length:
+      - '207'
+      content-type:
+      - text/html; charset=utf-8
+      date:
+      - Tue, 03 Nov 2026 00:24:27 GMT
+      nel:
+      - '{"report_to":"heroku-nel","response_headers":["Via"],"max_age":3600,"success_fraction":0.01,"failure_fraction":0.1}'
+      report-to:
+      - '{"group":"heroku-nel","endpoints":[{"url":"https://nel.heroku.com/reports?s=Xi1FPwie31c776eiq17oPmYf6VFBhoUd164P7zbxY%2FU%3D\u0026sid=c46efe9b-d3d2-4a0c-8c76-bfafa16c5add\u0026ts=1793665467"}],"max_age":3600}'
+      reporting-endpoints:
+      - heroku-nel="https://nel.heroku.com/reports?s=Xi1FPwie31c776eiq17oPmYf6VFBhoUd164P7zbxY%2FU%3D&sid=c46efe9b-d3d2-4a0c-8c76-bfafa16c5add&ts=1793665467"
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      via:
+      - 2.0 heroku-router
+      x-ratelimit-cost-usd:
+      - '0'
+      x-ratelimit-credits-used:
+      - '0'
+      x-ratelimit-limit:
+      - '1000'
+      x-ratelimit-limit-usd:
+      - '0.1'
+      x-ratelimit-onetime-remaining:
+      - '0'
+      x-ratelimit-prepaid-remaining-usd:
+      - '0'
+      x-ratelimit-remaining:
+      - '998'
+      x-ratelimit-remaining-usd:
+      - '0.0998'
+      x-ratelimit-reset:
+      - '84933'
+    status:
+      code: 404
+      message: Not Found
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - api.openalex.org
+    method: GET
+    uri: https://api.openalex.org/works/doi:10.1038/doesnotexist0000?select=id%2Creferenced_works
+  response:
+    body:
+      string: '<!doctype html>
+
+        <html lang=en>
+
+        <title>404 Not Found</title>
+
+        <h1>Not Found</h1>
+
+        <p>The requested URL was not found on the server. If you entered the URL manually
+        please check your spelling and try again.</p>
+
+        '
+    headers:
+      access-control-allow-headers:
+      - Accept, Accept-Language, Accept-Encoding, Authorization, Content-Type, X-OpenAlex-UI,
+        X-Impersonate-User
+      access-control-allow-methods:
+      - GET, HEAD, POST, PATCH, DELETE, OPTIONS
+      access-control-allow-origin:
+      - '*'
+      access-control-expose-headers:
+      - Cache-Control, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Onetime-Remaining,
+        X-RateLimit-Credits-Used, X-RateLimit-Credits-Required, X-RateLimit-Reset,
+        X-RateLimit-Limit-USD, X-RateLimit-Remaining-USD, X-RateLimit-Prepaid-Remaining-USD,
+        X-RateLimit-Cost-USD, X-RateLimit-Cost-Required-USD, Retry-After, Location,
+        Content-Disposition, X-OpenAlex-UI-Token
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a5473c736cc833af-KHI
+      connection:
+      - keep-alive
+      content-length:
+      - '207'
+      content-type:
+      - text/html; charset=utf-8
+      date:
+      - Tue, 03 Nov 2026 00:24:27 GMT
+      nel:
+      - '{"report_to":"heroku-nel","response_headers":["Via"],"max_age":3600,"success_fraction":0.01,"failure_fraction":0.1}'
+      report-to:
+      - '{"group":"heroku-nel","endpoints":[{"url":"https://nel.heroku.com/reports?s=Xi1FPwie31c776eiq17oPmYf6VFBhoUd164P7zbxY%2FU%3D\u0026sid=c46efe9b-d3d2-4a0c-8c76-bfafa16c5add\u0026ts=1793665467"}],"max_age":3600}'
+      reporting-endpoints:
+      - heroku-nel="https://nel.heroku.com/reports?s=Xi1FPwie31c776eiq17oPmYf6VFBhoUd164P7zbxY%2FU%3D&sid=c46efe9b-d3d2-4a0c-8c76-bfafa16c5add&ts=1793665467"
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      via:
+      - 2.0 heroku-router
+      x-ratelimit-cost-usd:
+      - '0'
+      x-ratelimit-credits-used:
+      - '0'
+      x-ratelimit-limit:
+      - '1000'
+      x-ratelimit-limit-usd:
+      - '0.1'
+      x-ratelimit-onetime-remaining:
+      - '0'
+      x-ratelimit-prepaid-remaining-usd:
+      - '0'
+      x-ratelimit-remaining:
+      - '998'
+      x-ratelimit-remaining-usd:
+      - '0.0998'
+      x-ratelimit-reset:
+      - '84933'
+    status:
+      code: 404
+      message: Not Found
+version: 1

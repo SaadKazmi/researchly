@@ -1,0 +1,79 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - api.openalex.org
+    method: GET
+    uri: https://api.openalex.org/works/doi:10.48550/arxiv.1706.03762?select=id%2Creferenced_works
+  response:
+    body:
+      string: '{"id":"https://openalex.org/W2626778328","referenced_works":["https://openalex.org/W1632114991","https://openalex.org/W1810943226","https://openalex.org/W1902237438","https://openalex.org/W2113691817","https://openalex.org/W2126433015","https://openalex.org/W2139621418","https://openalex.org/W2163568299","https://openalex.org/W2173051530","https://openalex.org/W2194775991","https://openalex.org/W2259472270","https://openalex.org/W2267186426","https://openalex.org/W2289899728","https://openalex.org/W2514713644","https://openalex.org/W2525778437","https://openalex.org/W2545625743","https://openalex.org/W2586050494","https://openalex.org/W2594990650","https://openalex.org/W2605203995","https://openalex.org/W2612675303","https://openalex.org/W2613904329","https://openalex.org/W2951008357","https://openalex.org/W2951583185","https://openalex.org/W2952339051","https://openalex.org/W2962784628","https://openalex.org/W2963069010","https://openalex.org/W2963991316","https://openalex.org/W2964121744","https://openalex.org/W2964308564"]}
+
+        '
+    headers:
+      access-control-allow-headers:
+      - Accept, Accept-Language, Accept-Encoding, Authorization, Content-Type, X-OpenAlex-UI,
+        X-Impersonate-User
+      access-control-allow-methods:
+      - GET, HEAD, POST, PATCH, DELETE, OPTIONS
+      access-control-allow-origin:
+      - '*'
+      access-control-expose-headers:
+      - Cache-Control, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Onetime-Remaining,
+        X-RateLimit-Credits-Used, X-RateLimit-Credits-Required, X-RateLimit-Reset,
+        X-RateLimit-Limit-USD, X-RateLimit-Remaining-USD, X-RateLimit-Prepaid-Remaining-USD,
+        X-RateLimit-Cost-USD, X-RateLimit-Cost-Required-USD, Retry-After, Location,
+        Content-Disposition, X-OpenAlex-UI-Token
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a5473c632856f431-KHI
+      connection:
+      - keep-alive
+      content-length:
+      - '1043'
+      content-type:
+      - application/json
+      date:
+      - Tue, 03 Nov 2026 00:24:25 GMT
+      nel:
+      - '{"report_to":"heroku-nel","response_headers":["Via"],"max_age":3600,"success_fraction":0.01,"failure_fraction":0.1}'
+      report-to:
+      - '{"group":"heroku-nel","endpoints":[{"url":"https://nel.heroku.com/reports?s=GPUSSl%2BEDC%2Bv9WJDmkQtLzkjFcqgJfCEOtI6d81py4M%3D\u0026sid=c46efe9b-d3d2-4a0c-8c76-bfafa16c5add\u0026ts=1793665465"}],"max_age":3600}'
+      reporting-endpoints:
+      - heroku-nel="https://nel.heroku.com/reports?s=GPUSSl%2BEDC%2Bv9WJDmkQtLzkjFcqgJfCEOtI6d81py4M%3D&sid=c46efe9b-d3d2-4a0c-8c76-bfafa16c5add&ts=1793665465"
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      via:
+      - 2.0 heroku-router
+      x-ratelimit-cost-usd:
+      - '0'
+      x-ratelimit-credits-used:
+      - '0'
+      x-ratelimit-limit:
+      - '1000'
+      x-ratelimit-limit-usd:
+      - '0.1'
+      x-ratelimit-onetime-remaining:
+      - '0'
+      x-ratelimit-prepaid-remaining-usd:
+      - '0'
+      x-ratelimit-remaining:
+      - '999'
+      x-ratelimit-remaining-usd:
+      - '0.0999'
+      x-ratelimit-reset:
+      - '84935'
+    status:
+      code: 200
+      message: OK
+version: 1
