@@ -1,0 +1,100 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - www.ebi.ac.uk
+    method: GET
+    uri: https://www.ebi.ac.uk/europepmc/webservices/rest/MED/26017442/references?format=json&pageSize=1000
+  response:
+    body:
+      string: '{"version":"6.9","hitCount":22,"request":{"id":"26017442","source":"MED","offSet":1,"pageSize":1000},"referenceList":{"reference":[{"source":"MED","id":"25521294","citationType":"JOURNAL
+        ARTICLE","title":"Deep neural networks rival the representation of primate
+        IT cortex for core visual object recognition.","authorString":"Cadieu CF,
+        Hong H, Yamins DL, Pinto N, Ardila D, Solomon EA, Majaj NJ, DiCarlo JJ.","journalAbbreviation":"PLoS
+        Comput Biol","issue":"12","pubYear":2014,"volume":"10","pageInfo":"e1003963","citedOrder":1,"match":"Y","essn":"1553-7358","issn":"1553-734X"},{"source":"MED","id":"16764513","citationType":"JOURNAL
+        ARTICLE","title":"A fast learning algorithm for deep belief nets.","authorString":"Hinton
+        GE, Osindero S, Teh YW.","journalAbbreviation":"Neural Comput","issue":"7","pubYear":2006,"volume":"18","pageInfo":"1527-1554","citedOrder":2,"match":"Y","essn":"1530-888X","issn":"0899-7667"},{"source":"MED","id":"14449617","citationType":"JOURNAL
+        ARTICLE","title":"Receptive fields, binocular interaction and functional architecture
+        in the cat''s visual cortex.","authorString":"HUBEL DH, WIESEL TN.","journalAbbreviation":"J
+        Physiol","pubYear":1962,"volume":"160","pageInfo":"106-154","citedOrder":3,"match":"Y","essn":"1469-7793","issn":"0022-3751"},{"source":"MED","id":"9377276","citationType":"JOURNAL
+        ARTICLE","title":"Long short-term memory.","authorString":"Hochreiter S, Schmidhuber
+        J.","journalAbbreviation":"Neural Comput","issue":"8","pubYear":1997,"volume":"9","pageInfo":"1735-1780","citedOrder":4,"match":"Y","essn":"1530-888X","issn":"0899-7667"},{"source":"MED","id":"12671647","citationType":"JOURNAL
+        ARTICLE","title":"The parallel distributed processing approach to semantic
+        cognition.","authorString":"McClelland JL, Rogers TT.","journalAbbreviation":"Nat
+        Rev Neurosci","issue":"4","pubYear":2003,"volume":"4","pageInfo":"310-322","citedOrder":5,"match":"Y","essn":"1471-0048","issn":"1471-003X"},{"source":"MED","id":"16873662","citationType":"JOURNAL
+        ARTICLE","title":"Reducing the dimensionality of data with neural networks.","authorString":"Hinton
+        GE, Salakhutdinov RR.","journalAbbreviation":"Science","issue":"5786","pubYear":2006,"volume":"313","pageInfo":"504-507","citedOrder":6,"match":"Y","essn":"1095-9203","issn":"0036-8075"},{"source":"MED","id":"25525159","citationType":"JOURNAL
+        ARTICLE","title":"RNA splicing. The human splicing code reveals new insights
+        into the genetic determinants of disease.","authorString":"Xiong HY, Alipanahi
+        B, Lee LJ, Bretschneider H, Merico D, Yuen RK, Hua Y, Gueroussov S, Najafabadi
+        HS, Hughes TR, Morris Q, Barash Y, Krainer AR, Jojic N, Scherer SW, Blencowe
+        BJ, Frey BJ.","journalAbbreviation":"Science","issue":"6218","pubYear":2014,"volume":"347","pageInfo":"1254806","citedOrder":7,"match":"Y","essn":"1095-9203","issn":"0036-8075"},{"source":"MED","id":"16190471","citationType":"JOURNAL
+        ARTICLE","title":"Toward automatic phenotyping of developing embryos from
+        videos.","authorString":"Ning F, Delhomme D, LeCun Y, Piano F, Bottou L, Barbano
+        PE.","journalAbbreviation":"IEEE Trans Image Process","issue":"9","pubYear":2005,"volume":"14","pageInfo":"1360-1371","citedOrder":8,"match":"Y","essn":"1941-0042","issn":"1057-7149"},{"source":"MED","id":"18267787","citationType":"JOURNAL
+        ARTICLE","title":"Learning long-term dependencies with gradient descent is
+        difficult.","authorString":"Bengio Y, Simard P, Frasconi P.","journalAbbreviation":"IEEE
+        Trans Neural Netw","issue":"2","pubYear":1994,"volume":"5","pageInfo":"157-166","citedOrder":9,"match":"Y","essn":"1941-0093","issn":"1045-9227"},{"source":"MED","id":"23787338","citationType":"JOURNAL
+        ARTICLE","title":"Representation learning: a review and new perspectives.","authorString":"Bengio
+        Y, Courville A, Vincent P.","journalAbbreviation":"IEEE Trans Pattern Anal
+        Mach Intell","issue":"8","pubYear":2013,"volume":"35","pageInfo":"1798-1828","citedOrder":10,"match":"Y","essn":"1939-3539","issn":"0162-8828"},{"source":"MED","id":"23925239","citationType":"JOURNAL
+        ARTICLE","title":"Connectomic reconstruction of the inner plexiform layer
+        in the mouse retina.","authorString":"Helmstaedter M, Briggman KL, Turaga
+        SC, Jain V, Seung HS, Denk W.","journalAbbreviation":"Nature","issue":"7461","pubYear":2013,"volume":"500","pageInfo":"168-174","citedOrder":11,"match":"Y","essn":"1476-4687","issn":"0028-0836"},{"source":"MED","id":"25635324","citationType":"JOURNAL
+        ARTICLE","title":"Deep neural nets as a method for quantitative structure-activity
+        relationships.","authorString":"Ma J, Sheridan RP, Liaw A, Dahl GE, Svetnik
+        V.","journalAbbreviation":"J Chem Inf Model","issue":"2","pubYear":2015,"volume":"55","pageInfo":"263-274","citedOrder":12,"match":"Y","essn":"1549-960X","issn":"1549-9596"},{"source":"MED","id":"22386783","citationType":"JOURNAL
+        ARTICLE","title":"Multi-column deep neural network for traffic sign classification.","authorString":"Ciresan
+        D, Meier U, Masci J, Schmidhuber J.","journalAbbreviation":"Neural Netw","pubYear":2012,"volume":"32","pageInfo":"333-338","citedOrder":13,"match":"Y","essn":"1879-2782","issn":"0893-6080"},{"source":"MED","id":"23787344","citationType":"JOURNAL
+        ARTICLE","title":"Learning hierarchical features for scene labeling.","authorString":"Farabet
+        C, Couprie C, Najman L, Lecun Y.","journalAbbreviation":"IEEE Trans Pattern
+        Anal Mach Intell","issue":"8","pubYear":2013,"volume":"35","pageInfo":"1915-1929","citedOrder":14,"match":"Y","essn":"1939-3539","issn":"0162-8828"},{"source":"MED","id":"1822724","citationType":"JOURNAL
+        ARTICLE","title":"Distributed hierarchical processing in the primate cerebral
+        cortex.","authorString":"Felleman DJ, Van Essen DC.","journalAbbreviation":"Cereb
+        Cortex","issue":"1","pubYear":1991,"volume":"1","pageInfo":"1-47","citedOrder":15,"match":"Y","essn":"1460-2199","issn":"1047-3211"},{"source":"MED","id":"19922289","citationType":"JOURNAL
+        ARTICLE","title":"Convolutional networks can learn to generate affinity graphs
+        for image segmentation.","authorString":"Turaga SC, Murray JF, Jain V, Roth
+        F, Helmstaedter M, Briggman K, Denk W, Seung HS.","journalAbbreviation":"Neural
+        Comput","issue":"2","pubYear":2010,"volume":"22","pageInfo":"511-538","citedOrder":16,"match":"Y","essn":"1530-888X","issn":"0899-7667"},{"source":"MED","id":"15521490","citationType":"JOURNAL
+        ARTICLE","title":"Convolutional face finder: a neural architecture for fast
+        and robust face detection.","authorString":"Garcia C, Delakis M.","journalAbbreviation":"IEEE
+        Trans Pattern Anal Mach Intell","issue":"11","pubYear":2004,"volume":"26","pageInfo":"1408-1423","citedOrder":17,"match":"Y","essn":"1939-3539","issn":"0162-8828"},{"source":"MED","id":"7761831","citationType":"JOURNAL
+        ARTICLE","title":"The \"wake-sleep\" algorithm for unsupervised neural networks.","authorString":"Hinton
+        GE, Dayan P, Frey BJ, Neal RM.","journalAbbreviation":"Science","issue":"5214","pubYear":1995,"volume":"268","pageInfo":"1158-1161","citedOrder":18,"match":"Y","essn":"1095-9203","issn":"0036-8075"},{"source":"MED","id":"24931975","citationType":"JOURNAL
+        ARTICLE","title":"Deep learning of the tissue-regulated splicing code.","authorString":"Leung
+        MK, Xiong HY, Lee LJ, Frey BJ.","journalAbbreviation":"Bioinformatics","issue":"12","pubYear":2014,"volume":"30","pageInfo":"i121-9","citedOrder":19,"match":"Y","essn":"1367-4811","issn":"1367-4803"},{"source":"MED","id":"23868780","citationType":"JOURNAL
+        ARTICLE","title":"Modeling natural images using gated MRFs.","authorString":"Ranzato
+        M, Mnih V, Susskind JM, Hinton GE.","journalAbbreviation":"IEEE Trans Pattern
+        Anal Mach Intell","issue":"9","pubYear":2013,"volume":"35","pageInfo":"2206-2222","citedOrder":20,"match":"Y","essn":"1939-3539","issn":"0162-8828"},{"source":"MED","id":"18255614","citationType":"JOURNAL
+        ARTICLE","title":"Face recognition: a convolutional neural-network approach.","authorString":"Lawrence
+        S, Giles CL, Tsoi AC, Back AD.","journalAbbreviation":"IEEE Trans Neural Netw","issue":"1","pubYear":1997,"volume":"8","pageInfo":"98-113","citedOrder":21,"match":"Y","essn":"1941-0093","issn":"1045-9227"},{"source":"MED","id":"25719670","citationType":"JOURNAL
+        ARTICLE","title":"Human-level control through deep reinforcement learning.","authorString":"Mnih
+        V, Kavukcuoglu K, Silver D, Rusu AA, Veness J, Bellemare MG, Graves A, Riedmiller
+        M, Fidjeland AK, Ostrovski G, Petersen S, Beattie C, Sadik A, Antonoglou I,
+        King H, Kumaran D, Wierstra D, Legg S, Hassabis D.","journalAbbreviation":"Nature","issue":"7540","pubYear":2015,"volume":"518","pageInfo":"529-533","citedOrder":22,"match":"Y","essn":"1476-4687","issn":"0028-0836"}]}}'
+    headers:
+      connection:
+      - keep-alive
+      content-length:
+      - '8622'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Tue, 03 Nov 2026 08:35:54 GMT
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      transfer-encoding:
+      - chunked
+      vary:
+      - origin,access-control-request-method,access-control-request-headers,accept-encoding
+    status:
+      code: 200
+      message: ''
+version: 1

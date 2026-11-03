@@ -1,0 +1,135 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - www.ebi.ac.uk
+    method: GET
+    uri: https://www.ebi.ac.uk/europepmc/webservices/rest/search?format=json&pageSize=2&query=%28EXT_ID%3A26017442+AND+SRC%3AMED%29&resultType=core
+  response:
+    body:
+      string: "{\"version\":\"6.9\",\"hitCount\":1,\"request\":{\"queryString\":\"(EXT_ID:26017442
+        AND SRC:MED)\",\"internalQuery\":\"(EXT_ID:26017442 AND SRC:MED)\",\"resultType\":\"CORE\",\"cursorMark\":\"*\",\"pageSize\":2,\"sort\":\"\",\"synonym\":false},\"resultList\":{\"result\":[{\"id\":\"26017442\",\"source\":\"MED\",\"pmid\":\"26017442\",\"doi\":\"10.1038/nature14539\",\"title\":\"Deep
+        learning.\",\"authorString\":\"LeCun Y, Bengio Y, Hinton G.\",\"authorList\":{\"author\":[{\"fullName\":\"LeCun
+        Y\",\"lastName\":\"LeCun\",\"firstName\":\"Yann\",\"initials\":\"Y\",\"authorAffiliationDetailsList\":{\"authorAffiliation\":[{\"affiliation\":\"1]
+        Facebook AI Research, 770 Broadway, New York, New York 10003 USA. [2] New
+        York University, 715 Broadway, New York, New York 10003, USA.\"}]}},{\"fullName\":\"Bengio
+        Y\",\"lastName\":\"Bengio\",\"firstName\":\"Yoshua\",\"initials\":\"Y\",\"authorAffiliationDetailsList\":{\"authorAffiliation\":[{\"affiliation\":\"Department
+        of Computer Science and Operations Research Universit\xE9 de Montr\xE9al,
+        Pavillon Andr\xE9-Aisenstadt, PO Box 6128 Centre-Ville STN Montr\xE9al, Quebec
+        H3C 3J7, Canada.\"}]}},{\"fullName\":\"Hinton G\",\"lastName\":\"Hinton\",\"firstName\":\"Geoffrey\",\"initials\":\"G\",\"authorAffiliationDetailsList\":{\"authorAffiliation\":[{\"affiliation\":\"1]
+        Google, 1600 Amphitheatre Parkway, Mountain View, California 94043, USA. [2]
+        Department of Computer Science, University of Toronto, 6 King's College Road,
+        Toronto, Ontario M5S 3G4, Canada.\"}]}}]},\"authorIdList\":{\"authorId\":[{\"type\":\"ORCID\",\"value\":\"0000-0001-9846-0176\"},{\"type\":\"ORCID\",\"value\":\"0000-0002-0308-2625\"},{\"type\":\"ORCID\",\"value\":\"0009-0007-2540-2611\"}]},\"dataLinksTagsList\":{\"dataLinkstag\":[\"recommended_reviews\",\"wikipedia\"]},\"journalInfo\":{\"issue\":\"7553\",\"volume\":\"521\",\"journalIssueId\":2288264,\"dateOfPublication\":\"2015
+        May\",\"monthOfPublication\":5,\"yearOfPublication\":2015,\"journal\":{\"medlineAbbreviation\":\"Nature\",\"title\":\"Nature\",\"essn\":\"1476-4687\",\"issn\":\"0028-0836\",\"nlmid\":\"0410462\",\"isoabbreviation\":\"Nature\"},\"printPublicationDate\":\"2015-05-01\"},\"pubYear\":\"2015\",\"pageInfo\":\"436-444\",\"abstractText\":\"Deep
+        learning allows computational models that are composed of multiple processing
+        layers to learn representations of data with multiple levels of abstraction.
+        These methods have dramatically improved the state-of-the-art in speech recognition,
+        visual object recognition, object detection and many other domains such as
+        drug discovery and genomics. Deep learning discovers intricate structure in
+        large data sets by using the backpropagation algorithm to indicate how a machine
+        should change its internal parameters that are used to compute the representation
+        in each layer from the representation in the previous layer. Deep convolutional
+        nets have brought about breakthroughs in processing images, video, speech
+        and audio, whereas recurrent nets have shone light on sequential data such
+        as text and speech.\",\"affiliation\":\"1] Facebook AI Research, 770 Broadway,
+        New York, New York 10003 USA. [2] New York University, 715 Broadway, New York,
+        New York 10003, USA.\",\"publicationStatus\":\"ppublish\",\"language\":\"eng\",\"pubModel\":\"Print\",\"pubTypeList\":{\"pubType\":[\"Research
+        Support, Non-U.S. Gov't\",\"Review\",\"Research Support, U.S. Gov't, Non-P.H.S.\",\"Journal
+        Article\"]},\"meshHeadingList\":{\"meshHeading\":[{\"majorTopic_YN\":\"N\",\"descriptorName\":\"Language\"},{\"majorTopic_YN\":\"N\",\"descriptorName\":\"Algorithms\"},{\"majorTopic_YN\":\"Y\",\"descriptorName\":\"Artificial
+        Intelligence\",\"meshQualifierList\":{\"meshQualifier\":[{\"majorTopic_YN\":\"N\",\"abbreviation\":\"TD\",\"qualifierName\":\"trends\"}]}},{\"majorTopic_YN\":\"N\",\"descriptorName\":\"Computers\"},{\"majorTopic_YN\":\"N\",\"descriptorName\":\"Neural
+        Networks, Computer\"}]},\"subsetList\":{\"subset\":[{\"code\":\"IM\",\"name\":\"Index
+        Medicus\"}]},\"fullTextUrlList\":{\"fullTextUrl\":[{\"availability\":\"Open
+        access\",\"availabilityCode\":\"OA\",\"documentStyle\":\"html\",\"site\":\"Unpaywall\",\"url\":\"https://hal.science/hal-04206682\"},{\"availability\":\"Subscription
+        required\",\"availabilityCode\":\"S\",\"documentStyle\":\"doi\",\"site\":\"DOI\",\"url\":\"https://doi.org/10.1038/nature14539\"}]},\"isOpenAccess\":\"N\",\"inEPMC\":\"N\",\"inPMC\":\"N\",\"citedByCount\":19318,\"hasReferences\":\"Y\",\"hasTextMinedTerms\":\"Y\",\"hasDbCrossReferences\":\"N\",\"hasPDF\":\"N\",\"hasBook\":\"N\",\"hasSuppl\":\"N\",\"hasLabsLinks\":\"Y\",\"hasData\":\"N\",\"authMan\":\"N\",\"epmcAuthMan\":\"N\",\"nihAuthMan\":\"N\",\"hasTMAccessionNumbers\":\"N\",\"dateOfCompletion\":\"2015-06-29\",\"dateOfCreation\":\"2015-05-29\",\"dateOfRevision\":\"2026-10-10\",\"firstPublicationDate\":\"2015-05-01\",\"firstIndexDate\":\"2015-05-29\",\"hasEvaluations\":\"N\"}]}}"
+    headers:
+      connection:
+      - keep-alive
+      content-length:
+      - '4441'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Tue, 03 Nov 2026 08:46:46 GMT
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      transfer-encoding:
+      - chunked
+      vary:
+      - origin,access-control-request-method,access-control-request-headers,accept-encoding
+    status:
+      code: 200
+      message: ''
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - www.ebi.ac.uk
+    method: GET
+    uri: https://www.ebi.ac.uk/europepmc/webservices/rest/search?format=json&pageSize=2&query=DOI%3A%2210.1038%2Fnature14539%22&resultType=core
+  response:
+    body:
+      string: "{\"version\":\"6.9\",\"hitCount\":1,\"request\":{\"queryString\":\"DOI:\\\"10.1038/nature14539\\\"\",\"resultType\":\"core\",\"cursorMark\":\"*\",\"pageSize\":2,\"sort\":\"\",\"synonym\":false},\"resultList\":{\"result\":[{\"id\":\"26017442\",\"source\":\"MED\",\"pmid\":\"26017442\",\"doi\":\"10.1038/nature14539\",\"title\":\"Deep
+        learning.\",\"authorString\":\"LeCun Y, Bengio Y, Hinton G.\",\"authorList\":{\"author\":[{\"fullName\":\"LeCun
+        Y\",\"lastName\":\"LeCun\",\"firstName\":\"Yann\",\"initials\":\"Y\",\"authorAffiliationDetailsList\":{\"authorAffiliation\":[{\"affiliation\":\"1]
+        Facebook AI Research, 770 Broadway, New York, New York 10003 USA. [2] New
+        York University, 715 Broadway, New York, New York 10003, USA.\"}]}},{\"fullName\":\"Bengio
+        Y\",\"lastName\":\"Bengio\",\"firstName\":\"Yoshua\",\"initials\":\"Y\",\"authorAffiliationDetailsList\":{\"authorAffiliation\":[{\"affiliation\":\"Department
+        of Computer Science and Operations Research Universit\xE9 de Montr\xE9al,
+        Pavillon Andr\xE9-Aisenstadt, PO Box 6128 Centre-Ville STN Montr\xE9al, Quebec
+        H3C 3J7, Canada.\"}]}},{\"fullName\":\"Hinton G\",\"lastName\":\"Hinton\",\"firstName\":\"Geoffrey\",\"initials\":\"G\",\"authorAffiliationDetailsList\":{\"authorAffiliation\":[{\"affiliation\":\"1]
+        Google, 1600 Amphitheatre Parkway, Mountain View, California 94043, USA. [2]
+        Department of Computer Science, University of Toronto, 6 King's College Road,
+        Toronto, Ontario M5S 3G4, Canada.\"}]}}]},\"authorIdList\":{\"authorId\":[{\"type\":\"ORCID\",\"value\":\"0000-0001-9846-0176\"},{\"type\":\"ORCID\",\"value\":\"0000-0002-0308-2625\"},{\"type\":\"ORCID\",\"value\":\"0009-0007-2540-2611\"}]},\"dataLinksTagsList\":{\"dataLinkstag\":[\"recommended_reviews\",\"wikipedia\"]},\"journalInfo\":{\"issue\":\"7553\",\"volume\":\"521\",\"journalIssueId\":2288264,\"dateOfPublication\":\"2015
+        May\",\"monthOfPublication\":5,\"yearOfPublication\":2015,\"journal\":{\"medlineAbbreviation\":\"Nature\",\"title\":\"Nature\",\"essn\":\"1476-4687\",\"issn\":\"0028-0836\",\"nlmid\":\"0410462\",\"isoabbreviation\":\"Nature\"},\"printPublicationDate\":\"2015-05-01\"},\"pubYear\":\"2015\",\"pageInfo\":\"436-444\",\"abstractText\":\"Deep
+        learning allows computational models that are composed of multiple processing
+        layers to learn representations of data with multiple levels of abstraction.
+        These methods have dramatically improved the state-of-the-art in speech recognition,
+        visual object recognition, object detection and many other domains such as
+        drug discovery and genomics. Deep learning discovers intricate structure in
+        large data sets by using the backpropagation algorithm to indicate how a machine
+        should change its internal parameters that are used to compute the representation
+        in each layer from the representation in the previous layer. Deep convolutional
+        nets have brought about breakthroughs in processing images, video, speech
+        and audio, whereas recurrent nets have shone light on sequential data such
+        as text and speech.\",\"affiliation\":\"1] Facebook AI Research, 770 Broadway,
+        New York, New York 10003 USA. [2] New York University, 715 Broadway, New York,
+        New York 10003, USA.\",\"publicationStatus\":\"ppublish\",\"language\":\"eng\",\"pubModel\":\"Print\",\"pubTypeList\":{\"pubType\":[\"Research
+        Support, Non-U.S. Gov't\",\"Review\",\"Research Support, U.S. Gov't, Non-P.H.S.\",\"Journal
+        Article\"]},\"meshHeadingList\":{\"meshHeading\":[{\"majorTopic_YN\":\"N\",\"descriptorName\":\"Language\"},{\"majorTopic_YN\":\"N\",\"descriptorName\":\"Algorithms\"},{\"majorTopic_YN\":\"Y\",\"descriptorName\":\"Artificial
+        Intelligence\",\"meshQualifierList\":{\"meshQualifier\":[{\"majorTopic_YN\":\"N\",\"abbreviation\":\"TD\",\"qualifierName\":\"trends\"}]}},{\"majorTopic_YN\":\"N\",\"descriptorName\":\"Computers\"},{\"majorTopic_YN\":\"N\",\"descriptorName\":\"Neural
+        Networks, Computer\"}]},\"subsetList\":{\"subset\":[{\"code\":\"IM\",\"name\":\"Index
+        Medicus\"}]},\"fullTextUrlList\":{\"fullTextUrl\":[{\"availability\":\"Open
+        access\",\"availabilityCode\":\"OA\",\"documentStyle\":\"html\",\"site\":\"Unpaywall\",\"url\":\"https://hal.science/hal-04206682\"},{\"availability\":\"Subscription
+        required\",\"availabilityCode\":\"S\",\"documentStyle\":\"doi\",\"site\":\"DOI\",\"url\":\"https://doi.org/10.1038/nature14539\"}]},\"isOpenAccess\":\"N\",\"inEPMC\":\"N\",\"inPMC\":\"N\",\"citedByCount\":19318,\"hasReferences\":\"Y\",\"hasTextMinedTerms\":\"Y\",\"hasDbCrossReferences\":\"N\",\"hasPDF\":\"N\",\"hasBook\":\"N\",\"hasSuppl\":\"N\",\"hasLabsLinks\":\"Y\",\"hasData\":\"N\",\"authMan\":\"N\",\"epmcAuthMan\":\"N\",\"nihAuthMan\":\"N\",\"hasTMAccessionNumbers\":\"N\",\"dateOfCompletion\":\"2015-06-29\",\"dateOfCreation\":\"2015-05-29\",\"dateOfRevision\":\"2026-10-10\",\"firstPublicationDate\":\"2015-05-01\",\"firstIndexDate\":\"2015-05-29\",\"hasEvaluations\":\"N\"}]}}"
+    headers:
+      connection:
+      - keep-alive
+      content-length:
+      - '4391'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Tue, 03 Nov 2026 08:46:49 GMT
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      transfer-encoding:
+      - chunked
+      vary:
+      - origin,access-control-request-method,access-control-request-headers,accept-encoding
+    status:
+      code: 200
+      message: ''
+version: 1

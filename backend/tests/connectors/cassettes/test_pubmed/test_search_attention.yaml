@@ -1,0 +1,1064 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - eutils.ncbi.nlm.nih.gov
+    method: GET
+    uri: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&retmax=3&retmode=json&sort=relevance&term=attention+is+all+you+need
+  response:
+    body:
+      string: '{"header":{"type":"esearch","version":"0.3"},"esearchresult":{"count":"506","retmax":"3","retstart":"0","idlist":["38157463","36741395","38978847"],"translationset":[{"from":"attention","to":"\"attention\"[MeSH
+        Terms] OR \"attention\"[All Fields] OR \"attentions\"[All Fields] OR \"attention''s\"[All
+        Fields] OR \"attentional\"[All Fields] OR \"attentive\"[All Fields] OR \"attentively\"[All
+        Fields] OR \"attentiveness\"[All Fields]"}],"querytranslation":"(\"attention\"[MeSH
+        Terms] OR \"attention\"[All Fields] OR \"attentions\"[All Fields] OR \"attention
+        s\"[All Fields] OR \"attentional\"[All Fields] OR \"attentive\"[All Fields]
+        OR \"attentively\"[All Fields] OR \"attentiveness\"[All Fields]) AND \"you\"[All
+        Fields] AND \"need\"[All Fields]","warninglist":{"phrasesignored":["is","all"],"quotedphrasesnotfound":[],"outputmessages":[]}}}
+
+        '
+    headers:
+      access-control-allow-origin:
+      - '*'
+      access-control-expose-headers:
+      - X-RateLimit-Limit,X-RateLimit-Remaining
+      alt-svc:
+      - clear
+      cache-control:
+      - private
+      content-length:
+      - '842'
+      content-security-policy:
+      - upgrade-insecure-requests
+      content-type:
+      - application/json; charset=UTF-8
+      date:
+      - Tue, 03 Nov 2026 08:35:14 GMT
+      ncbi-phid:
+      - 1D33E48A198D301500006253DC7076BD.1.1.m_1
+      ncbi-sid:
+      - 5AF8C40BDE4A0EF2_D86CSID
+      referrer-policy:
+      - origin-when-cross-origin
+      server:
+      - Finatra
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      transfer-encoding:
+      - chunked
+      via:
+      - 1.1 google
+      x-ratelimit-limit:
+      - '3'
+      x-ratelimit-remaining:
+      - '2'
+      x-ua-compatible:
+      - IE=Edge
+      x-xss-protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - eutils.ncbi.nlm.nih.gov
+    method: GET
+    uri: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=38157463%2C36741395%2C38978847&retmode=xml
+  response:
+    body:
+      string: "<?xml version=\"1.0\" ?>\n<!DOCTYPE PubmedArticleSet PUBLIC \"-//NLM//DTD
+        PubMedArticle, 1st January 2025//EN\" \"https://dtd.nlm.nih.gov/ncbi/pubmed/out/pubmed_250101.dtd\">\n<PubmedArticleSet>\n<PubmedArticle><MedlineCitation
+        Status=\"MEDLINE\" Owner=\"NLM\" IndexingMethod=\"Curated\"><PMID Version=\"1\">38157463</PMID><DateCompleted><Year>2024</Year><Month>03</Month><Day>07</Day></DateCompleted><DateRevised><Year>2024</Year><Month>12</Month><Day>04</Day></DateRevised><Article
+        PubModel=\"Print-Electronic\"><Journal><ISSN IssnType=\"Electronic\">2168-2208</ISSN><JournalIssue
+        CitedMedium=\"Internet\"><Volume>28</Volume><Issue>3</Issue><PubDate><Year>2024</Year><Month>Mar</Month></PubDate></JournalIssue><Title>IEEE
+        journal of biomedical and health informatics</Title><ISOAbbreviation>IEEE
+        J Biomed Health Inform</ISOAbbreviation></Journal><ArticleTitle>Is Attention
+        all You Need in Medical Image Analysis? A Review.</ArticleTitle><Pagination><StartPage>1398</StartPage><EndPage>1411</EndPage><MedlinePgn>1398-1411</MedlinePgn></Pagination><ELocationID
+        EIdType=\"doi\" ValidYN=\"Y\">10.1109/JBHI.2023.3348436</ELocationID><Abstract><AbstractText>Medical
+        imaging is a key component in clinical diagnosis, treatment planning and clinical
+        trial design, accounting for almost 90% of all healthcare data. CNNs achieved
+        performance gains in medical image analysis (MIA) over the last years. CNNs
+        can efficiently model local pixel interactions and be trained on small-scale
+        MI data. Despite their important advances, typical CNN have relatively limited
+        capabilities in modelling \"global\" pixel interactions, which restricts their
+        generalisation ability to understand out-of-distribution data with different
+        \"global\" information. The recent progress of Artificial Intelligence gave
+        rise to Transformers, which can learn global relationships from data. However,
+        full Transformer models need to be trained on large-scale data and involve
+        tremendous computational complexity. Attention and Transformer compartments
+        (\"Transf/Attention\") which can well maintain properties for modelling global
+        relationships, have been proposed as lighter alternatives of full Transformers.
+        Recently, there is an increasing trend to co-pollinate complementary local-global
+        properties from CNN and Transf/Attention architectures, which led to a new
+        era of hybrid models. The past years have witnessed substantial growth in
+        hybrid CNN-Transf/Attention models across diverse MIA problems. In this systematic
+        review, we survey existing hybrid CNN-Transf/Attention models, review and
+        unravel key architectural designs, analyse breakthroughs, and evaluate current
+        and future opportunities as well as challenges. We also introduced an analysis
+        framework on generalisation opportunities of scientific and clinical impact,
+        based on which new data-driven domain generalisation and adaptation methods
+        can be stimulated.</AbstractText></Abstract><AuthorList CompleteYN=\"Y\"><Author
+        ValidYN=\"Y\"><LastName>Papanastasiou</LastName><ForeName>Giorgos</ForeName><Initials>G</Initials></Author><Author
+        ValidYN=\"Y\"><LastName>Dikaios</LastName><ForeName>Nikolaos</ForeName><Initials>N</Initials></Author><Author
+        ValidYN=\"Y\"><LastName>Huang</LastName><ForeName>Jiahao</ForeName><Initials>J</Initials></Author><Author
+        ValidYN=\"Y\"><LastName>Wang</LastName><ForeName>Chengjia</ForeName><Initials>C</Initials></Author><Author
+        ValidYN=\"Y\"><LastName>Yang</LastName><ForeName>Guang</ForeName><Initials>G</Initials></Author></AuthorList><Language>eng</Language><GrantList
+        CompleteYN=\"Y\"><Grant><GrantID>MC/PC/21013</GrantID><Acronym>MRC_</Acronym><Agency>Medical
+        Research Council</Agency><Country>United Kingdom</Country></Grant></GrantList><PublicationTypeList><PublicationType
+        UI=\"D000078182\">Systematic Review</PublicationType><PublicationType UI=\"D016428\">Journal
+        Article</PublicationType><PublicationType UI=\"D013485\">Research Support,
+        Non-U.S. Gov't</PublicationType></PublicationTypeList><ArticleDate DateType=\"Electronic\"><Year>2024</Year><Month>03</Month><Day>06</Day></ArticleDate></Article><MedlineJournalInfo><Country>United
+        States</Country><MedlineTA>IEEE J Biomed Health Inform</MedlineTA><NlmUniqueID>101604520</NlmUniqueID><ISSNLinking>2168-2194</ISSNLinking></MedlineJournalInfo><CitationSubset>IM</CitationSubset><MeshHeadingList><MeshHeading><DescriptorName
+        UI=\"D001185\" MajorTopicYN=\"Y\">Artificial Intelligence</DescriptorName></MeshHeading><MeshHeading><DescriptorName
+        UI=\"D007091\" MajorTopicYN=\"Y\">Image Processing, Computer-Assisted</DescriptorName></MeshHeading><MeshHeading><DescriptorName
+        UI=\"D003198\" MajorTopicYN=\"N\">Computer Simulation</DescriptorName></MeshHeading></MeshHeadingList></MedlineCitation><PubmedData><History><PubMedPubDate
+        PubStatus=\"medline\"><Year>2024</Year><Month>3</Month><Day>7</Day><Hour>6</Hour><Minute>43</Minute></PubMedPubDate><PubMedPubDate
+        PubStatus=\"pubmed\"><Year>2024</Year><Month>1</Month><Day>2</Day><Hour>11</Hour><Minute>47</Minute></PubMedPubDate><PubMedPubDate
+        PubStatus=\"entrez\"><Year>2023</Year><Month>12</Month><Day>29</Day><Hour>15</Hour><Minute>4</Minute></PubMedPubDate></History><PublicationStatus>ppublish</PublicationStatus><ArticleIdList><ArticleId
+        IdType=\"pubmed\">38157463</ArticleId><ArticleId IdType=\"doi\">10.1109/JBHI.2023.3348436</ArticleId></ArticleIdList></PubmedData></PubmedArticle><PubmedArticle><MedlineCitation
+        Status=\"MEDLINE\" Owner=\"NLM\" IndexingMethod=\"Automated\"><PMID Version=\"1\">36741395</PMID><DateCompleted><Year>2023</Year><Month>02</Month><Day>07</Day></DateCompleted><DateRevised><Year>2026</Year><Month>10</Month><Day>01</Day></DateRevised><Article
+        PubModel=\"Electronic-eCollection\"><Journal><ISSN IssnType=\"Electronic\">1664-3224</ISSN><JournalIssue
+        CitedMedium=\"Internet\"><Volume>13</Volume><PubDate><Year>2022</Year></PubDate></JournalIssue><Title>Frontiers
+        in immunology</Title><ISOAbbreviation>Front Immunol</ISOAbbreviation></Journal><ArticleTitle>Counting
+        is almost all you need.</ArticleTitle><Pagination><StartPage>1031011</StartPage><MedlinePgn>1031011</MedlinePgn></Pagination><ELocationID
+        EIdType=\"pii\" ValidYN=\"Y\">1031011</ELocationID><ELocationID EIdType=\"doi\"
+        ValidYN=\"Y\">10.3389/fimmu.2022.1031011</ELocationID><Abstract><AbstractText>The
+        immune memory repertoire encodes the history of present and past infections
+        and immunological attributes of the individual. As such, multiple methods
+        were proposed to use T-cell receptor (TCR) repertoires to detect disease history.
+        We here show that the counting method outperforms two leading algorithms.
+        We then show that the counting can be further improved using a novel attention
+        model to weigh the different TCRs. The attention model is based on the projection
+        of TCRs using a Variational AutoEncoder (VAE). Both counting and attention
+        algorithms predict better than current leading algorithms whether the host
+        had CMV and its HLA alleles. As an intermediate solution between the complex
+        attention model and the very simple counting model, we propose a new Graph
+        Convolutional Network approach that obtains the accuracy of the attention
+        model and the simplicity of the counting model. The code for the models used
+        in the paper is provided at: https://github.com/louzounlab/CountingIsAlmostAllYouNeed.</AbstractText><CopyrightInformation>Copyright
+        &#xa9; 2023 Akerman, Isakov, Levi, Psevkin and Louzoun.</CopyrightInformation></Abstract><AuthorList
+        CompleteYN=\"Y\"><Author ValidYN=\"Y\"><LastName>Akerman</LastName><ForeName>Ofek</ForeName><Initials>O</Initials><AffiliationInfo><Affiliation>Department
+        of Mathematics, Bar-Ilan University, Ramat Gan, Israel.</Affiliation></AffiliationInfo><AffiliationInfo><Affiliation>Department
+        of Computer Science, Bar-Ilan University, Ramat Gan, Israel.</Affiliation></AffiliationInfo></Author><Author
+        ValidYN=\"Y\"><LastName>Isakov</LastName><ForeName>Haim</ForeName><Initials>H</Initials><AffiliationInfo><Affiliation>Department
+        of Mathematics, Bar-Ilan University, Ramat Gan, Israel.</Affiliation></AffiliationInfo></Author><Author
+        ValidYN=\"Y\"><LastName>Levi</LastName><ForeName>Reut</ForeName><Initials>R</Initials><AffiliationInfo><Affiliation>Department
+        of Mathematics, Bar-Ilan University, Ramat Gan, Israel.</Affiliation></AffiliationInfo></Author><Author
+        ValidYN=\"Y\"><LastName>Psevkin</LastName><ForeName>Vladimir</ForeName><Initials>V</Initials><AffiliationInfo><Affiliation>Department
+        of Mathematics, Bar-Ilan University, Ramat Gan, Israel.</Affiliation></AffiliationInfo></Author><Author
+        ValidYN=\"Y\"><LastName>Louzoun</LastName><ForeName>Yoram</ForeName><Initials>Y</Initials><AffiliationInfo><Affiliation>Department
+        of Mathematics, Bar-Ilan University, Ramat Gan, Israel.</Affiliation></AffiliationInfo></Author></AuthorList><Language>eng</Language><PublicationTypeList><PublicationType
+        UI=\"D016428\">Journal Article</PublicationType><PublicationType UI=\"D013485\">Research
+        Support, Non-U.S. Gov't</PublicationType></PublicationTypeList><ArticleDate
+        DateType=\"Electronic\"><Year>2023</Year><Month>01</Month><Day>20</Day></ArticleDate></Article><MedlineJournalInfo><Country>Switzerland</Country><MedlineTA>Front
+        Immunol</MedlineTA><NlmUniqueID>101560960</NlmUniqueID><ISSNLinking>1664-3224</ISSNLinking></MedlineJournalInfo><ChemicalList><Chemical><RegistryNumber>0</RegistryNumber><NameOfSubstance
+        UI=\"D011948\">Receptors, Antigen, T-Cell</NameOfSubstance></Chemical></ChemicalList><CitationSubset>IM</CitationSubset><MeshHeadingList><MeshHeading><DescriptorName
+        UI=\"D011948\" MajorTopicYN=\"Y\">Receptors, Antigen, T-Cell</DescriptorName><QualifierName
+        UI=\"Q000235\" MajorTopicYN=\"N\">genetics</QualifierName></MeshHeading><MeshHeading><DescriptorName
+        UI=\"D000465\" MajorTopicYN=\"Y\">Algorithms</DescriptorName></MeshHeading><MeshHeading><DescriptorName
+        UI=\"D007156\" MajorTopicYN=\"N\">Immunologic Memory</DescriptorName></MeshHeading></MeshHeadingList><KeywordList
+        Owner=\"NOTNLM\"><Keyword MajorTopicYN=\"N\">T cells</Keyword><Keyword MajorTopicYN=\"N\">attention</Keyword><Keyword
+        MajorTopicYN=\"N\">graphs</Keyword><Keyword MajorTopicYN=\"N\">immune repertoire</Keyword><Keyword
+        MajorTopicYN=\"N\">immunology</Keyword><Keyword MajorTopicYN=\"N\">machine
+        learning</Keyword><Keyword MajorTopicYN=\"N\">repertoire classification</Keyword></KeywordList><CoiStatement>The
+        authors declare that the research was conducted in the absence of any commercial
+        or financial relationships that could be construed as a potential conflict
+        of interest.</CoiStatement></MedlineCitation><PubmedData><History><PubMedPubDate
+        PubStatus=\"received\"><Year>2022</Year><Month>8</Month><Day>29</Day></PubMedPubDate><PubMedPubDate
+        PubStatus=\"accepted\"><Year>2022</Year><Month>12</Month><Day>27</Day></PubMedPubDate><PubMedPubDate
+        PubStatus=\"entrez\"><Year>2023</Year><Month>2</Month><Day>6</Day><Hour>3</Hour><Minute>30</Minute></PubMedPubDate><PubMedPubDate
+        PubStatus=\"pubmed\"><Year>2023</Year><Month>2</Month><Day>7</Day><Hour>6</Hour><Minute>0</Minute></PubMedPubDate><PubMedPubDate
+        PubStatus=\"medline\"><Year>2023</Year><Month>2</Month><Day>8</Day><Hour>6</Hour><Minute>0</Minute></PubMedPubDate><PubMedPubDate
+        PubStatus=\"pmc-release\"><Year>2022</Year><Month>1</Month><Day>1</Day></PubMedPubDate></History><PublicationStatus>epublish</PublicationStatus><ArticleIdList><ArticleId
+        IdType=\"pubmed\">36741395</ArticleId><ArticleId IdType=\"pmc\">PMC9896581</ArticleId><ArticleId
+        IdType=\"doi\">10.3389/fimmu.2022.1031011</ArticleId></ArticleIdList><ReferenceList><Reference><Citation>Georgiou
+        G, Ippolito GC, Beausang J, Busse CE, Wardemann H, Quake SR. The promise and
+        challenge of high-throughput sequencing of the antibody repertoire. Nat Biotechnol
+        (2014) 32:158&#x2013;68. doi: 10.1038/nbt.2782</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1038/nbt.2782</ArticleId><ArticleId IdType=\"pmc\">PMC4113560</ArticleId><ArticleId
+        IdType=\"pubmed\">24441474</ArticleId></ArticleIdList></Reference><Reference><Citation>Brown
+        AJ, Snapkov I, Akbar R, Pavlovi&#x107; M, Miho E, Sandve GK, et al. Augmenting
+        adaptive immunity: progress and challenges in the quantitative engineering
+        and analysis of adaptive immune receptor repertoires. Mol Syst Design Eng
+        (2019) 4:701&#x2013;36. doi: 10.1039/C9ME00071B</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1039/C9ME00071B</ArticleId></ArticleIdList></Reference><Reference><Citation>Benichou
+        J, Ben-Hamo R, Louzoun Y, Efroni S. Rep-seq: uncovering the immunological
+        repertoire through next-generation sequencing. Immunology (2012) 135:183&#x2013;91.
+        doi: 10.1111/j.1365-2567.2011.03527.x</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1111/j.1365-2567.2011.03527.x</ArticleId><ArticleId IdType=\"pmc\">PMC3311040</ArticleId><ArticleId
+        IdType=\"pubmed\">22043864</ArticleId></ArticleIdList></Reference><Reference><Citation>Emerson
+        RO, DeWitt WS, Vignali M, Gravley J, Hu JK, Osborne EJ, et al. Immunosequencing
+        identifies signatures of cytomegalovirus exposure history and HLA-mediated
+        effects on the T cell repertoire. Nat Genet (2017) 49:659&#x2013;65. doi:
+        10.1038/ng.3822</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1038/ng.3822</ArticleId><ArticleId
+        IdType=\"pubmed\">28369038</ArticleId></ArticleIdList></Reference><Reference><Citation>Liu
+        M, Goo J, Liu Y, Sun W, Wu MC, Hsu L, et al. TCR-l: an analysis tool for evaluating
+        the association between the T-cell receptor repertoire and clinical phenotypes.
+        BMC Bioinf (2022) 23:1&#x2013;16. doi: 10.1186/s12859-022-04690-2</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1186/s12859-022-04690-2</ArticleId><ArticleId IdType=\"pmc\">PMC9052542</ArticleId><ArticleId
+        IdType=\"pubmed\">35484495</ArticleId></ArticleIdList></Reference><Reference><Citation>Sidhom
+        J-W, Larman HB, Pardoll DM, Baras AS. DeepTCR is a deep learning framework
+        for revealing sequence concepts within T-cell repertoires. Nat Commun (2021)
+        12:1&#x2013;12. doi: 10.1038/s41467-021-21879-w</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1038/s41467-021-21879-w</ArticleId><ArticleId IdType=\"pmc\">PMC7952906</ArticleId><ArticleId
+        IdType=\"pubmed\">33707415</ArticleId></ArticleIdList></Reference><Reference><Citation>Ostmeyer
+        J, Christley S, Toby IT, Cowell LG. Biophysicochemical motifs in T-cell receptor
+        sequences distinguish repertoires from tumor-infiltrating lymphocyte and adjacent
+        healthy tissue. Cancer Res (2019) 79:1671&#x2013;80. doi: 10.1158/0008-5472.CAN-18-2292</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1158/0008-5472.CAN-18-2292</ArticleId><ArticleId IdType=\"pmc\">PMC6445742</ArticleId><ArticleId
+        IdType=\"pubmed\">30622114</ArticleId></ArticleIdList></Reference><Reference><Citation>Widrich
+        M, Sch&#xe4;fl B, Pavlovi&#x107; M, Sandve GK, Hochreiter S, Greiff V, et
+        al. DeepRC: immune repertoire classification with attention-based deep massive
+        multiple instance learning. bioRxiv (2020). doi: 10.1101/2020.04.12.038158</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1101/2020.04.12.038158</ArticleId></ArticleIdList></Reference><Reference><Citation>Zhang
+        H, Zhan X, Li B. Giana allows computationally-efficient tcr clustering and
+        multi-disease repertoire classification by isometric transformation. Nat Commun
+        (2021) 12:1&#x2013;11. doi: 10.1038/s41467-021-25693-2</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1038/s41467-021-25693-2</ArticleId><ArticleId IdType=\"pmc\">PMC8339063</ArticleId><ArticleId
+        IdType=\"pubmed\">34349111</ArticleId></ArticleIdList></Reference><Reference><Citation>Carbonneau
+        M-A, Cheplygina V, Granger E, Gagnon G. Multiple instance learning: A survey
+        of problem characteristics and applications. Pattern Recognition (2018) 77:329&#x2013;53.
+        doi: 10.1016/j.patcog.2017.10.009</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1016/j.patcog.2017.10.009</ArticleId></ArticleIdList></Reference><Reference><Citation>Uriot
+        T. Learning with sets in multiple instance regression applied to remote sensing.
+        arXiv preprint arXiv:1903.07745 (2019). doi: 10.48550/arXiv.1903.07745</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.48550/arXiv.1903.07745</ArticleId></ArticleIdList></Reference><Reference><Citation>Greiff
+        V, Weber CR, Palme J, Bodenhofer U, Miho E, Menzel U, et al. Learning the
+        high-dimensional immunogenomic features that predict public and private antibody
+        repertoires. J Immunol (2017) 199:2985&#x2013;97. doi: 10.4049/jimmunol.1700594</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.4049/jimmunol.1700594</ArticleId><ArticleId IdType=\"pubmed\">28924003</ArticleId></ArticleIdList></Reference><Reference><Citation>Elhanati
+        Y, Sethna Z, Callan CG, Jr., Mora T, Walczak AM. Predicting the spectrum of
+        TCR repertoire sharing with a data-driven model of recombination. Immunol
+        Rev (2018) 284:167&#x2013;79. doi: 10.1111/imr.12665</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1111/imr.12665</ArticleId><ArticleId IdType=\"pmc\">PMC6033145</ArticleId><ArticleId
+        IdType=\"pubmed\">29944757</ArticleId></ArticleIdList></Reference><Reference><Citation>Wucherpfennig
+        KW, Allen PM, Celada F, Cohen IR, De Boer R, Garcia KC, et al. Polyspecificity
+        of T cell and b cell receptor recognition. Semin Immunol (2007) 19 (4):216&#x2013;24.</Citation><ArticleIdList><ArticleId
+        IdType=\"pmc\">PMC2034306</ArticleId><ArticleId IdType=\"pubmed\">17398114</ArticleId></ArticleIdList></Reference><Reference><Citation>Mora
+        T, Walczak AM. How many different clonotypes do immune repertoires contain?
+        Curr Opin Syst Biol (2019) 18:104&#x2013;10. doi: 10.1016/j.coisb.2019.10.001</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.coisb.2019.10.001</ArticleId></ArticleIdList></Reference><Reference><Citation>Sethna
+        Z, Elhanati Y, Callan CG, Jr., Walczak AM, Mora T. OLGA: fast computation
+        of generation probabilities of b-and T-cell receptor amino acid sequences
+        and motifs. Bioinformatics (2019) 35:2974&#x2013;81. doi: 10.1093/bioinformatics/btz035</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1093/bioinformatics/btz035</ArticleId><ArticleId IdType=\"pmc\">PMC6735909</ArticleId><ArticleId
+        IdType=\"pubmed\">30657870</ArticleId></ArticleIdList></Reference><Reference><Citation>DeWitt
+        WS, III, Smith A, Schoch G, Hansen JA, Matsen FA, IV, Bradley P. Human t cell
+        receptor occurrence patterns encode immune history, genetic background, and
+        receptor specificity. Elife (2018) 7:e38358. doi: 10.7554/eLife.38358.043</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.7554/eLife.38358.043</ArticleId><ArticleId IdType=\"pmc\">PMC6162092</ArticleId><ArticleId
+        IdType=\"pubmed\">30152754</ArticleId></ArticleIdList></Reference><Reference><Citation>Christophersen
+        A, R&#xe1;ki M, Bergseng E, Lundin KE, Jahnsen J, Sollid LM, et al. Tetramer-visualized
+        gluten-specific CD4+ T cells in blood as a potential diagnostic marker for
+        coeliac disease without oral gluten challenge. United Eur Gastroenterol J
+        (2014) 2:268&#x2013;78. doi: 10.1177/2050640614540154</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1177/2050640614540154</ArticleId><ArticleId IdType=\"pmc\">PMC4114117</ArticleId><ArticleId
+        IdType=\"pubmed\">25083284</ArticleId></ArticleIdList></Reference><Reference><Citation>Dvorkin
+        S, Levi R, Louzoun Y. Autoencoder based local T cell repertoire density can
+        be used to classify samples and T cell receptors. PloS Comput Biol (2021)
+        17:e1009225. doi: 10.1371/journal.pcbi.1009225</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1371/journal.pcbi.1009225</ArticleId><ArticleId IdType=\"pmc\">PMC8341707</ArticleId><ArticleId
+        IdType=\"pubmed\">34310600</ArticleId></ArticleIdList></Reference><Reference><Citation>Katayama
+        Y, Kobayashi TJ. MotifBoost: k-mer based data-efficient immune repertoire
+        classification method. bioRxiv (2021). doi: 10.1101/2021.09.28.462258</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1101/2021.09.28.462258</ArticleId></ArticleIdList></Reference><Reference><Citation>Vaswani
+        A, Shazeer N, Parmar N, Uszkoreit J, Jones L, Gomez AN, et al. Attention is
+        all you need. Adv Neural Inf Process Syst (2017), 30.</Citation></Reference><Reference><Citation>Benichou
+        JI, van Heijst JW, Glanville J, Louzoun Y. Converging evolution leads to near
+        maximal junction diversity through parallel mechanisms in b and T cell receptors.
+        Phys Biol (2017) 14:045003. doi: 10.1088/1478-3975/aa7366</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1088/1478-3975/aa7366</ArticleId><ArticleId IdType=\"pubmed\">28510537</ArticleId></ArticleIdList></Reference><Reference><Citation>Tickotsky-Moskovitz
+        N, Louzoun Y, Dvorkin S, Rotkopf A, Kuperman AA, Efroni S. CDR3 and V genes
+        show distinct reconstitution patterns in T cell repertoire post-allogeneic
+        bone marrow transplantation. Immunogenetics (2021) 73:163&#x2013;73. doi:
+        10.1007/s00251-020-01200-7</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1007/s00251-020-01200-7</ArticleId><ArticleId
+        IdType=\"pubmed\">33475766</ArticleId></ArticleIdList></Reference><Reference><Citation>Gordin
+        M, Philip H, Zilberberg A, Gidoni M, Margalit R, Clouser C, et al. Breast
+        cancer is marked by specific, public T-cell receptor CDR3 regions shared by
+        mice and humans. PloS Comput Biol (2021) 17:e1008486. doi: 10.1371/journal.pcbi.1008486</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1371/journal.pcbi.1008486</ArticleId><ArticleId IdType=\"pmc\">PMC7846026</ArticleId><ArticleId
+        IdType=\"pubmed\">33465095</ArticleId></ArticleIdList></Reference><Reference><Citation>Snir
+        T, Efroni S. T Cell repertoire sequencing as a cancer&#x2019;s liquid biopsy
+        can we decode what the immune system is coding? Curr Opin Syst Biol (2020)
+        24:135&#x2013;41. doi: 10.1016/j.coisb.2020.10.009</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.coisb.2020.10.009</ArticleId></ArticleIdList></Reference><Reference><Citation>Bradley
+        AP. The use of the area under the roc curve in the evaluation of machine learning
+        algorithms. Pattern Recognition (1997) 30:1145&#x2013;59. doi:&#xa0; 10.1016/S0031-3203(96)00142-2</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/S0031-3203(96)00142-2</ArticleId></ArticleIdList></Reference><Reference><Citation>Nolan
+        S, Vignali M, Klinger M, Dines JN, Kaplan IM, Svejnoha E, et al. A large-scale
+        database of t-cell receptor beta (tcr&#x3b2;) sequences and binding associations
+        from natural and synthetic exposure to sars-cov-2. Res Square (2020). doi:
+        10.21203/rs.3.rs-51964/v1</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.21203/rs.3.rs-51964/v1</ArticleId><ArticleId
+        IdType=\"pmc\">PMC11873104</ArticleId><ArticleId IdType=\"pubmed\">40034696</ArticleId></ArticleIdList></Reference><Reference><Citation>Ling
+        CX, Huang J, Zhang H. (2003). AUC: a better measure than accuracy in comparing
+        learning algorithms, in: Conference of the Canadian Society for Computational
+        Studies of Intelligence, vol 706. (Springer; ). pp. 329&#x2013;41.</Citation></Reference><Reference><Citation>Fu
+        H, Li C, Liu X, Gao J, Celikyilmaz A, Carin L. Cyclical annealing schedule:
+        A simple approach to mitigating kl vanishing. arXiv preprint arXiv:1903.10145
+        (2019). doi: 10.18653/v1/N19-1021</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.18653/v1/N19-1021</ArticleId></ArticleIdList></Reference><Reference><Citation>Kipf
+        TN, Welling M. (2016). Semi-supervised classification with graph convolutional
+        networks. arXiv preprint arXiv:1609.02907.</Citation></Reference><Reference><Citation>Huisman
+        W, Hageman L, Leboux DA, Khmelevskaya A, Efimov GA, Roex MC, et al. Public
+        T-cell receptors (TCRs) revisited by analysis of the magnitude of identical
+        and highly-similar TCRs in virus-specific T-cell repertoires of healthy individuals.
+        bioRxiv (2021). doi: 10.1101/2021.11.29.470325</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1101/2021.11.29.470325</ArticleId><ArticleId IdType=\"pmc\">PMC8987591</ArticleId><ArticleId
+        IdType=\"pubmed\">35401538</ArticleId></ArticleIdList></Reference><Reference><Citation>Glanville
+        J, Huang H, Nau A, Hatton O, Wagar LE, Rubelt F, et al. Identifying specificity
+        groups in the T cell receptor repertoire. Nature (2017) 547:94&#x2013;8. doi:
+        10.1038/nature22976</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1038/nature22976</ArticleId><ArticleId
+        IdType=\"pmc\">PMC5794212</ArticleId><ArticleId IdType=\"pubmed\">28636589</ArticleId></ArticleIdList></Reference><Reference><Citation>Dash
+        P, Fiore-Gartland AJ, Hertz T, Wang GC, Sharma S, Souquette A, et al. Quantifiable
+        predictive features define epitope-specific T cell receptor repertoires. Nature
+        (2017) 547:89&#x2013;93. doi: 10.1038/nature22383</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1038/nature22383</ArticleId><ArticleId IdType=\"pmc\">PMC5616171</ArticleId><ArticleId
+        IdType=\"pubmed\">28636592</ArticleId></ArticleIdList></Reference><Reference><Citation>Springer
+        I, Besser H, Tickotsky-Moskovitz N, Dvorkin S, Louzoun Y. Prediction of specific
+        TCR-peptide binding from large dictionaries of TCR-peptide pairs. Front Immunol
+        (2020) 11:1803. doi: 10.3389/fimmu.2020.01803</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.3389/fimmu.2020.01803</ArticleId><ArticleId IdType=\"pmc\">PMC7477042</ArticleId><ArticleId
+        IdType=\"pubmed\">32983088</ArticleId></ArticleIdList></Reference><Reference><Citation>Jurtz
+        VI, Jessen LE, Bentzen AK, Jespersen MC, Mahajan S, Vita R, et al. NetTCR:
+        sequence-based prediction of TCR binding to peptide-MHC complexes using convolutional
+        neural networks. bioRxiv (2018), 433706. doi: 10.1101/433706</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1101/433706</ArticleId></ArticleIdList></Reference><Reference><Citation>Moris
+        P, De Pauw J, Postovskaya A, Ogunjimi B, Laukens K, Meysman P. Treating biomolecular
+        interaction as an image classification problem&#x2013;a case study on T-cell
+        receptor-epitope recognition prediction. bioRxiv (2019).</Citation></Reference><Reference><Citation>Fischer
+        DS, Wu Y, Schubert B, Theis FJ. Predicting antigen specificity of single T
+        cells based on TCR CDR 3 regions. Mol Syst Biol (2020) 16:e9416. doi: 10.15252/msb.20199416</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.15252/msb.20199416</ArticleId><ArticleId IdType=\"pmc\">PMC7418512</ArticleId><ArticleId
+        IdType=\"pubmed\">32779888</ArticleId></ArticleIdList></Reference><Reference><Citation>Gielis
+        S, Moris P, Bittremieux W, De Neuter N, Ogunjimi B, Laukens K, et al. TCRex:
+        detection of enriched T cell epitope specificity in full T cell receptor sequence
+        repertoires. Frontiers Immunol (2019) 10, 2820. doi:&#xa0; 10.1101/373472</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1101/373472</ArticleId><ArticleId IdType=\"pmc\">PMC6896208</ArticleId><ArticleId
+        IdType=\"pubmed\">31849987</ArticleId></ArticleIdList></Reference><Reference><Citation>Springer
+        I, Tickotsky N, Louzoun Y. Contribution of t cell receptor alpha and beta
+        cdr3, mhc typing, v and j genes to peptide binding prediction. Front Immunol
+        (2021) 12. doi: 10.3389/fimmu.2021.664514</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.3389/fimmu.2021.664514</ArticleId><ArticleId IdType=\"pmc\">PMC8107833</ArticleId><ArticleId
+        IdType=\"pubmed\">33981311</ArticleId></ArticleIdList></Reference><Reference><Citation>Montemurro
+        A, Schuster V, Povlsen HR, Bentzen AK, Jurtz V, Chronister WD, et al. NetTCR-2.0
+        enables accurate prediction of tcr-peptide binding by using paired TCR&#x3b1;
+        and &#x3b2; sequence data. Commun Biol (2021) 4:1&#x2013;13. doi: 10.1038/s42003-021-02610-3</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1038/s42003-021-02610-3</ArticleId><ArticleId IdType=\"pmc\">PMC8433451</ArticleId><ArticleId
+        IdType=\"pubmed\">34508155</ArticleId></ArticleIdList></Reference><Reference><Citation>Tong
+        Y, Wang J, Zheng T, Zhang X, Xiao X, Zhu X, et al. SETE: sequence-based ensemble
+        learning approach for TCR epitope binding prediction. Comput Biol Chem (2020)
+        87:107281. doi: 10.1016/j.compbiolchem.2020.107281</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.compbiolchem.2020.107281</ArticleId><ArticleId IdType=\"pubmed\">32623023</ArticleId></ArticleIdList></Reference><Reference><Citation>\nBeshnova
+        D, Ye J, Onabolu O, Moon B, Zheng W, Fu Y-X, et al. \n<i>De novo</i> prediction
+        of cancer-associated T cell receptors for noninvasive cancer detection. Sci
+        Trans Med (2020) 12:eaaz3738. doi: 10.1126/scitranslmed.aaz3738\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1126/scitranslmed.aaz3738</ArticleId><ArticleId IdType=\"pmc\">PMC7887928</ArticleId><ArticleId
+        IdType=\"pubmed\">32817363</ArticleId></ArticleIdList></Reference><Reference><Citation>Jokinen
+        E, Huuhtanen J, Mustjoki S, Heinonen M, L&#xe4;hdesm&#xe4;ki H. Predicting
+        recognition between T cell receptors and epitopes with TCRGP. PloS Comput
+        Biol (2021) 17:e1008814. doi: 10.1371/journal.pcbi.1008814</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1371/journal.pcbi.1008814</ArticleId><ArticleId IdType=\"pmc\">PMC8023491</ArticleId><ArticleId
+        IdType=\"pubmed\">33764977</ArticleId></ArticleIdList></Reference><Reference><Citation>De
+        Neuter N, Bittremieux W, Beirnaert C, Cuypers B, Mrzic A, Moris P, et al.
+        On the feasibility of mining CD8+ T cell receptor patterns underlying immunogenic
+        peptide recognition. Immunogenetics (2018) 70:159&#x2013;68. doi: 10.1007/s00251-017-1023-5</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1007/s00251-017-1023-5</ArticleId><ArticleId IdType=\"pubmed\">28779185</ArticleId></ArticleIdList></Reference><Reference><Citation>Glazer
+        N, Akerman O, Louzoun Y. Naive and memory T cells TCR-HLA binding prediction.
+        Oxford Open Immunol (2022). doi: 10.1093/oxfimm/iqac001</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1093/oxfimm/iqac001</ArticleId><ArticleId IdType=\"pmc\">PMC9914496</ArticleId><ArticleId
+        IdType=\"pubmed\">36846560</ArticleId></ArticleIdList></Reference><Reference><Citation>Zhang
+        H, Lund O, Nielsen M. The pickpocket method for predicting binding specificities
+        for receptors based on receptor pocket similarities: application to mhc-peptide
+        binding. Bioinformatics (2009) 25:1293&#x2013;9. doi: 10.1093/bioinformatics/btp137</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1093/bioinformatics/btp137</ArticleId><ArticleId IdType=\"pmc\">PMC2732311</ArticleId><ArticleId
+        IdType=\"pubmed\">19297351</ArticleId></ArticleIdList></Reference><Reference><Citation>Liu
+        G, Li D, Li Z, Qiu S, Li W, Chao CC, et al. Pssmhcpan: a novel PSSM-based
+        software for predicting class I peptide-hla binding affinity. Giga Science
+        (2017) 6(5):gix017. doi: 10.1093/gigascience/gix017</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1093/gigascience/gix017</ArticleId><ArticleId IdType=\"pmc\">PMC5467046</ArticleId><ArticleId
+        IdType=\"pubmed\">28327987</ArticleId></ArticleIdList></Reference><Reference><Citation>Andreatta
+        M, Nielsen M. Gapped sequence alignment using artificial neural networks:
+        application to the mhc class i system. Bioinformatics (2016) 32:511&#x2013;7.
+        doi: 10.1093/bioinformatics/btv639</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1093/bioinformatics/btv639</ArticleId><ArticleId
+        IdType=\"pmc\">PMC6402319</ArticleId><ArticleId IdType=\"pubmed\">26515819</ArticleId></ArticleIdList></Reference><Reference><Citation>Mei
+        S, Li F, Xiang D, Ayala R, Faridi P, Webb GI, et al. Anthem: a user customised
+        tool for fast and accurate prediction of binding between peptides and HLA
+        class I molecules. Briefings Bioinf (2021). doi: 10.1093/bib/bbaa415</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1093/bib/bbaa415</ArticleId><ArticleId IdType=\"pubmed\">33454737</ArticleId></ArticleIdList></Reference><Reference><Citation>O&#x2019;Donnell
+        TJ, Rubinsteyn A, Bonsack M, Riemer AB, Laserson U, Hammerbacher J. MHCflurry:
+        open-source class I MHC binding affinity prediction. Cell Syst (2018) 7:129&#x2013;32.
+        doi: 10.1016/j.cels.2018.05.014</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1016/j.cels.2018.05.014</ArticleId><ArticleId
+        IdType=\"pubmed\">29960884</ArticleId></ArticleIdList></Reference><Reference><Citation>Reynisson
+        B, Alvarez B, Paul S, Peters B, Nielsen M. NetMHCpan-4.1 and NetMHCIIpan-4.0:
+        improved predictions of MHC antigen presentation by concurrent motif deconvolution
+        and integration of MS MHC eluted ligand data. Nucleic Acids Res (2020) 48:W449&#x2013;54.
+        doi: 10.1093/nar/gkaa379</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1093/nar/gkaa379</ArticleId><ArticleId
+        IdType=\"pmc\">PMC7319546</ArticleId><ArticleId IdType=\"pubmed\">32406916</ArticleId></ArticleIdList></Reference><Reference><Citation>Liberman
+        G, Vider-Shalit T, Louzoun Y. Kernel multi label vector optimization (kmlvo):
+        A unified multi-label classification formalism. In: Nicosia G, Pardalos P,
+        editors. Learning and intelligent optimization. Berlin, Heidelberg: Springer
+        Berlin Heidelberg; (2013). p. 131&#x2013;7. doi:&#xa0; 10.1007/978-3-642-44973-4\\s\\do5(1)5</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1007/978-3-642-44973-4\\s\\do5(1)5</ArticleId></ArticleIdList></Reference><Reference><Citation>Vider-Shalit
+        T, Louzoun Y. MHC-I prediction using a combination of T cell epitopes and
+        MHC-I binding peptides. J Immunol Methods (2011) 374:43&#x2013;6. doi:&#xa0;
+        10.1016/j.jim.2010.09.037. High-throughput methods for immunology: Machine
+        learning and automation.</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1016/j.jim.2010.09.037</ArticleId><ArticleId
+        IdType=\"pmc\">PMC3044214</ArticleId><ArticleId IdType=\"pubmed\">20920507</ArticleId></ArticleIdList></Reference><Reference><Citation>Ginodi
+        I, Vider-Shalit T, Tsaban L, Louzoun Y. Precise score for the prediction of
+        peptides cleaved by the proteasome. Bioinformatics (2008) 24:477&#x2013;83.
+        doi:&#xa0; 10.1093/bioinformatics/btm616</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1093/bioinformatics/btm616</ArticleId><ArticleId IdType=\"pubmed\">18216070</ArticleId></ArticleIdList></Reference><Reference><Citation>Vider-Shalit
+        T, Louzoun Y. Mhc-i prediction using a combination of t cell epitopes and
+        mhc-i binding peptides. J Immunol Methods (2011) 374:43&#x2013;6. doi: 10.1016/j.jim.2010.09.037</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.jim.2010.09.037</ArticleId><ArticleId IdType=\"pmc\">PMC3044214</ArticleId><ArticleId
+        IdType=\"pubmed\">20920507</ArticleId></ArticleIdList></Reference><Reference><Citation>Liberman
+        G, Vider-Shalit T, Louzoun Y. (2013). Kernel multi label vector optimization
+        (kmlvo): a unified multi-label classification formalism, in: International
+        Conference on Learning and Intelligent Optimization, . pp. 131&#x2013;7. Springer.</Citation></Reference></ReferenceList></PubmedData></PubmedArticle><PubmedArticle><MedlineCitation
+        Status=\"PubMed-not-MEDLINE\" Owner=\"NLM\"><PMID Version=\"1\">38978847</PMID><DateRevised><Year>2024</Year><Month>07</Month><Day>10</Day></DateRevised><Article
+        PubModel=\"Electronic-eCollection\"><Journal><ISSN IssnType=\"Print\">1179-1578</ISSN><JournalIssue
+        CitedMedium=\"Print\"><Volume>17</Volume><PubDate><Year>2024</Year></PubDate></JournalIssue><Title>Psychology
+        research and behavior management</Title><ISOAbbreviation>Psychol Res Behav
+        Manag</ISOAbbreviation></Journal><ArticleTitle>Mitigating Harms of Social
+        Media for Adolescent Body Image and Eating Disorders: A Review.</ArticleTitle><Pagination><StartPage>2587</StartPage><EndPage>2601</EndPage><MedlinePgn>2587-2601</MedlinePgn></Pagination><ELocationID
+        EIdType=\"doi\" ValidYN=\"Y\">10.2147/PRBM.S410600</ELocationID><Abstract><AbstractText>Social
+        media has negative effects on adolescent body image and disordered eating
+        behaviors, yet adolescents are unlikely to discontinue engaging with these
+        platforms. Thus, it is important to identify strategies that can reduce the
+        harms of social media on adolescent mental health. This article reviews research
+        on social media and adolescent body image, and discusses strategies to reduce
+        risks associated with social media use. Topics covered include interventions
+        aimed at mitigating social media's negative impacts, the body-positivity movement,
+        and policies regulating adolescents' social media use. Overall, this review
+        highlights specific factors (such as staffing, duration, modality, facilitator
+        training, and cultural sensitivity) to consider when designing and implementing
+        social media interventions targeting adolescents. This review also discusses
+        psychosocial outcomes associated with body positivity on social media. Finally,
+        policy efforts to reduce the negative impact of social media on adolescents'
+        body image and eating behaviors are described. In sum, there is a strong need
+        to conduct further research identifying optimal approaches to reduce the harms
+        of social media for adolescent body image and eating behavior.</AbstractText><CopyrightInformation>&#xa9;
+        2024 Mazzeo et al.</CopyrightInformation></Abstract><AuthorList CompleteYN=\"Y\"><Author
+        ValidYN=\"Y\"><LastName>Mazzeo</LastName><ForeName>Suzanne E</ForeName><Initials>SE</Initials><AffiliationInfo><Affiliation>Department
+        of Psychology, Virginia Commonwealth University, Richmond, VA, USA.</Affiliation></AffiliationInfo><AffiliationInfo><Affiliation>Department
+        of Pediatrics, Virginia Commonwealth University, Richmond, VA, USA.</Affiliation></AffiliationInfo></Author><Author
+        ValidYN=\"Y\"><LastName>Weinstock</LastName><ForeName>Madison</ForeName><Initials>M</Initials><AffiliationInfo><Affiliation>Department
+        of Psychology, Virginia Commonwealth University, Richmond, VA, USA.</Affiliation></AffiliationInfo></Author><Author
+        ValidYN=\"Y\" EqualContrib=\"Y\"><LastName>Vashro</LastName><ForeName>Taylor
+        Nadine</ForeName><Initials>TN</Initials><AffiliationInfo><Affiliation>Department
+        of Psychology, Virginia Commonwealth University, Richmond, VA, USA.</Affiliation></AffiliationInfo></Author><Author
+        ValidYN=\"Y\" EqualContrib=\"Y\"><LastName>Henning</LastName><ForeName>Taryn</ForeName><Initials>T</Initials><AffiliationInfo><Affiliation>Department
+        of Psychology, Virginia Commonwealth University, Richmond, VA, USA.</Affiliation></AffiliationInfo></Author><Author
+        ValidYN=\"Y\"><LastName>Derrigo</LastName><ForeName>Karly</ForeName><Initials>K</Initials><AffiliationInfo><Affiliation>Department
+        of Psychology, Virginia Commonwealth University, Richmond, VA, USA.</Affiliation></AffiliationInfo></Author></AuthorList><Language>eng</Language><PublicationTypeList><PublicationType
+        UI=\"D016428\">Journal Article</PublicationType><PublicationType UI=\"D016454\">Review</PublicationType></PublicationTypeList><ArticleDate
+        DateType=\"Electronic\"><Year>2024</Year><Month>07</Month><Day>04</Day></ArticleDate></Article><MedlineJournalInfo><Country>New
+        Zealand</Country><MedlineTA>Psychol Res Behav Manag</MedlineTA><NlmUniqueID>101514563</NlmUniqueID><ISSNLinking>1179-1578</ISSNLinking></MedlineJournalInfo><KeywordList
+        Owner=\"NOTNLM\"><Keyword MajorTopicYN=\"N\">adolescent</Keyword><Keyword
+        MajorTopicYN=\"N\">body image</Keyword><Keyword MajorTopicYN=\"N\">eating
+        disorders</Keyword><Keyword MajorTopicYN=\"N\">review</Keyword><Keyword MajorTopicYN=\"N\">social
+        media</Keyword></KeywordList><CoiStatement>The authors report no conflicts
+        of interest in this work. References1.BrownBBLarsonJ, LernerRM, SteinbergL.
+        Handbook of Adolescent Psychology: Contextual influences on adolescent development.
+        Vol. 2. 3rd ed. (John Wiley &amp; Sons Inc.) 2009Available From: https://onlinelibrary.wiley.com/doi/10.1002/9780470479193.adlpsy002004.2.MittmannG,
+        WoodcockK, D&#xf6;rflerS, KrammerI, PollakI, SchrankB. &#x201c;TikTok is my
+        life and snapchat is my ventricle&#x201d;: a mixed-methods study on the role
+        of online communication tools for friendships in early adolescents. J Early
+        Adoles. 2022;42(2):172&#x2013;203. doi:10.1177/027243162110203683.DahlgrenCL,
+        Sundgot-BorgenC, KvalemIL, WennersbergAL, WistingL. Further evidence of the
+        association between social media use, eating disorder pathology and appearance
+        ideals and pressure: a cross-sectional study in Norwegian adolescents. J Eat
+        Disord. 2024;12(1):34. doi:10.1186/s40337-024-00992-3384245794.HollandG, TiggemannM.
+        A systematic review of the impact of the use of social networking sites on
+        body image and disordered eating outcomes. Body Image. 2016;17:100&#x2013;110.
+        doi:10.1016/j.bodyim.2016.02.008269951585.SaiphooAN, VahediZ. A meta-analytic
+        review of the relationship between social media use and body image disturbance.
+        Comput Human Behav. 2019;101:259&#x2013;275. doi:10.1016/j.chb.2019.07.0286.VandenboschL,
+        FardoulyJ, TiggemannM. Social media and body image: recent trends and future
+        directions. Curr Opin Psychol. 2022;45:101289. doi:10.1016/j.copsyc.2021.12.002350304607.WellsG,
+        HorwitzJ, SeetharamanDFacebook knows Instagram is toxic for teen girls, company
+        documents show. Wall Street Journal; Available from: https://www.wsj.com/articles/facebook-knows-instagram-is-toxic-for-teen-girls-company-documents-show-11631620739.
+        Accessed March13, 2024.8.NetworkTLWhat students are saying about how social
+        media affects their body image. The New York Times. 2024.9.WilkschSM, O&#x2019;SheaA,
+        HoP, ByrneS, WadeTD. The relationship between social media use and disordered
+        eating in young adolescents. Int J Eating Disord. 2020;53(1):96&#x2013;106.
+        doi:10.1002/eat.2319810.PolaninJR, EspelageDL, GrotpeterJK, et al. A systematic
+        review and meta-analysis of interventions to decrease cyberbullying perpetration
+        and victimization. Prev Sci. 2022;23(3):439&#x2013;454. doi:10.1007/s11121-021-01259-y3415950611.DayS,
+        BusseyK, TrompeterN, MitchisonD. The impact of teasing and bullying victimization
+        on disordered eating and body image disturbance among adolescents: a systematic
+        review. Trauma Violence Abuse.2022;23(3):985&#x2013;1006. doi:10.1177/15248380209855343346143912.BerneS,
+        Fris&#xe9;nA, KlingJ. Appearance-related cyberbullying: a qualitative investigation
+        of characteristics, content, reasons, and effects. Body Image. 2014;11(4):527&#x2013;533.
+        doi:10.1016/j.bodyim.2014.08.0062519430913.KelesB, McCraeN, GrealishA. A systematic
+        review: the influence of social media on depression, anxiety and psychological
+        distress in adolescents. Int J Adolesc Youth. 2020;25(1):79&#x2013;93. doi:10.1080/02673843.2019.159085114.McCraeN,
+        GettingsS, PurssellE. Social media and depressive symptoms in childhood and
+        adolescence: a systematic review. Adolesc Res Rev. 2017;2(4):315&#x2013;330.
+        doi:10.1007/s40894-017-0053-415.BarakatS, McLeanSA, BryantE, et al. Risk factors
+        for eating disorders: findings from a rapid review. J Eat Disord. 2023;11(1):8.3665057216.SpindlerA,
+        MilosG. Links between eating disorder symptom severity and psychiatric comorbidity.
+        Eating Behav. 2007;8(3):364&#x2013;373. doi:10.1016/j.eatbeh.2006.11.01217.TiggemannM.
+        Digital modification and body image on social media: disclaimer labels, captions,
+        hashtags, and comments. Body Image. 2022;41:172&#x2013;180. doi:10.1016/j.bodyim.2022.02.0123525965518.KrayerA,
+        IngledewDK, IphofenR. Social comparison and body image in adolescence: a grounded
+        theory approach. Health Educ Res. 2008;23(5):892&#x2013;903. doi:10.1093/her/cym0761815614819.KleemansM,
+        DaalmansS, CarbaatI, Ansch&#xfc;tzD. Picture perfect: the direct effect of
+        manipulated Instagram photos on body image in adolescent girls. Media Psychol.
+        2018;21(1):93&#x2013;110. doi:10.1080/15213269.2016.125739220.MoormanEL, WarnickJL,
+        AcharyaR, JanickeDM. The use of internet sources for nutritional information
+        is linked to weight perception and disordered eating in young adolescents.
+        Appetite. 2020;154:104782. doi:10.1016/j.appet.2020.1047823254446721.CustersK.
+        The urgent matter of online pro-eating disorder content and children: clinical
+        practice. Eur J Pediatr. 2015;174(4):429&#x2013;433. doi:10.1007/s00431-015-2487-72563358022.CarrotteER,
+        VellaAM, LimMSC. Predictors of &#x201c;liking&#x201d; three types of health
+        and fitness-related content on social media: a cross-sectional study. J Med
+        Internet Res. 2015;17(8):e205. doi:10.2196/jmir.48032629768923.Jer&#xf3;nimoF,
+        Carra&#xe7;aEV. Effects of fitspiration content on body image: a systematic
+        review. Eat Weight Disord. 2022;27(8):3017&#x2013;3035. doi:10.1007/s40519-022-01505-43640108224.Urgent
+        responsibility to reduce harms posed by social media on risk for eating disorders:
+        an open letter to Facebook, Instagram, TikTok, and Other Global Social Media
+        Corporations. Available From: https://www.newswise.com/articles/urgent-responsibility-to-reduce-harms-posed-by-social-media-on-risk-for-eating-disorders.
+        Accessed March13, 2024.25.HuddlestonJWould new legislation actually make kids
+        safer online? analyzing the consequences of recent youth online safety proposals.
+        Cato Institute Briefing Paper. 2023;(150).26.MarlattGA, WitkiewitzK. Update
+        on harm-reduction policy and intervention research. Ann Rev Clin Psychol.
+        2010;6(1):591&#x2013;606. doi:10.1146/annurev.clinpsy.121208.1314382019279127.HawkM,
+        CoulterRW, EganJE, et al. Harm reduction principles for healthcare settings.
+        Harm Reduct J. 2017;14(1):1&#x2013;9. doi:10.1186/s12954-017-0196-42805699028.HendlinYH,
+        VoraM, EliasJ, LingPM. Financial conflicts of interest and stance on tobacco
+        harm reduction: a systematic review. Am J Public Health. 2019;109(7):e1&#x2013;e8.
+        doi:10.2105/AJPH.2019.30510629.LevengoodTW, YoonGH, DavoustMJ, et al. Supervised
+        injection facilities as harm reduction: a systematic review. Am J PrevMed.
+        2021;61(5):738&#x2013;749. doi:10.1016/j.amepre.2021.04.01730.KellyY, ZilanawalaA,
+        BookerC, SackerA. Social media use and adolescent mental health: findings
+        from the UK millennium cohort study. EClinical Med. 2018;6:59&#x2013;68. doi:10.1016/j.eclinm.2018.12.00531.Massarat
+        EAV Risa Gelles Watnick and Navid. Teens, social media and technology 2022.
+        pew research center: internet, science &amp; tech, 2024. Available from: https://www.pewresearch.org/internet/2022/08/10/teens-social-media-and-technology-2022/.
+        August10, 2022.32.ZuairAA, SoporyP. Effects of media health literacy school-based
+        interventions on adolescents&#x2019; body image concerns, eating concerns,
+        and thin-internalization attitudes: a systematic review and meta-analysis.
+        Health Commun. 2022;37(1):20&#x2013;28. doi:10.1080/10410236.2020.18139543287308233.McLeanSA,
+        WertheimEH, MastersJ, PaxtonSJ. A pilot evaluation of a social media literacy
+        intervention to reduce risk factors for eating disorders. Intl J Eating Disord.
+        2017;50(7):847&#x2013;851. doi:10.1002/eat.2270834.BellBT, TaylorC, PaddockD,
+        BatesA. Digital Bodies: a controlled evaluation of a brief classroom&#x2010;based
+        intervention for reducing negative body image among adolescents in the digital
+        age. Br J Educ Psychol. 2022;92(1):280&#x2013;298. doi:10.1111/bjep.124493435059435.MahonC,
+        HeveyD. Pilot trial of a self-compassion intervention to address adolescents&#x2019;
+        social media-related body image concerns. Clin Child Psychol Psychiatry. 2023;28(1):307&#x2013;322.
+        doi:10.1177/135910452210992153554946236.KusinaJR, Exline JulieJ. Beyond body
+        image: a systematic review of classroom-based interventions targeting body
+        image of adolescents. Adolesc Res Rev. 2019;4(3):293&#x2013;311. doi:10.1007/s40894-019-00121-137.Sundgot-BorgenC,
+        FriborgO, KolleE, et al. The healthy body image (HBI) intervention: effects
+        of a school-based cluster-randomized controlled trial with 12-months follow-up.
+        Body Image. 2019;29:122&#x2013;131. doi:10.1016/j.bodyim.2019.03.0073092868138.GordonCS,
+        JarmanHK, RodgersRF, et al. Outcomes of a cluster randomized controlled trial
+        of the SoMe social media literacy program for improving body image-related
+        outcomes in adolescent boys and girls. Nutrients. 2021;13(11):3825. doi:10.3390/nu131138253483608439.DiedrichsPC,
+        AtkinsonMJ, GarbettKM, LeckieG. Evaluating the &#x201c;Dove Confident Me&#x201d;
+        five-session body image intervention delivered by teachers in schools: a cluster
+        randomized controlled effectiveness trial. J Adolesc Health. 2021;68(2):331&#x2013;341.
+        doi:10.1016/j.jadohealth.2020.10.0013324372340.GuestE, JarmanH, SharrattN,
+        et al. &#x2018;everybody&#x2019;s different: the appearance game&#x2019;.
+        A randomised controlled trial evaluating an appearance-related board game
+        intervention with children aged 9&#x2013;11 years. Body Image. 2021;36:34&#x2013;44.
+        doi:10.1016/j.bodyim.2020.09.0103316025641.Smolak, L, Cash, TFCashTF, SmolakLBody
+        Image: A Handbook of Science, Practice, and Prevention2nd (New York: Guilford
+        Press)2011. editors. Future challenges for body image science, practice, and
+        prevention.. xxi, 490-xxi. 471&#x2013;47842.YagerZ, DiedrichsPC, RicciardelliLA,
+        HalliwellE. What works in secondary schools? A systematic review of classroom-based
+        body image programs. Body Image. 2013;10(3):271&#x2013;281. doi:10.1016/j.bodyim.2013.04.0012368361143.Lewis-SmithH,
+        GarbettKM, ChaudhryA, et al. Evaluating a body image school-based intervention
+        in India: a randomized controlled trial. Body Image. 2023;44:148&#x2013;156.
+        doi:10.1016/j.bodyim.2022.12.0063660843444.GarbettKM, Lewis-SmithH, ChaudhryA,
+        et al. Acceptability and preliminary efficacy of a school-based body image
+        intervention in urban India: a pilot randomised controlled trial. Body Image.
+        2021;37:282&#x2013;290. doi:10.1016/j.bodyim.2021.02.0113381334545.CraddockN,
+        GarbettKM, HaywoodS, et al. &#x2018;Dove Confident Me Indonesia: Single Session&#x2019;:
+        study protocol for a randomised controlled trial to evaluate a school-based
+        body image intervention among Indonesian adolescents. BMC Public Health. 2021;21(1):2102.
+        doi:10.1186/s12889-021-11770-03478491646.GarbettKM, HaywoodS, CraddockN, et
+        al. Evaluating the efficacy of a social media&#x2013;based intervention (Warna-Warni
+        Waktu) to improve body image among young Indonesian women: parallel randomized
+        controlled trial. J Med Internet Res. 2023;25(1):e42499. doi:10.2196/424993701091147.MathesonEL,
+        SmithHG, AmaralACS, et al. Using chatbot technology to improve Brazilian adolescents&#x2019;
+        body image and mental health at scale: randomized controlled trial. JMIR Mhealth
+        Uhealth. 2023;11(1):e39934. doi:10.2196/399343733560448.GarbettKM, DiedrichsPC.
+        Improving uptake and engagement with child body image interventions delivered
+        to mothers: understanding mother and daughter preferences for intervention
+        content. Body Image. 2016;19:24&#x2013;27. doi:10.1016/j.bodyim.2016.07.0042758047549.LothKA,
+        MacLehoseR, BucchianeriM, CrowS, Neumark-SztainerD. Predictors of dieting
+        and disordered eating behaviors from adolescence to young adulthood. J Adolesc
+        Health. 2014;55(5):705&#x2013;712. doi:10.1016/j.jadohealth.2014.04.0162492549150.FrederickDA,
+        SandhuG, ScottT, AkbariY. Reducing the negative effects of media exposure
+        on body image: testing the effectiveness of subvertising and disclaimer labels.
+        Body Image. 2016;17:171&#x2013;174. doi:10.1016/j.bodyim.2016.03.0092708511251.Cohen,
+        R, Newton-John, T, Slater, AThe case for body positivity on social media:
+        Perspectives on current advances and future directions. J Health Psychol.202126132365&#x2013;2373.
+        doi:10.1177/13591053209124503219113252.RodgersRF, WertheimEH, PaxtonSJ, TylkaTL,
+        HarrigerJA. #Bopo: Enhancing body image through body positive social media-
+        evidence to date and research directions. Body Image. 2022;41:367&#x2013;374.
+        doi:10.1016/j.bodyim.2022.03.0083552515553.LazukaRF, WickMR, KeelPK, HarrigerJA.
+        Are we there yet? Progress in depicting diverse images of beauty in Instagram&#x2019;s
+        body positivity movement. Body Image. 2020;34:85&#x2013;93. doi:10.1016/j.bodyim.2020.05.0013253426954.SmithAC,
+        AhuviaI, ItoS, SchleiderJL. Project body neutrality: piloting a digital single-session
+        intervention for adolescent body image and depression. Int J Eating Disord.
+        2023;56(8):1554&#x2013;1569. doi:10.1002/eat.2397655.Wood-BarcalowNL, TylkaTL,
+        Augustus-HorvathCL. &#x201c;But I Like My Body&#x201d;: Positive body image
+        characteristics and a holistic model for young-adult women. Body Image. 2010;7(2):106&#x2013;116.
+        doi:10.1016/j.bodyim.2010.01.0012015399056.TylkaTL, Wood-BarcalowNL. What
+        is and what is not positive body image? Conceptual foundations and construct
+        definition. Body Image. 2015;14:118&#x2013;129. doi:10.1016/j.bodyim.2015.04.0012592165757.ZavattaroSM.
+        Taking the social justice fight to the cloud: Social media and body positivity.
+        Public Integrity. 2021;23(3):281&#x2013;295. doi:10.1080/10999922.2020.178210458.AffulAA,
+        RicciardelliR. Shaping the online fat acceptance movement: talking about body
+        image and beauty standards. J Gend Stud. 2015;24(4):453&#x2013;472. doi:10.1080/09589236.2015.102852359.BaconL.
+        Health at Every Size: The Surprising Truth About Your Weight. BenBella Books;
+        2010.60.CohenR, ShikoraS. Fighting weight bias and obesity stigma: a call
+        for action. Obes Surg. 2020;30(5):1623&#x2013;1624. doi:10.1007/s11695-020-04525-03219374261.PiranN.
+        New possibilities in the prevention of eating disorders: the introduction
+        of positive body image measures. Body Image. 2015;14:146&#x2013;157. doi:10.1016/j.bodyim.2015.03.0082588671162.CohenR,
+        IrwinL, Newton-JohnT, SlaterA. #bodypositivity: a content analysis of body
+        positive accounts on Instagram. Body Image. 2019;29:47&#x2013;57. doi:10.1016/j.bodyim.2019.02.0073083133463.HarrigerJA,
+        EvansJA, ThompsonJK, TylkaTL. The dangers of the rabbit hole: reflections
+        on social media as a portal into a distorted world of edited bodies and eating
+        disorder risk and the role of algorithms. Body Image. 2022;41:292&#x2013;297.
+        doi:10.1016/j.bodyim.2022.03.0073537833864.BarronAM, Krumrei-MancusoEJ, HarrigerJA.
+        The effects of fitspiration and self-compassion Instagram posts on body image
+        and self-compassion in men and women. Body Image. 2021;37:14&#x2013;27. doi:10.1016/j.bodyim.2021.01.0033355691465.StevensA,
+        GriffithsS. Body Positivity (#BoPo) in everyday life: an ecological momentary
+        assessment study showing potential benefits to individuals&#x2019; body image
+        and emotional wellbeing. Body Image. 2020;35:181&#x2013;191. doi:10.1016/j.bodyim.2020.09.0033306889366.OgdenJ,
+        GoslingC, HazelwoodM, AtkinsE. Exposure to body diversity images as a buffer
+        against the thin-ideal: an experimental study. Psychol Health Med. 2020;25(10):1165&#x2013;1178.
+        doi:10.1080/13548506.2020.17342193211599867.RankinSTPortrait Positive: Changing
+        the way you see. United Kingdom: Portrait Positive; 2018.68.BurnetteCB, KwitowskiMA,
+        MazzeoSE. &#x201c;I don&#x2019;t need people to tell me I&#x2019;m pretty
+        on social media:&#x201d; A qualitative study of social media and body image
+        in early adolescent girls. Body Image. 2017;23:114&#x2013;125. doi:10.1016/j.bodyim.2017.09.0012896505269.RodgersRF,
+        LavewayK, ZalvinoJ, CardoneW, WangL. #BodyPositive: a qualitative exploration
+        of young people&#x2019;s responses to body positive social media content.
+        Body Image. 2023;47:101613. doi:10.1016/j.bodyim.2023.08.0053765924770.RodgersRF,
+        PaxtonSJ, WertheimEH. #Take idealized bodies out of the picture: a scoping
+        review of social media content aiming to protect and promote positive body
+        image. Body Image. 2021;38:10&#x2013;36. doi:10.1016/j.bodyim.2021.03.0093379880071.HendrickseJ,
+        ClaytonRB, RayEC, RidgwayJL, SecharanR. Experimental effects of viewing thin
+        and plus-size models in objectifying and empowering contexts on Instagram.
+        Health Commun. 2021;36(11):1417&#x2013;1425. doi:10.1080/10410236.2020.17610773240105872.CohenR,
+        FardoulyJ, Newton-JohnT, SlaterA. BoPo on Instagram: an experimental investigation
+        of the effects of viewing body positive content on young women&#x2019;s mood
+        and body image. New Media Soc. 2019;21(7):1546&#x2013;1564. doi:10.1177/146144481982653073.ReesA.
+        Beyond Beautiful: A Practical Guide to Being Happy, Confident, and You in
+        a Looks-Obsessed World. Clarkson Potter/Ten Speed; 2019.74.MAF. What if body
+        positivity doesn&#x2019;t work? how about body neutrality? everyday feminism.
+        2016; Available from: https://everydayfeminism.com/2016/02/body-positivity-vs-neutrality.
+        Accessed March13, 2024.75.PuhlRM, HeuerCA. The stigma of obesity: a review
+        and update. Obesity. 2009;17(5):941&#x2013;964. doi:10.1038/oby.2008.6361916516176.SharpG,
+        GerrardY. The body image &#x201c;problem&#x201d; on social media: novel directions
+        for the field. Body Image. 2022;41:267&#x2013;271. doi:10.1016/j.bodyim.2022.03.0043533900177.CostelloN,
+        SuttonR, JonesM, et al. ALGORITHMS, ADDICTION, AND ADOLESCENT MENTAL HEALTH:
+        an interdisciplinary study to inform state-level policy action to protect
+        youth from the dangers of social media. Am J Law Med. 2023;49(2&#x2013;3):135&#x2013;172.
+        doi:10.1017/amj.2023.253834478278.DanthinneES, GiorgianniFE, RodgersRF. Labels
+        to prevent the detrimental effects of media on body image: a systematic review
+        and meta&#x2010;analysis. Intl J Eating Disord. 2020;53(5):647&#x2013;661.
+        doi:10.1002/eat.2324279.BuryB, TiggemannM, SlaterA. Disclaimer labels on fashion
+        magazine advertisements: impact on visual attention and relationship with
+        body dissatisfaction. Body Image. 2016;16:1&#x2013;9. doi:10.1016/j.bodyim.2015.09.0052649872880.PuhlRM.
+        Weight stigma, policy initiatives, and harnessing social media to elevate
+        activism. Body Image. 2022;40:131&#x2013;137. doi:10.1016/j.bodyim.2021.12.0083495338781.LessardLM,
+        PuhlRM. Adolescents&#x2019; exposure to and experiences of weight stigma during
+        the COVID-19 pandemic. J Pediatr Psychol. 2021;46(8):950&#x2013;959. doi:10.1093/jpepsy/jsab0713431372782.RobertsonA.
+        Court blocks California&#x2019;s online child safety law. The Verge. 2023;
+        Available From: https://www.theverge.com/2023/9/18/23879489/california-age-appropriate-design-code-act-blocked-unconstitutional-first-amendment-injunction.
+        Accessed March13, 2024.</CoiStatement></MedlineCitation><PubmedData><History><PubMedPubDate
+        PubStatus=\"received\"><Year>2024</Year><Month>3</Month><Day>15</Day></PubMedPubDate><PubMedPubDate
+        PubStatus=\"accepted\"><Year>2024</Year><Month>6</Month><Day>22</Day></PubMedPubDate><PubMedPubDate
+        PubStatus=\"medline\"><Year>2024</Year><Month>7</Month><Day>9</Day><Hour>6</Hour><Minute>43</Minute></PubMedPubDate><PubMedPubDate
+        PubStatus=\"pubmed\"><Year>2024</Year><Month>7</Month><Day>9</Day><Hour>6</Hour><Minute>42</Minute></PubMedPubDate><PubMedPubDate
+        PubStatus=\"entrez\"><Year>2024</Year><Month>7</Month><Day>9</Day><Hour>4</Hour><Minute>18</Minute></PubMedPubDate><PubMedPubDate
+        PubStatus=\"pmc-release\"><Year>2024</Year><Month>7</Month><Day>4</Day></PubMedPubDate></History><PublicationStatus>epublish</PublicationStatus><ArticleIdList><ArticleId
+        IdType=\"pubmed\">38978847</ArticleId><ArticleId IdType=\"pmc\">PMC11229793</ArticleId><ArticleId
+        IdType=\"doi\">10.2147/PRBM.S410600</ArticleId><ArticleId IdType=\"pii\">410600</ArticleId></ArticleIdList><ReferenceList><Reference><Citation>Brown
+        BBLarson J, Lerner RM, Steinberg L. <i>Handbook of Adolescent Psychology:
+        Contextual influences on adolescent development</i>. Vol. 2. 3rd ed. (John
+        Wiley &amp; Sons Inc.) 2009. \nAvailable From: https://onlinelibrary.wiley.com/doi/10.1002/9780470479193.adlpsy002004.</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1002/9780470479193.adlpsy002004</ArticleId></ArticleIdList></Reference><Reference><Citation>Mittmann
+        G, Woodcock K, D&#xf6;rfler S, Krammer I, Pollak I, Schrank B. &#x201c;TikTok
+        is my life and snapchat is my ventricle&#x201d;: a mixed-methods study on
+        the role of online communication tools for friendships in early adolescents.
+        <i>J Early Adoles</i>. 2022;42(2):172&#x2013;203. doi: 10.1177/02724316211020368</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1177/02724316211020368</ArticleId></ArticleIdList></Reference><Reference><Citation>Dahlgren
+        CL, Sundgot-Borgen C, Kvalem IL, Wennersberg AL, Wisting L. Further evidence
+        of the association between social media use, eating disorder pathology and
+        appearance ideals and pressure: a cross-sectional study in Norwegian adolescents.
+        <i>J Eat Disord</i>. 2024;12(1):34. doi: 10.1186/s40337-024-00992-3\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1186/s40337-024-00992-3</ArticleId><ArticleId IdType=\"pmc\">PMC10905800</ArticleId><ArticleId
+        IdType=\"pubmed\">38424579</ArticleId></ArticleIdList></Reference><Reference><Citation>Holland
+        G, Tiggemann M. A systematic review of the impact of the use of social networking
+        sites on body image and disordered eating outcomes. <i>Body Image</i>. 2016;17:100&#x2013;110.
+        doi: 10.1016/j.bodyim.2016.02.008\n</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1016/j.bodyim.2016.02.008</ArticleId><ArticleId
+        IdType=\"pubmed\">26995158</ArticleId></ArticleIdList></Reference><Reference><Citation>Saiphoo
+        AN, Vahedi Z. A meta-analytic review of the relationship between social media
+        use and body image disturbance. <i>Comput Human Behav</i>. 2019;101:259&#x2013;275.
+        doi: 10.1016/j.chb.2019.07.028</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1016/j.chb.2019.07.028</ArticleId></ArticleIdList></Reference><Reference><Citation>Vandenbosch
+        L, Fardouly J, Tiggemann M. Social media and body image: recent trends and
+        future directions. <i>Curr Opin Psychol</i>. 2022;45:101289. doi: 10.1016/j.copsyc.2021.12.002\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.copsyc.2021.12.002</ArticleId><ArticleId IdType=\"pubmed\">35030460</ArticleId></ArticleIdList></Reference><Reference><Citation>Wells
+        G, Horwitz J, Seetharaman D\nFacebook knows Instagram is toxic for teen girls,
+        company documents show. <i>Wall Street Journal</i>; Available from: https://www.wsj.com/articles/facebook-knows-instagram-is-toxic-for-teen-girls-company-documents-show-11631620739.
+        Accessed March\n13, 2024.</Citation></Reference><Reference><Citation>Network
+        TL\nWhat students are saying about how social media affects their body image.
+        <i>The New York Times</i>. 2024.</Citation></Reference><Reference><Citation>Wilksch
+        SM, O&#x2019;Shea A, Ho P, Byrne S, Wade TD. The relationship between social
+        media use and disordered eating in young adolescents. <i>Int J Eating Disord</i>.
+        2020;53(1):96&#x2013;106. doi: 10.1002/eat.23198</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1002/eat.23198</ArticleId><ArticleId IdType=\"pubmed\">31797420</ArticleId></ArticleIdList></Reference><Reference><Citation>Polanin
+        JR, Espelage DL, Grotpeter JK, et al. A systematic review and meta-analysis
+        of interventions to decrease cyberbullying perpetration and victimization.
+        <i>Prev Sci</i>. 2022;23(3):439&#x2013;454. doi: 10.1007/s11121-021-01259-y\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1007/s11121-021-01259-y</ArticleId><ArticleId IdType=\"pmc\">PMC8218972</ArticleId><ArticleId
+        IdType=\"pubmed\">34159506</ArticleId></ArticleIdList></Reference><Reference><Citation>Day
+        S, Bussey K, Trompeter N, Mitchison D. The impact of teasing and bullying
+        victimization on disordered eating and body image disturbance among adolescents:
+        a systematic review. <i>Trauma Violence Abuse.</i>\n2022;23(3):985&#x2013;1006.
+        doi: 10.1177/1524838020985534\n</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1177/1524838020985534</ArticleId><ArticleId
+        IdType=\"pubmed\">33461439</ArticleId></ArticleIdList></Reference><Reference><Citation>Berne
+        S, Fris&#xe9;n A, Kling J. Appearance-related cyberbullying: a qualitative
+        investigation of characteristics, content, reasons, and effects. <i>Body Image</i>.
+        2014;11(4):527&#x2013;533. doi: 10.1016/j.bodyim.2014.08.006\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.bodyim.2014.08.006</ArticleId><ArticleId IdType=\"pubmed\">25194309</ArticleId></ArticleIdList></Reference><Reference><Citation>Keles
+        B, McCrae N, Grealish A. A systematic review: the influence of social media
+        on depression, anxiety and psychological distress in adolescents. <i>Int J
+        Adolesc Youth</i>. 2020;25(1):79&#x2013;93. doi: 10.1080/02673843.2019.1590851</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1080/02673843.2019.1590851</ArticleId></ArticleIdList></Reference><Reference><Citation>McCrae
+        N, Gettings S, Purssell E. Social media and depressive symptoms in childhood
+        and adolescence: a systematic review. <i>Adolesc Res Rev</i>. 2017;2(4):315&#x2013;330.
+        doi: 10.1007/s40894-017-0053-4</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1007/s40894-017-0053-4</ArticleId></ArticleIdList></Reference><Reference><Citation>Barakat
+        S, McLean SA, Bryant E, et al. Risk factors for eating disorders: findings
+        from a rapid review. <i>J Eat Disord</i>. 2023;11(1):8.\n</Citation><ArticleIdList><ArticleId
+        IdType=\"pmc\">PMC9847054</ArticleId><ArticleId IdType=\"pubmed\">36650572</ArticleId></ArticleIdList></Reference><Reference><Citation>Spindler
+        A, Milos G. Links between eating disorder symptom severity and psychiatric
+        comorbidity. <i>Eating Behav</i>. 2007;8(3):364&#x2013;373. doi: 10.1016/j.eatbeh.2006.11.012</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.eatbeh.2006.11.012</ArticleId><ArticleId IdType=\"pubmed\">17606234</ArticleId></ArticleIdList></Reference><Reference><Citation>Tiggemann
+        M. Digital modification and body image on social media: disclaimer labels,
+        captions, hashtags, and comments. <i>Body Image</i>. 2022;41:172&#x2013;180.
+        doi: 10.1016/j.bodyim.2022.02.012\n</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1016/j.bodyim.2022.02.012</ArticleId><ArticleId
+        IdType=\"pubmed\">35259655</ArticleId></ArticleIdList></Reference><Reference><Citation>Krayer
+        A, Ingledew DK, Iphofen R. Social comparison and body image in adolescence:
+        a grounded theory approach. <i>Health Educ Res</i>. 2008;23(5):892&#x2013;903.
+        doi: 10.1093/her/cym076\n</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1093/her/cym076</ArticleId><ArticleId
+        IdType=\"pubmed\">18156148</ArticleId></ArticleIdList></Reference><Reference><Citation>Kleemans
+        M, Daalmans S, Carbaat I, Ansch&#xfc;tz D. Picture perfect: the direct effect
+        of manipulated Instagram photos on body image in adolescent girls. <i>Media
+        Psychol</i>. 2018;21(1):93&#x2013;110. doi: 10.1080/15213269.2016.1257392</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1080/15213269.2016.1257392</ArticleId></ArticleIdList></Reference><Reference><Citation>Moorman
+        EL, Warnick JL, Acharya R, Janicke DM. The use of internet sources for nutritional
+        information is linked to weight perception and disordered eating in young
+        adolescents. <i>Appetite</i>. 2020;154:104782. doi: 10.1016/j.appet.2020.104782\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.appet.2020.104782</ArticleId><ArticleId IdType=\"pubmed\">32544467</ArticleId></ArticleIdList></Reference><Reference><Citation>Custers
+        K. The urgent matter of online pro-eating disorder content and children: clinical
+        practice. <i>Eur J Pediatr</i>. 2015;174(4):429&#x2013;433. doi: 10.1007/s00431-015-2487-7\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1007/s00431-015-2487-7</ArticleId><ArticleId IdType=\"pubmed\">25633580</ArticleId></ArticleIdList></Reference><Reference><Citation>Carrotte
+        ER, Vella AM, Lim MSC. Predictors of &#x201c;liking&#x201d; three types of
+        health and fitness-related content on social media: a cross-sectional study.
+        <i>J Med Internet Res</i>. 2015;17(8):e205. doi: 10.2196/jmir.4803\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.2196/jmir.4803</ArticleId><ArticleId IdType=\"pmc\">PMC4642410</ArticleId><ArticleId
+        IdType=\"pubmed\">26297689</ArticleId></ArticleIdList></Reference><Reference><Citation>Jer&#xf3;nimo
+        F, Carra&#xe7;a EV. Effects of fitspiration content on body image: a systematic
+        review. <i>Eat Weight Disord</i>. 2022;27(8):3017&#x2013;3035. doi: 10.1007/s40519-022-01505-4\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1007/s40519-022-01505-4</ArticleId><ArticleId IdType=\"pmc\">PMC9676749</ArticleId><ArticleId
+        IdType=\"pubmed\">36401082</ArticleId></ArticleIdList></Reference><Reference><Citation>Urgent
+        responsibility to reduce harms posed by social media on risk for eating disorders:
+        an open letter to Facebook, Instagram, TikTok, and Other Global Social Media
+        Corporations. Available From: https://www.newswise.com/articles/urgent-responsibility-to-reduce-harms-posed-by-social-media-on-risk-for-eating-disorders.
+        Accessed March\n13, 2024.</Citation></Reference><Reference><Citation>Huddleston
+        J\nWould new legislation actually make kids safer online? analyzing the consequences
+        of recent youth online safety proposals. <i>Cato Institute Briefing Paper</i>.
+        2023;(150).</Citation></Reference><Reference><Citation>Marlatt GA, Witkiewitz
+        K. Update on harm-reduction policy and intervention research. <i>Ann Rev Clin
+        Psychol</i>. 2010;6(1):591&#x2013;606. doi: 10.1146/annurev.clinpsy.121208.131438\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1146/annurev.clinpsy.121208.131438</ArticleId><ArticleId
+        IdType=\"pubmed\">20192791</ArticleId></ArticleIdList></Reference><Reference><Citation>Hawk
+        M, Coulter RW, Egan JE, et al. Harm reduction principles for healthcare settings.
+        <i>Harm Reduct J</i>. 2017;14(1):1&#x2013;9. doi: 10.1186/s12954-017-0196-4\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1186/s12954-017-0196-4</ArticleId><ArticleId IdType=\"pmc\">PMC5655864</ArticleId><ArticleId
+        IdType=\"pubmed\">29065896</ArticleId></ArticleIdList></Reference><Reference><Citation>Hendlin
+        YH, Vora M, Elias J, Ling PM. Financial conflicts of interest and stance on
+        tobacco harm reduction: a systematic review. <i>Am J Public Health</i>. 2019;109(7):e1&#x2013;e8.
+        doi: 10.2105/AJPH.2019.305106</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.2105/AJPH.2019.305106</ArticleId><ArticleId
+        IdType=\"pmc\">PMC6603486</ArticleId><ArticleId IdType=\"pubmed\">31095414</ArticleId></ArticleIdList></Reference><Reference><Citation>Levengood
+        TW, Yoon GH, Davoust MJ, et al. Supervised injection facilities as harm reduction:
+        a systematic review. <i>Am J PrevMed</i>. 2021;61(5):738&#x2013;749. doi:
+        10.1016/j.amepre.2021.04.017</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1016/j.amepre.2021.04.017</ArticleId><ArticleId
+        IdType=\"pmc\">PMC8541900</ArticleId><ArticleId IdType=\"pubmed\">34218964</ArticleId></ArticleIdList></Reference><Reference><Citation>Kelly
+        Y, Zilanawala A, Booker C, Sacker A. Social media use and adolescent mental
+        health: findings from the UK millennium cohort study. <i>EClinical Med</i>.
+        2018;6:59&#x2013;68. doi: 10.1016/j.eclinm.2018.12.005</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.eclinm.2018.12.005</ArticleId><ArticleId IdType=\"pmc\">PMC6537508</ArticleId><ArticleId
+        IdType=\"pubmed\">31193561</ArticleId></ArticleIdList></Reference><Reference><Citation>Massarat
+        EAV Risa Gelles Watnick and Navid. Teens, social media and technology 2022.
+        pew research center: internet, science &amp; tech, 2024. Available from: https://www.pewresearch.org/internet/2022/08/10/teens-social-media-and-technology-2022/.
+        August\n10, 2022.</Citation></Reference><Reference><Citation>Zuair AA, Sopory
+        P. Effects of media health literacy school-based interventions on adolescents&#x2019;
+        body image concerns, eating concerns, and thin-internalization attitudes:
+        a systematic review and meta-analysis. <i>Health Commun</i>. 2022;37(1):20&#x2013;28.
+        doi: 10.1080/10410236.2020.1813954\n</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1080/10410236.2020.1813954</ArticleId><ArticleId
+        IdType=\"pubmed\">32873082</ArticleId></ArticleIdList></Reference><Reference><Citation>McLean
+        SA, Wertheim EH, Masters J, Paxton SJ. A pilot evaluation of a social media
+        literacy intervention to reduce risk factors for eating disorders. <i>Intl
+        J Eating Disord</i>. 2017;50(7):847&#x2013;851. doi: 10.1002/eat.22708</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1002/eat.22708</ArticleId><ArticleId IdType=\"pubmed\">28370321</ArticleId></ArticleIdList></Reference><Reference><Citation>Bell
+        BT, Taylor C, Paddock D, Bates A. <i>Digital Bodies</i>: a controlled evaluation
+        of a brief classroom&#x2010;based intervention for reducing negative body
+        image among adolescents in the digital age. <i>Br J Educ Psychol</i>. 2022;92(1):280&#x2013;298.
+        doi: 10.1111/bjep.12449\n</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1111/bjep.12449</ArticleId><ArticleId
+        IdType=\"pubmed\">34350594</ArticleId></ArticleIdList></Reference><Reference><Citation>Mahon
+        C, Hevey D. Pilot trial of a self-compassion intervention to address adolescents&#x2019;
+        social media-related body image concerns. <i>Clin Child Psychol Psychiatry</i>.
+        2023;28(1):307&#x2013;322. doi: 10.1177/13591045221099215\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1177/13591045221099215</ArticleId><ArticleId IdType=\"pmc\">PMC9908838</ArticleId><ArticleId
+        IdType=\"pubmed\">35549462</ArticleId></ArticleIdList></Reference><Reference><Citation>Kusina
+        JR, Exline Julie J. Beyond body image: a systematic review of classroom-based
+        interventions targeting body image of adolescents. <i>Adolesc Res Rev</i>.
+        2019;4(3):293&#x2013;311. doi: 10.1007/s40894-019-00121-1</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1007/s40894-019-00121-1</ArticleId></ArticleIdList></Reference><Reference><Citation>Sundgot-Borgen
+        C, Friborg O, Kolle E, et al. The healthy body image (HBI) intervention: effects
+        of a school-based cluster-randomized controlled trial with 12-months follow-up.
+        <i>Body Image</i>. 2019;29:122&#x2013;131. doi: 10.1016/j.bodyim.2019.03.007\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.bodyim.2019.03.007</ArticleId><ArticleId IdType=\"pubmed\">30928681</ArticleId></ArticleIdList></Reference><Reference><Citation>Gordon
+        CS, Jarman HK, Rodgers RF, et al. Outcomes of a cluster randomized controlled
+        trial of the SoMe social media literacy program for improving body image-related
+        outcomes in adolescent boys and girls. <i>Nutrients</i>. 2021;13(11):3825.
+        doi: 10.3390/nu13113825\n</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.3390/nu13113825</ArticleId><ArticleId
+        IdType=\"pmc\">PMC8674763</ArticleId><ArticleId IdType=\"pubmed\">34836084</ArticleId></ArticleIdList></Reference><Reference><Citation>Diedrichs
+        PC, Atkinson MJ, Garbett KM, Leckie G. Evaluating the &#x201c;Dove Confident
+        Me&#x201d; five-session body image intervention delivered by teachers in schools:
+        a cluster randomized controlled effectiveness trial. <i>J Adolesc Health</i>.
+        2021;68(2):331&#x2013;341. doi: 10.1016/j.jadohealth.2020.10.001\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.jadohealth.2020.10.001</ArticleId><ArticleId IdType=\"pubmed\">33243723</ArticleId></ArticleIdList></Reference><Reference><Citation>Guest
+        E, Jarman H, Sharratt N, et al. &#x2018;everybody&#x2019;s different: the
+        appearance game&#x2019;. A randomised controlled trial evaluating an appearance-related
+        board game intervention with children aged 9&#x2013;11 years. <i>Body Image</i>.
+        2021;36:34&#x2013;44. doi: 10.1016/j.bodyim.2020.09.010\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.bodyim.2020.09.010</ArticleId><ArticleId IdType=\"pubmed\">33160256</ArticleId></ArticleIdList></Reference><Reference><Citation>Smolak,
+        L, Cash, TF Cash TF, Smolak L Body Image: A Handbook of Science, Practice,
+        and Prevention 2nd (New York: Guilford Press; )2011. editors. Future challenges
+        for body image science, practice, and prevention.. xxi, 490-xxi. 471&#x2013;478</Citation></Reference><Reference><Citation>Yager
+        Z, Diedrichs PC, Ricciardelli LA, Halliwell E. What works in secondary schools?
+        A systematic review of classroom-based body image programs. <i>Body Image</i>.
+        2013;10(3):271&#x2013;281. doi: 10.1016/j.bodyim.2013.04.001\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.bodyim.2013.04.001</ArticleId><ArticleId IdType=\"pubmed\">23683611</ArticleId></ArticleIdList></Reference><Reference><Citation>Lewis-Smith
+        H, Garbett KM, Chaudhry A, et al. Evaluating a body image school-based intervention
+        in India: a randomized controlled trial. <i>Body Image</i>. 2023;44:148&#x2013;156.
+        doi: 10.1016/j.bodyim.2022.12.006\n</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1016/j.bodyim.2022.12.006</ArticleId><ArticleId
+        IdType=\"pubmed\">36608434</ArticleId></ArticleIdList></Reference><Reference><Citation>Garbett
+        KM, Lewis-Smith H, Chaudhry A, et al. Acceptability and preliminary efficacy
+        of a school-based body image intervention in urban India: a pilot randomised
+        controlled trial. <i>Body Image</i>. 2021;37:282&#x2013;290. doi: 10.1016/j.bodyim.2021.02.011\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.bodyim.2021.02.011</ArticleId><ArticleId IdType=\"pubmed\">33813345</ArticleId></ArticleIdList></Reference><Reference><Citation>Craddock
+        N, Garbett KM, Haywood S, et al. &#x2018;Dove Confident Me Indonesia: Single
+        Session&#x2019;: study protocol for a randomised controlled trial to evaluate
+        a school-based body image intervention among Indonesian adolescents. <i>BMC
+        Public Health</i>. 2021;21(1):2102. doi: 10.1186/s12889-021-11770-0\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1186/s12889-021-11770-0</ArticleId><ArticleId IdType=\"pmc\">PMC8593637</ArticleId><ArticleId
+        IdType=\"pubmed\">34784916</ArticleId></ArticleIdList></Reference><Reference><Citation>Garbett
+        KM, Haywood S, Craddock N, et al. Evaluating the efficacy of a social media&#x2013;based
+        intervention (Warna-Warni Waktu) to improve body image among young Indonesian
+        women: parallel randomized controlled trial. <i>J Med Internet Res</i>. 2023;25(1):e42499.
+        doi: 10.2196/42499\n</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.2196/42499</ArticleId><ArticleId
+        IdType=\"pmc\">PMC10131926</ArticleId><ArticleId IdType=\"pubmed\">37010911</ArticleId></ArticleIdList></Reference><Reference><Citation>Matheson
+        EL, Smith HG, Amaral ACS, et al. Using chatbot technology to improve Brazilian
+        adolescents&#x2019; body image and mental health at scale: randomized controlled
+        trial. <i>JMIR Mhealth Uhealth</i>. 2023;11(1):e39934. doi: 10.2196/39934\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.2196/39934</ArticleId><ArticleId IdType=\"pmc\">PMC10337468</ArticleId><ArticleId
+        IdType=\"pubmed\">37335604</ArticleId></ArticleIdList></Reference><Reference><Citation>Garbett
+        KM, Diedrichs PC. Improving uptake and engagement with child body image interventions
+        delivered to mothers: understanding mother and daughter preferences for intervention
+        content. <i>Body Image</i>. 2016;19:24&#x2013;27. doi: 10.1016/j.bodyim.2016.07.004\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.bodyim.2016.07.004</ArticleId><ArticleId IdType=\"pubmed\">27580475</ArticleId></ArticleIdList></Reference><Reference><Citation>Loth
+        KA, MacLehose R, Bucchianeri M, Crow S, Neumark-Sztainer D. Predictors of
+        dieting and disordered eating behaviors from adolescence to young adulthood.
+        <i>J Adolesc Health</i>. 2014;55(5):705&#x2013;712. doi: 10.1016/j.jadohealth.2014.04.016\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.jadohealth.2014.04.016</ArticleId><ArticleId IdType=\"pmc\">PMC4380744</ArticleId><ArticleId
+        IdType=\"pubmed\">24925491</ArticleId></ArticleIdList></Reference><Reference><Citation>Frederick
+        DA, Sandhu G, Scott T, Akbari Y. Reducing the negative effects of media exposure
+        on body image: testing the effectiveness of subvertising and disclaimer labels.
+        <i>Body Image</i>. 2016;17:171&#x2013;174. doi: 10.1016/j.bodyim.2016.03.009\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.bodyim.2016.03.009</ArticleId><ArticleId IdType=\"pubmed\">27085112</ArticleId></ArticleIdList></Reference><Reference><Citation>Cohen,
+        R, Newton-John, T, Slater, A\nThe case for body positivity on social media:
+        Perspectives on current advances and future directions. <i>J Health Psychol.</i>\n2021.
+        \n26\n13\n2365&#x2013;2373. doi: 10.1177/1359105320912450\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1177/1359105320912450</ArticleId><ArticleId IdType=\"pubmed\">32191132</ArticleId></ArticleIdList></Reference><Reference><Citation>Rodgers
+        RF, Wertheim EH, Paxton SJ, Tylka TL, Harriger JA. #Bopo: Enhancing body image
+        through body positive social media- evidence to date and research directions.
+        <i>Body Image</i>. 2022;41:367&#x2013;374. doi: 10.1016/j.bodyim.2022.03.008\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.bodyim.2022.03.008</ArticleId><ArticleId IdType=\"pubmed\">35525155</ArticleId></ArticleIdList></Reference><Reference><Citation>Lazuka
+        RF, Wick MR, Keel PK, Harriger JA. Are we there yet? Progress in depicting
+        diverse images of beauty in Instagram&#x2019;s body positivity movement. <i>Body
+        Image</i>. 2020;34:85&#x2013;93. doi: 10.1016/j.bodyim.2020.05.001\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.bodyim.2020.05.001</ArticleId><ArticleId IdType=\"pubmed\">32534269</ArticleId></ArticleIdList></Reference><Reference><Citation>Smith
+        AC, Ahuvia I, Ito S, Schleider JL. Project body neutrality: piloting a digital
+        single-session intervention for adolescent body image and depression. <i>Int
+        J Eating Disord</i>. 2023;56(8):1554&#x2013;1569. doi: 10.1002/eat.23976</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1002/eat.23976</ArticleId><ArticleId IdType=\"pmc\">PMC10524309</ArticleId><ArticleId
+        IdType=\"pubmed\">37129116</ArticleId></ArticleIdList></Reference><Reference><Citation>Wood-Barcalow
+        NL, Tylka TL, Augustus-Horvath CL. &#x201c;But I Like My Body&#x201d;: Positive
+        body image characteristics and a holistic model for young-adult women. <i>Body
+        Image</i>. 2010;7(2):106&#x2013;116. doi: 10.1016/j.bodyim.2010.01.001\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.bodyim.2010.01.001</ArticleId><ArticleId IdType=\"pubmed\">20153990</ArticleId></ArticleIdList></Reference><Reference><Citation>Tylka
+        TL, Wood-Barcalow NL. What is and what is not positive body image? Conceptual
+        foundations and construct definition. <i>Body Image</i>. 2015;14:118&#x2013;129.
+        doi: 10.1016/j.bodyim.2015.04.001\n</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1016/j.bodyim.2015.04.001</ArticleId><ArticleId
+        IdType=\"pubmed\">25921657</ArticleId></ArticleIdList></Reference><Reference><Citation>Zavattaro
+        SM. Taking the social justice fight to the cloud: Social media and body positivity.
+        <i>Public Integrity</i>. 2021;23(3):281&#x2013;295. doi: 10.1080/10999922.2020.1782104</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1080/10999922.2020.1782104</ArticleId></ArticleIdList></Reference><Reference><Citation>Afful
+        AA, Ricciardelli R. Shaping the online fat acceptance movement: talking about
+        body image and beauty standards. <i>J Gend Stud</i>. 2015;24(4):453&#x2013;472.
+        doi: 10.1080/09589236.2015.1028523</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1080/09589236.2015.1028523</ArticleId></ArticleIdList></Reference><Reference><Citation>Bacon
+        L. <i>Health at Every Size: The Surprising Truth About Your Weight</i>. BenBella
+        Books; 2010.</Citation></Reference><Reference><Citation>Cohen R, Shikora S.
+        Fighting weight bias and obesity stigma: a call for action. <i>Obes Surg</i>.
+        2020;30(5):1623&#x2013;1624. doi: 10.1007/s11695-020-04525-0\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1007/s11695-020-04525-0</ArticleId><ArticleId IdType=\"pubmed\">32193742</ArticleId></ArticleIdList></Reference><Reference><Citation>Piran
+        N. New possibilities in the prevention of eating disorders: the introduction
+        of positive body image measures. <i>Body Image</i>. 2015;14:146&#x2013;157.
+        doi: 10.1016/j.bodyim.2015.03.008\n</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1016/j.bodyim.2015.03.008</ArticleId><ArticleId
+        IdType=\"pubmed\">25886711</ArticleId></ArticleIdList></Reference><Reference><Citation>Cohen
+        R, Irwin L, Newton-John T, Slater A. #bodypositivity: a content analysis of
+        body positive accounts on Instagram. <i>Body Image</i>. 2019;29:47&#x2013;57.
+        doi: 10.1016/j.bodyim.2019.02.007\n</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1016/j.bodyim.2019.02.007</ArticleId><ArticleId
+        IdType=\"pubmed\">30831334</ArticleId></ArticleIdList></Reference><Reference><Citation>Harriger
+        JA, Evans JA, Thompson JK, Tylka TL. The dangers of the rabbit hole: reflections
+        on social media as a portal into a distorted world of edited bodies and eating
+        disorder risk and the role of algorithms. <i>Body Image</i>. 2022;41:292&#x2013;297.
+        doi: 10.1016/j.bodyim.2022.03.007\n</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1016/j.bodyim.2022.03.007</ArticleId><ArticleId
+        IdType=\"pubmed\">35378338</ArticleId></ArticleIdList></Reference><Reference><Citation>Barron
+        AM, Krumrei-Mancuso EJ, Harriger JA. The effects of fitspiration and self-compassion
+        Instagram posts on body image and self-compassion in men and women. <i>Body
+        Image</i>. 2021;37:14&#x2013;27. doi: 10.1016/j.bodyim.2021.01.003\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.bodyim.2021.01.003</ArticleId><ArticleId IdType=\"pubmed\">33556914</ArticleId></ArticleIdList></Reference><Reference><Citation>Stevens
+        A, Griffiths S. Body Positivity (#BoPo) in everyday life: an ecological momentary
+        assessment study showing potential benefits to individuals&#x2019; body image
+        and emotional wellbeing. <i>Body Image</i>. 2020;35:181&#x2013;191. doi: 10.1016/j.bodyim.2020.09.003\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.bodyim.2020.09.003</ArticleId><ArticleId IdType=\"pubmed\">33068893</ArticleId></ArticleIdList></Reference><Reference><Citation>Ogden
+        J, Gosling C, Hazelwood M, Atkins E. Exposure to body diversity images as
+        a buffer against the thin-ideal: an experimental study. <i>Psychol Health
+        Med</i>. 2020;25(10):1165&#x2013;1178. doi: 10.1080/13548506.2020.1734219\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1080/13548506.2020.1734219</ArticleId><ArticleId IdType=\"pubmed\">32115998</ArticleId></ArticleIdList></Reference><Reference><Citation>Rankin
+        ST Portrait Positive: Changing the way you see. United Kingdom: Portrait Positive;
+        2018.</Citation></Reference><Reference><Citation>Burnette CB, Kwitowski MA,
+        Mazzeo SE. &#x201c;I don&#x2019;t need people to tell me I&#x2019;m pretty
+        on social media:&#x201d; A qualitative study of social media and body image
+        in early adolescent girls. <i>Body Image</i>. 2017;23:114&#x2013;125. doi:
+        10.1016/j.bodyim.2017.09.001\n</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1016/j.bodyim.2017.09.001</ArticleId><ArticleId
+        IdType=\"pubmed\">28965052</ArticleId></ArticleIdList></Reference><Reference><Citation>Rodgers
+        RF, Laveway K, Zalvino J, Cardone W, Wang L. #BodyPositive: a qualitative
+        exploration of young people&#x2019;s responses to body positive social media
+        content. <i>Body Image</i>. 2023;47:101613. doi: 10.1016/j.bodyim.2023.08.005\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.bodyim.2023.08.005</ArticleId><ArticleId IdType=\"pubmed\">37659247</ArticleId></ArticleIdList></Reference><Reference><Citation>Rodgers
+        RF, Paxton SJ, Wertheim EH. #Take idealized bodies out of the picture: a scoping
+        review of social media content aiming to protect and promote positive body
+        image. <i>Body Image</i>. 2021;38:10&#x2013;36. doi: 10.1016/j.bodyim.2021.03.009\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.bodyim.2021.03.009</ArticleId><ArticleId IdType=\"pubmed\">33798800</ArticleId></ArticleIdList></Reference><Reference><Citation>Hendrickse
+        J, Clayton RB, Ray EC, Ridgway JL, Secharan R. Experimental effects of viewing
+        thin and plus-size models in objectifying and empowering contexts on Instagram.
+        <i>Health Commun</i>. 2021;36(11):1417&#x2013;1425. doi: 10.1080/10410236.2020.1761077\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1080/10410236.2020.1761077</ArticleId><ArticleId IdType=\"pubmed\">32401058</ArticleId></ArticleIdList></Reference><Reference><Citation>Cohen
+        R, Fardouly J, Newton-John T, Slater A. BoPo on Instagram: an experimental
+        investigation of the effects of viewing body positive content on young women&#x2019;s
+        mood and body image. <i>New Media Soc</i>. 2019;21(7):1546&#x2013;1564. doi:
+        10.1177/1461444819826530</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1177/1461444819826530</ArticleId></ArticleIdList></Reference><Reference><Citation>Rees
+        A. <i>Beyond Beautiful: A Practical Guide to Being Happy, Confident, and You
+        in a Looks-Obsessed World</i>. Clarkson Potter/Ten Speed; 2019.</Citation></Reference><Reference><Citation>MA
+        F. What if body positivity doesn&#x2019;t work? how about body neutrality?
+        everyday feminism. 2016; Available from: https://everydayfeminism.com/2016/02/body-positivity-vs-neutrality.
+        Accessed March\n13, 2024.</Citation></Reference><Reference><Citation>Puhl
+        RM, Heuer CA. The stigma of obesity: a review and update. <i>Obesity</i>.
+        2009;17(5):941&#x2013;964. doi: 10.1038/oby.2008.636\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1038/oby.2008.636</ArticleId><ArticleId IdType=\"pubmed\">19165161</ArticleId></ArticleIdList></Reference><Reference><Citation>Sharp
+        G, Gerrard Y. The body image &#x201c;problem&#x201d; on social media: novel
+        directions for the field. <i>Body Image</i>. 2022;41:267&#x2013;271. doi:
+        10.1016/j.bodyim.2022.03.004\n</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1016/j.bodyim.2022.03.004</ArticleId><ArticleId
+        IdType=\"pubmed\">35339001</ArticleId></ArticleIdList></Reference><Reference><Citation>Costello
+        N, Sutton R, Jones M, et al. ALGORITHMS, ADDICTION, AND ADOLESCENT MENTAL
+        HEALTH: an interdisciplinary study to inform state-level policy action to
+        protect youth from the dangers of social media. <i>Am J Law Med</i>. 2023;49(2&#x2013;3):135&#x2013;172.
+        doi: 10.1017/amj.2023.25\n</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1017/amj.2023.25</ArticleId><ArticleId
+        IdType=\"pubmed\">38344782</ArticleId></ArticleIdList></Reference><Reference><Citation>Danthinne
+        ES, Giorgianni FE, Rodgers RF. Labels to prevent the detrimental effects of
+        media on body image: a systematic review and meta&#x2010;analysis. <i>Intl
+        J Eating Disord</i>. 2020;53(5):647&#x2013;661. doi: 10.1002/eat.23242</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1002/eat.23242</ArticleId><ArticleId IdType=\"pubmed\">32048752</ArticleId></ArticleIdList></Reference><Reference><Citation>Bury
+        B, Tiggemann M, Slater A. Disclaimer labels on fashion magazine advertisements:
+        impact on visual attention and relationship with body dissatisfaction. <i>Body
+        Image</i>. 2016;16:1&#x2013;9. doi: 10.1016/j.bodyim.2015.09.005\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.bodyim.2015.09.005</ArticleId><ArticleId IdType=\"pubmed\">26498728</ArticleId></ArticleIdList></Reference><Reference><Citation>Puhl
+        RM. Weight stigma, policy initiatives, and harnessing social media to elevate
+        activism. <i>Body Image</i>. 2022;40:131&#x2013;137. doi: 10.1016/j.bodyim.2021.12.008\n</Citation><ArticleIdList><ArticleId
+        IdType=\"doi\">10.1016/j.bodyim.2021.12.008</ArticleId><ArticleId IdType=\"pubmed\">34953387</ArticleId></ArticleIdList></Reference><Reference><Citation>Lessard
+        LM, Puhl RM. Adolescents&#x2019; exposure to and experiences of weight stigma
+        during the COVID-19 pandemic. <i>J Pediatr Psychol</i>. 2021;46(8):950&#x2013;959.
+        doi: 10.1093/jpepsy/jsab071\n</Citation><ArticleIdList><ArticleId IdType=\"doi\">10.1093/jpepsy/jsab071</ArticleId><ArticleId
+        IdType=\"pmc\">PMC8344898</ArticleId><ArticleId IdType=\"pubmed\">34313727</ArticleId></ArticleIdList></Reference><Reference><Citation>Robertson
+        A. Court blocks California&#x2019;s online child safety law. The Verge. 2023;
+        Available From: https://www.theverge.com/2023/9/18/23879489/california-age-appropriate-design-code-act-blocked-unconstitutional-first-amendment-injunction.
+        Accessed March\n13, 2024.</Citation></Reference></ReferenceList></PubmedData></PubmedArticle></PubmedArticleSet>"
+    headers:
+      access-control-allow-origin:
+      - '*'
+      access-control-expose-headers:
+      - X-RateLimit-Limit,X-RateLimit-Remaining
+      alt-svc:
+      - clear
+      cache-control:
+      - private
+      content-length:
+      - '90392'
+      content-security-policy:
+      - upgrade-insecure-requests
+      content-type:
+      - text/xml; charset=UTF-8
+      date:
+      - Tue, 03 Nov 2026 08:35:15 GMT
+      ncbi-phid:
+      - 1D33E48A198D301500002353DE3737DE.1.1.m_4
+      ncbi-sid:
+      - 5AF8C40BDE4A0EF2_D86CSID
+      referrer-policy:
+      - origin-when-cross-origin
+      server:
+      - Finatra
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      transfer-encoding:
+      - chunked
+      via:
+      - 1.1 google
+      x-ratelimit-limit:
+      - '3'
+      x-ratelimit-remaining:
+      - '1'
+      x-ua-compatible:
+      - IE=Edge
+      x-xss-protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+version: 1

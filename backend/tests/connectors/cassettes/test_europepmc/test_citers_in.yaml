@@ -1,0 +1,239 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - www.ebi.ac.uk
+    method: GET
+    uri: https://www.ebi.ac.uk/europepmc/webservices/rest/MED/23456789/citations?format=json&pageSize=1000
+  response:
+    body:
+      string: "{\"version\":\"6.9\",\"hitCount\":50,\"request\":{\"id\":\"23456789\",\"source\":\"MED\",\"offSet\":0,\"pageSize\":1000},\"citationList\":{\"citation\":[{\"source\":\"MED\",\"id\":\"42333381\",\"citationType\":\"research-article;
+        journal article\",\"title\":\"A novel collagen hydrogel loaded with primary
+        brown sugar for accelerating burn wound healing by a synergistic mechanism.\",\"authorString\":\"Guan
+        Z, Wei L, Han L, Lu J, Tan Y, Wei Q.\",\"journalAbbreviation\":\"Regen Biomater\",\"pubYear\":2026,\"volume\":\"13\",\"pageInfo\":\"rbag113\",\"citedByCount\":0},{\"source\":\"MED\",\"id\":\"42147228\",\"citationType\":\"research-article;
+        journal article\",\"title\":\"Plasma proteome-wide Mendelian randomization
+        reveals multi-ancestry drug targets for gastric cancer.\",\"authorString\":\"Zhi
+        P, Cui Y, Xue G, Qiao L, Geng J, Chang Z, Xu Y, Yan J, Wang Y, Zhao C.\",\"journalAbbreviation\":\"Front
+        Oncol\",\"pubYear\":2026,\"volume\":\"16\",\"pageInfo\":\"1821512\",\"citedByCount\":0},{\"source\":\"MED\",\"id\":\"41601062\",\"citationType\":\"journal
+        article\",\"title\":\"Identification of benzo(a)pyrene-mediated ferroptosis
+        to impact prognosis prediction and immune microenvironment with network toxicology
+        in lung adenocarcinoma.\",\"authorString\":\"Gao L, Liu W, Gao J, He J, Wang
+        X, Han C.\",\"journalAbbreviation\":\"Ecotoxicol Environ Saf\",\"pubYear\":2026,\"volume\":\"309\",\"pageInfo\":\"119633\",\"citedByCount\":0},{\"source\":\"MED\",\"id\":\"41304192\",\"citationType\":\"research-article;
+        journal article\",\"title\":\"Microbiological Investigation and Clinical Efficacy
+        of Professional Topical Fluoride Application on &lt;i&gt;Streptococcus mutans&lt;/i&gt;
+        and &lt;i&gt;Selemonas sputigena&lt;/i&gt; in Orthodontic Patients: A Randomized
+        Controlled Clinical Trial.\",\"authorString\":\"Pardo A, Marcoccia S, Montagnini
+        C, Signoriello A, Messina E, Gaibani P, Burlacchini G, Salgarelli C, Signoretto
+        C, Zerman N.\",\"journalAbbreviation\":\"Microorganisms\",\"pubYear\":2025,\"volume\":\"13\",\"issue\":\"11\",\"pageInfo\":\"2506\",\"citedByCount\":1},{\"source\":\"MED\",\"id\":\"41057590\",\"citationType\":\"randomized
+        controlled trial; journal article\",\"title\":\"Clinical study of PEID in
+        the treatment of LDH based on the position relationship between nucleus pulposus
+        of lumbar disc herniation and compressed nerve root.\",\"authorString\":\"Dong
+        H, Mao Q, Zhu L, Zhao Y, Xia Q, Wu F, Xia J, Weng Z, Feng S, Lu Y, Jiang Y,
+        Ding M, Zhang W, Xin Z.\",\"journalAbbreviation\":\"Eur Spine J\",\"pubYear\":2026,\"volume\":\"35\",\"issue\":\"4\",\"pageInfo\":\"1666-1685\",\"citedByCount\":1},{\"source\":\"MED\",\"id\":\"38642146\",\"citationType\":\"research-article;
+        journal article\",\"title\":\"Improved recurrence rates and progression-free
+        survival in primarily surgically treated oral squamous cell carcinoma - results
+        from a German tertiary medical center.\",\"authorString\":\"Struckmeier AK,
+        Buchbender M, Lutz R, Kesting M.\",\"journalAbbreviation\":\"Clin Oral Investig\",\"pubYear\":2024,\"volume\":\"28\",\"issue\":\"5\",\"pageInfo\":\"262\",\"citedByCount\":23},{\"source\":\"MED\",\"id\":\"38379709\",\"citationType\":\"research-article;
+        journal article\",\"title\":\"Association of peripheral B cells and delirium:
+        combined single-cell sequencing and Mendelian randomization analysis.\",\"authorString\":\"Tan
+        S, Pan S, Wei L, Chen W, Pan B, Kong G, Chen J, Xie Y.\",\"journalAbbreviation\":\"Front
+        Neurol\",\"pubYear\":2024,\"volume\":\"15\",\"pageInfo\":\"1343726\",\"citedByCount\":4},{\"source\":\"MED\",\"id\":\"37847431\",\"citationType\":\"journal
+        article\",\"title\":\"The impact of facility type and volume on treatment
+        and overall survival in craniopharyngioma.\",\"authorString\":\"Bitner BF,
+        Liu DH, Nottoli MM, Torabi SJ, Hsu FPK, Kuan EC.\",\"journalAbbreviation\":\"Pituitary\",\"pubYear\":2023,\"volume\":\"26\",\"issue\":\"6\",\"pageInfo\":\"686-695\",\"citedByCount\":5},{\"source\":\"PPR\",\"id\":\"PPR700819\",\"citationType\":\"preprint\",\"title\":\"The
+        Impact of Facility Type and Volume on Treatment and Overall Survival in Craniopharyngioma\",\"authorString\":\"Bitner
+        BF, Liu DH, Nottoli MM, Torabi SJ, Hsu FP, Kuan EC.\",\"pubYear\":2023,\"citedByCount\":0},{\"source\":\"MED\",\"id\":\"37564472\",\"citationType\":\"research-article;
+        journal article\",\"title\":\"Eugene Nicholas Myers' Lecture on Head and Neck
+        Cancer, 2020: The Surgeon as a Prognostic Factor in Head and Neck Cancer Patients
+        Undergoing Surgery.\",\"authorString\":\"Kowalski LP.\",\"journalAbbreviation\":\"Int
+        Arch Otorhinolaryngol\",\"pubYear\":2023,\"volume\":\"27\",\"issue\":\"3\",\"pageInfo\":\"e536-e546\",\"citedByCount\":8},{\"source\":\"MED\",\"id\":\"36826717\",\"citationType\":\"journal
+        article\",\"title\":\"Adjuvant treatment of surgically treated bone metastasis
+        patients: association with hospital characteristics and trends over time.\",\"authorString\":\"Herbach
+        EL, McDowell BD, Charlton M, Miller BJ.\",\"journalAbbreviation\":\"Med Oncol\",\"pubYear\":2023,\"volume\":\"40\",\"issue\":\"4\",\"pageInfo\":\"107\",\"citedByCount\":0},{\"source\":\"MED\",\"id\":\"36746098\",\"citationType\":\"journal
+        article\",\"title\":\"High surgical volume is associated with improved survival
+        in head and neck cancer.\",\"authorString\":\"Rygalski CJ, Huttinger ZM, Zhao
+        S, Brock G, VanKoevering K, Old MO, Teknos TN, Rocco JW, Puram SV, Seim NB,
+        Swendseid B, Haring CT, Eskander A, Kang SY.\",\"journalAbbreviation\":\"Oral
+        Oncol\",\"pubYear\":2023,\"volume\":\"138\",\"pageInfo\":\"106333\",\"citedByCount\":4},{\"source\":\"MED\",\"id\":\"35792549\",\"citationType\":\"research
+        support, non-u.s. gov't; research-article; journal article; research support,
+        n.i.h., extramural\",\"title\":\"The Influence of Hospital Characteristics
+        on Patient Survival in Surgically Managed Metastatic Disease of Bone: An Analysis
+        of the SEER-Medicare Linked Database.\",\"authorString\":\"Herbach EL, McDowell
+        BD, Chrischilles EA, Miller BJ.\",\"journalAbbreviation\":\"Am J Clin Oncol\",\"pubYear\":2022,\"volume\":\"45\",\"issue\":\"8\",\"pageInfo\":\"344-351\",\"citedByCount\":1},{\"source\":\"MED\",\"id\":\"35547406\",\"citationType\":\"research-article;
+        journal article\",\"title\":\"Prognostic Impact of Primary Tumor Extent and
+        Postoperative Radiation Facility Location in Major Salivary Gland Malignancies.\",\"authorString\":\"Ladbury
+        C, Liu J, Nelson R, Amini A, Maghami E, Sampath S.\",\"journalAbbreviation\":\"Cureus\",\"pubYear\":2022,\"volume\":\"14\",\"issue\":\"4\",\"pageInfo\":\"e24038\",\"citedByCount\":1},{\"source\":\"MED\",\"id\":\"34795020\",\"citationType\":\"research
+        support, non-u.s. gov't; journal article\",\"title\":\"European Society of
+        Gynaecological Oncology quality indicators for the surgical treatment of endometrial
+        carcinoma.\",\"authorString\":\"Concin N, Planchamp F, Abu-Rustum NR, Ataseven
+        B, Cibula D, Fagotti A, Fotopoulou C, Knapp P, Marth C, Morice P, Querleu
+        D, Sehouli J, Stepanyan A, Taskiran C, Vergote I, Wimberger P, Zapardiel I,
+        Persson J.\",\"journalAbbreviation\":\"Int J Gynecol Cancer\",\"pubYear\":2021,\"volume\":\"31\",\"issue\":\"12\",\"pageInfo\":\"1508-1529\",\"citedByCount\":31},{\"source\":\"MED\",\"id\":\"34399637\",\"citationType\":\"journal
+        article\",\"title\":\"Impact of Treatment Parameters on Racial Survival Differences
+        in Oropharyngeal Cancer: National Cancer Database Study.\",\"authorString\":\"Zhu
+        D, Wong A, Oh EJ, Ahn S, Wotman M, Sahai T, Bottalico D, Frank D, Tham T.\",\"journalAbbreviation\":\"Otolaryngol
+        Head Neck Surg\",\"pubYear\":2022,\"volume\":\"166\",\"issue\":\"6\",\"pageInfo\":\"1134-1143\",\"citedByCount\":3},{\"source\":\"MED\",\"id\":\"33998094\",\"citationType\":\"research-article;
+        journal article; research support, n.i.h., extramural\",\"title\":\"The influence
+        of facility volume on patient treatments and survival outcomes in nasopharyngeal
+        carcinoma.\",\"authorString\":\"Goshtasbi K, Abiri A, Lehrich BM, Haidar YM,
+        Tjoa T, Kuan EC.\",\"journalAbbreviation\":\"Head Neck\",\"pubYear\":2021,\"volume\":\"43\",\"issue\":\"9\",\"pageInfo\":\"2755-2763\",\"citedByCount\":12},{\"source\":\"MED\",\"id\":\"33857781\",\"citationType\":\"journal
+        article\",\"title\":\"The effect of reconstruction on positive margin rates
+        in oral cancer: Using length of stay as a proxy measure for flap reconstruction
+        in a national database.\",\"authorString\":\"Campbell DA, Pipkorn P, Divi
+        V, Stadler M, Massey B, Campbell B, Richmon JD, Graboyes E, Puram S, Zenga
+        J.\",\"journalAbbreviation\":\"Am J Otolaryngol\",\"pubYear\":2021,\"volume\":\"42\",\"issue\":\"5\",\"pageInfo\":\"103012\",\"citedByCount\":4},{\"source\":\"MED\",\"id\":\"33556919\",\"citationType\":\"journal
+        article\",\"title\":\"Radiotherapy Remains Underused in the Treatment of Soft-Tissue
+        Sarcomas: Disparities in Practice Patterns in the United States.\",\"authorString\":\"Reddy
+        VK, Jain V, Venigalla S, Levin WP, Wilson RJ, Weber KL, Kalbasi A, Sebro RA,
+        Shabason JE.\",\"journalAbbreviation\":\"J Natl Compr Canc Netw\",\"pubYear\":2021,\"volume\":\"19\",\"issue\":\"3\",\"pageInfo\":\"295-306\",\"citedByCount\":4},{\"source\":\"MED\",\"id\":\"32600116\",\"citationType\":\"journal
+        article\",\"title\":\"Sinonasal Squamous Cell Carcinoma Outcomes: Does Treatment
+        at a High-Volume Center Confer Survival Benefit?\",\"authorString\":\"Teitelbaum
+        JI, Issa K, Barak IR, Ackall FY, Jung SH, Jang DW, Abi Hachem R.\",\"journalAbbreviation\":\"Otolaryngol
+        Head Neck Surg\",\"pubYear\":2020,\"volume\":\"163\",\"issue\":\"5\",\"pageInfo\":\"986-991\",\"citedByCount\":20},{\"source\":\"MED\",\"id\":\"32191271\",\"citationType\":\"research-article;
+        journal article\",\"title\":\"Multilevel Associations Between Patient- and
+        Hospital-Level Factors and In-Hospital Mortality Among Hospitalized Patients
+        With Head and Neck Cancer.\",\"authorString\":\"Adjei Boakye E, Osazuwa-Peters
+        N, Chen B, Cai M, Tobo BB, Challapalli SD, Buchanan P, Piccirillo JF.\",\"journalAbbreviation\":\"JAMA
+        Otolaryngol Head Neck Surg\",\"pubYear\":2020,\"volume\":\"146\",\"issue\":\"5\",\"pageInfo\":\"444-454\",\"citedByCount\":16},{\"source\":\"MED\",\"id\":\"31334365\",\"citationType\":\"research-article;
+        journal article\",\"title\":\"Volumetric and dosimetric comparison of two
+        delineation guidelines for the radiation treatment of laryngeal squamous cell
+        carcinoma.\",\"authorString\":\"Bondue C, Racadot S, Coutte A, Dupuis P, Biston
+        MC, Gr\xE9goire V.\",\"journalAbbreviation\":\"Clin Transl Radiat Oncol\",\"pubYear\":2019,\"volume\":\"19\",\"pageInfo\":\"1-11\",\"citedByCount\":4},{\"source\":\"MED\",\"id\":\"30737961\",\"citationType\":\"comparative
+        study; research-article; journal article\",\"title\":\"Postoperative radiation
+        performed at the same surgical facility associated with improved overall survival
+        in oral cavity squamous cell carcinoma.\",\"authorString\":\"Amini A, Stokes
+        WA, Jones BL, Sampath S, Kang RS, Gernon TJ, Maghami EG, Massarelli E, Bradley
+        CJ, Karam SD.\",\"journalAbbreviation\":\"Head Neck\",\"pubYear\":2019,\"volume\":\"41\",\"issue\":\"7\",\"pageInfo\":\"2299-2308\",\"citedByCount\":10},{\"source\":\"MED\",\"id\":\"30447127\",\"citationType\":\"journal
+        article\",\"title\":\"Impact of treatment expertise on the outcome of patients
+        with head and neck cancer treated within 6 randomized trials.\",\"authorString\":\"Bossi
+        P, Miceli R, Benasso M, Corv\xF2 R, Bacigalupo A, Sanguineti G, Fallai C,
+        Merlano MC, Infante G, Dani C, Di Giannantonio V, Licitra L.\",\"journalAbbreviation\":\"Head
+        Neck\",\"pubYear\":2018,\"volume\":\"40\",\"issue\":\"12\",\"pageInfo\":\"2648-2656\",\"citedByCount\":6},{\"source\":\"MED\",\"id\":\"30409307\",\"citationType\":\"journal
+        article\",\"title\":\"Hypopharyngeal cancer: A state of the art review.\",\"authorString\":\"Garneau
+        JC, Bakst RL, Miles BA.\",\"journalAbbreviation\":\"Oral Oncol\",\"pubYear\":2018,\"volume\":\"86\",\"pageInfo\":\"244-250\",\"citedByCount\":137},{\"source\":\"MED\",\"id\":\"30194691\",\"citationType\":\"research
+        support, non-u.s. gov't; multicenter study; journal article\",\"title\":\"Changing
+        prognosis of oral cancer: An analysis of survival and treatment between 1973
+        and 2014.\",\"authorString\":\"Cheraghlou S, Schettino A, Zogg CK, Judson
+        BL.\",\"journalAbbreviation\":\"Laryngoscope\",\"pubYear\":2018,\"volume\":\"128\",\"issue\":\"12\",\"pageInfo\":\"2762-2769\",\"citedByCount\":54},{\"source\":\"MED\",\"id\":\"30173901\",\"citationType\":\"review;
+        journal article\",\"title\":\"Multidisciplinary Team Planning for Patients
+        with Head and Neck Cancer.\",\"authorString\":\"Shellenberger TD, Weber RS.\",\"journalAbbreviation\":\"Oral
+        Maxillofac Surg Clin North Am\",\"pubYear\":2018,\"volume\":\"30\",\"issue\":\"4\",\"pageInfo\":\"435-444\",\"citedByCount\":22},{\"source\":\"MED\",\"id\":\"30220318\",\"citationType\":\"journal
+        article\",\"title\":\"The impact of institutional clinical trial recruitment
+        versus hospital volume on survival outcomes of patients with head and neck
+        cancer: An analysis of the PET-NECK trial outcomes, UKCRN portfolio, and Hospital
+        Episode Statistics (HES) in England.\",\"authorString\":\"Lin DJ, McConkey
+        CC, Nankivell P, Dunn J, Mehanna H.\",\"journalAbbreviation\":\"Oral Oncol\",\"pubYear\":2018,\"volume\":\"85\",\"pageInfo\":\"40-43\",\"citedByCount\":4},{\"source\":\"MED\",\"id\":\"30186960\",\"citationType\":\"research-article;
+        journal article\",\"title\":\"Is There a Difference in Staging and Treatment
+        of Head and Neck Squamous Cell Tumors Between Tertiary Care and Community-Based
+        Institutions?\",\"authorString\":\"Akkina SR, Kim RY, Stucken CL, Pynnonen
+        MA, Bradford CR.\",\"journalAbbreviation\":\"Laryngoscope Investig Otolaryngol\",\"pubYear\":2018,\"volume\":\"3\",\"issue\":\"4\",\"pageInfo\":\"290-295\",\"citedByCount\":0},{\"source\":\"MED\",\"id\":\"29794540\",\"citationType\":\"research
+        support, non-u.s. gov't; review; journal article\",\"title\":\"Closing Knowledge
+        Gaps to Optimize Patient Outcomes and Advance Precision Medicine.\",\"authorString\":\"Giusti
+        K, Young AQ, Lehrhaupt K.\",\"journalAbbreviation\":\"Cancer J\",\"pubYear\":2018,\"volume\":\"24\",\"issue\":\"3\",\"pageInfo\":\"144-151\",\"citedByCount\":3},{\"source\":\"MED\",\"id\":\"29180076\",\"citationType\":\"practice
+        guideline; journal article\",\"title\":\"Delineation of the primary tumour
+        Clinical Target Volumes (CTV-P) in laryngeal, hypopharyngeal, oropharyngeal
+        and oral cavity squamous cell carcinoma: AIRO, CACA, DAHANCA, EORTC, GEORCC,
+        GORTEC, HKNPCSG, HNCIG, IAG-KHT, LPRHHT, NCIC CTG, NCRI, NRG Oncology, PHNS,
+        SBRT, SOMERA, SRO, SSHNO, TROG consensus guidelines.\",\"authorString\":\"Gr\xE9goire
+        V, Evans M, Le QT, Bourhis J, Budach V, Chen A, Eisbruch A, Feng M, Giralt
+        J, Gupta T, Hamoir M, Helito JK, Hu C, Hunter K, Johansen J, Kaanders J, Laskar
+        SG, Lee A, Maingon P, M\xE4kitie A, Micciche' F, Nicolai P, O'Sullivan B,
+        Poitevin A, Porceddu S, Sk\u0142adowski K, Tribius S, Waldron J, Wee J, Yao
+        M, Yom SS, Zimmermann F, Grau C.\",\"journalAbbreviation\":\"Radiother Oncol\",\"pubYear\":2018,\"volume\":\"126\",\"issue\":\"1\",\"pageInfo\":\"3-24\",\"citedByCount\":311},{\"source\":\"MED\",\"id\":\"29112234\",\"citationType\":\"journal
+        article\",\"title\":\"Impact of the insurance type of head and neck cancer
+        patients on their hospitalization utilization patterns.\",\"authorString\":\"Gupta
+        A, Sonis ST, Schneider EB, Villa A.\",\"journalAbbreviation\":\"Cancer\",\"pubYear\":2018,\"volume\":\"124\",\"issue\":\"4\",\"pageInfo\":\"760-768\",\"citedByCount\":26},{\"source\":\"MED\",\"id\":\"29079897\",\"citationType\":\"review;
+        journal article\",\"title\":\"The Case Volume Issue in Head and Neck Oncology.\",\"authorString\":\"Alfieri
+        S, Orlandi E, Bossi P.\",\"journalAbbreviation\":\"Curr Treat Options Oncol\",\"pubYear\":2017,\"volume\":\"18\",\"issue\":\"11\",\"pageInfo\":\"65\",\"citedByCount\":6},{\"source\":\"MED\",\"id\":\"29100787\",\"citationType\":\"journal
+        article\",\"title\":\"Facility Volume and Survival in Nasopharyngeal Carcinoma.\",\"authorString\":\"Yoshida
+        EJ, Luu M, David JM, Kim S, Mita A, Scher K, Shiao SL, Tighiouart M, Lee NY,
+        Ho AS, Zumsteg ZS.\",\"journalAbbreviation\":\"Int J Radiat Oncol Biol Phys\",\"pubYear\":2018,\"volume\":\"100\",\"issue\":\"2\",\"pageInfo\":\"408-417\",\"citedByCount\":35},{\"source\":\"MED\",\"id\":\"28640546\",\"citationType\":\"journal
+        article\",\"title\":\"Treatment at high-volume facilities and academic centers
+        is independently associated with improved survival in patients with locally
+        advanced head and neck cancer.\",\"authorString\":\"David JM, Ho AS, Luu M,
+        Yoshida EJ, Kim S, Mita AC, Scher KS, Shiao SL, Tighiouart M, Zumsteg ZS.\",\"journalAbbreviation\":\"Cancer\",\"pubYear\":2017,\"volume\":\"123\",\"issue\":\"20\",\"pageInfo\":\"3933-3942\",\"citedByCount\":124},{\"source\":\"MED\",\"id\":\"28606602\",\"citationType\":\"review;
+        journal article\",\"title\":\"It Takes a Village: The Importance of Multidisciplinary
+        Care.\",\"authorString\":\"Heineman T, St John MA, Wein RO, Weber RS.\",\"journalAbbreviation\":\"Otolaryngol
+        Clin North Am\",\"pubYear\":2017,\"volume\":\"50\",\"issue\":\"4\",\"pageInfo\":\"679-687\",\"citedByCount\":19},{\"source\":\"MED\",\"id\":\"28079775\",\"citationType\":\"journal
+        article\",\"title\":\"Association of Hospital Volume With Racial and Ethnic
+        Disparities in Locally Advanced Cervical Cancer Treatment.\",\"authorString\":\"Uppal
+        S, Chapman C, Spencer RJ, Jolly S, Maturen K, Rauh-Hain JA, delCarmen MG,
+        Rice LW.\",\"journalAbbreviation\":\"Obstet Gynecol\",\"pubYear\":2017,\"volume\":\"129\",\"issue\":\"2\",\"pageInfo\":\"295-304\",\"citedByCount\":30},{\"source\":\"MED\",\"id\":\"27571233\",\"citationType\":\"journal
+        article\",\"title\":\"Impact of facility volume on outcomes in patients with
+        squamous cell carcinoma of the anal canal: Analysis of the National Cancer
+        Data Base.\",\"authorString\":\"Amini A, Jones BL, Ghosh D, Schefter TE, Goodman
+        KA.\",\"journalAbbreviation\":\"Cancer\",\"pubYear\":2017,\"volume\":\"123\",\"issue\":\"2\",\"pageInfo\":\"228-236\",\"citedByCount\":32},{\"source\":\"MED\",\"id\":\"27061951\",\"citationType\":\"journal
+        article\",\"title\":\"Historical compliance rates for providing postoperative
+        radiotherapy in oral cavity squamous cell carcinoma.\",\"authorString\":\"Hinther
+        A, Nakoneshny SC, Dort JC, Chandarana SP, Matthews TW.\",\"journalAbbreviation\":\"Head
+        Neck\",\"pubYear\":2016,\"volume\":\"38\",\"issue\":\"10\",\"pageInfo\":\"1525-1529\",\"citedByCount\":3},{\"source\":\"MED\",\"id\":\"26868285\",\"citationType\":\"journal
+        article\",\"title\":\"Receipt of Care Discordant with Practice Guidelines
+        is Associated with Compromised Overall Survival in Nasopharyngeal Carcinoma.\",\"authorString\":\"Schwam
+        ZG, Sosa JA, Roman S, Judson BL.\",\"journalAbbreviation\":\"Clin Oncol (R
+        Coll Radiol)\",\"pubYear\":2016,\"volume\":\"28\",\"issue\":\"6\",\"pageInfo\":\"402-409\",\"citedByCount\":8},{\"source\":\"MED\",\"id\":\"26777060\",\"citationType\":\"journal
+        article; case reports\",\"title\":\"Analysis of decision making at a multidisciplinary
+        head and neck tumor board incorporating evidence-based National Cancer Comprehensive
+        Network (NCCN) guidelines.\",\"authorString\":\"Shah BA, Qureshi MM, Jalisi
+        S, Grillone G, Salama A, Cooley T, Zaner K, Sakai O, Truong MT.\",\"journalAbbreviation\":\"Pract
+        Radiat Oncol\",\"pubYear\":2016,\"volume\":\"6\",\"issue\":\"4\",\"pageInfo\":\"248-254\",\"citedByCount\":23},{\"source\":\"MED\",\"id\":\"26553389\",\"citationType\":\"journal
+        article\",\"title\":\"Improved prognosis for patients with oral cavity squamous
+        cell carcinoma: Analysis of the National Cancer Database 1998-2006.\",\"authorString\":\"Schwam
+        ZG, Judson BL.\",\"journalAbbreviation\":\"Oral Oncol\",\"pubYear\":2016,\"volume\":\"52\",\"pageInfo\":\"45-51\",\"citedByCount\":41},{\"source\":\"MED\",\"id\":\"25983103\",\"citationType\":\"journal
+        article\",\"title\":\"Radiotherapy for head and neck cancer in Lombardy: a
+        survey by the Lombardy Group of the Italian Association for Radiation Oncology.\",\"authorString\":\"Merlotti
+        A, Di Muzio N, Antognoni P, Filippone F, Bianchi E, Castiglioni S, Bruschieri
+        L, Ivaldi G, De Cicco L, Marzoli L, Orecchia R.\",\"journalAbbreviation\":\"Tumori\",\"pubYear\":2015,\"volume\":\"101\",\"issue\":\"5\",\"pageInfo\":\"560-565\",\"citedByCount\":0},{\"source\":\"MED\",\"id\":\"25797461\",\"citationType\":\"journal
+        article\",\"title\":\"Predictive factors of survival and treatment tolerance
+        in older patients treated with chemotherapy and radiotherapy for locally advanced
+        head and neck cancer.\",\"authorString\":\"Bahig H, Fortin B, Alizadeh M,
+        Lambert L, Filion E, Guertin L, Ayad T, Christopoulos A, Bissada E, Souli\xE8res
+        D, Gaba Idiamey F, Nguyen-Tan PF.\",\"journalAbbreviation\":\"Oral Oncol\",\"pubYear\":2015,\"volume\":\"51\",\"issue\":\"5\",\"pageInfo\":\"521-528\",\"citedByCount\":31},{\"source\":\"MED\",\"id\":\"25681489\",\"citationType\":\"journal
+        article\",\"title\":\"Hospital volume and failure to rescue after head and
+        neck cancer surgery.\",\"authorString\":\"Mulvey CL, Pronovost PJ, Gourin
+        CG.\",\"journalAbbreviation\":\"Otolaryngol Head Neck Surg\",\"pubYear\":2015,\"volume\":\"152\",\"issue\":\"5\",\"pageInfo\":\"783-789\",\"citedByCount\":30},{\"source\":\"MED\",\"id\":\"25488965\",\"citationType\":\"clinical
+        trial, phase iii; comparative study; research-article; multicenter study;
+        randomized controlled trial; journal article\",\"title\":\"Institutional clinical
+        trial accrual volume and survival of patients with head and neck cancer.\",\"authorString\":\"Wuthrick
+        EJ, Zhang Q, Machtay M, Rosenthal DI, Nguyen-Tan PF, Fortin A, Silverman CL,
+        Raben A, Kim HE, Horwitz EM, Read NE, Harris J, Wu Q, Le QT, Gillison ML.\",\"journalAbbreviation\":\"J
+        Clin Oncol\",\"pubYear\":2015,\"volume\":\"33\",\"issue\":\"2\",\"pageInfo\":\"156-164\",\"citedByCount\":189},{\"source\":\"MED\",\"id\":\"25042524\",\"citationType\":\"research
+        support, non-u.s. gov't; journal article\",\"title\":\"Trends and variations
+        in the use of adjuvant therapy for patients with head and neck cancer.\",\"authorString\":\"Chen
+        MM, Roman SA, Yarbrough WG, Burtness BA, Sosa JA, Judson BL.\",\"journalAbbreviation\":\"Cancer\",\"pubYear\":2014,\"volume\":\"120\",\"issue\":\"21\",\"pageInfo\":\"3353-3360\",\"citedByCount\":37},{\"source\":\"MED\",\"id\":\"24706437\",\"citationType\":\"research
+        support, non-u.s. gov't; journal article\",\"title\":\"Volume-outcome relationships
+        for head and neck cancer surgery in a universal health care system.\",\"authorString\":\"Eskander
+        A, Irish J, Groome PA, Freeman J, Gullane P, Gilbert R, Hall SF, Urbach DR,
+        Goldstein DP.\",\"journalAbbreviation\":\"Laryngoscope\",\"pubYear\":2014,\"volume\":\"124\",\"issue\":\"9\",\"pageInfo\":\"2081-2088\",\"citedByCount\":57},{\"source\":\"MED\",\"id\":\"24488549\",\"citationType\":\"review;
+        journal article\",\"title\":\"Outcomes measurement in patients with head and
+        neck cancer.\",\"authorString\":\"Gourin CG.\",\"journalAbbreviation\":\"Curr
+        Oncol Rep\",\"pubYear\":2014,\"volume\":\"16\",\"issue\":\"3\",\"pageInfo\":\"376\",\"citedByCount\":7},{\"source\":\"MED\",\"id\":\"24123512\",\"citationType\":\"meta-analysis;
+        research support, non-u.s. gov't; systematic review; journal article\",\"title\":\"Volume-outcome
+        associations in head and neck cancer treatment: a systematic review and meta-analysis.\",\"authorString\":\"Eskander
+        A, Merdad M, Irish JC, Hall SF, Groome PA, Freeman JL, Urbach DR, Goldstein
+        DP.\",\"journalAbbreviation\":\"Head Neck\",\"pubYear\":2014,\"volume\":\"36\",\"issue\":\"12\",\"pageInfo\":\"1820-1834\",\"citedByCount\":106}]}}"
+    headers:
+      connection:
+      - keep-alive
+      content-length:
+      - '21669'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Tue, 03 Nov 2026 08:46:50 GMT
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      transfer-encoding:
+      - chunked
+      vary:
+      - origin,access-control-request-method,access-control-request-headers,accept-encoding
+    status:
+      code: 200
+      message: ''
+version: 1

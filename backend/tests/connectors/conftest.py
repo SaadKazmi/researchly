@@ -1,9 +1,16 @@
 import pytest
 
 
+def _drop_set_cookie(response):
+    """NCBI sets an `ncbi_sid` session cookie on every answer: never keep one in a cassette."""
+    response["headers"] = {k: v for k, v in response["headers"].items() if k.lower() != "set-cookie"}
+    return response
+
+
 @pytest.fixture(scope="module")
 def vcr_config():
     return {
+        "before_record_response": _drop_set_cookie,
         # no record_mode here: pytest-recording defaults to "none" (a missing cassette fails the test) and a
         # pinned value would override --record-mode, so recording could never be asked for
         "filter_headers": ["authorization", "x-api-key", "cookie", "set-cookie", "user-agent"],
