@@ -62,3 +62,28 @@ Newest entries at the bottom. Each session appends: date, plan + task, what chan
 - Deferred: see the plan's Deferred list (product wiring at step 2, rerank depth at step 4, warm Pyodide and the kernel sandbox at step 7/10, SearXNG install race at step 9).
 - No features.json flips.
 - Next: step 2 plan.
+
+## 2026-11-03 — Step 2a scholarly connectors (plan docs/superpowers/plans/2026-11-03-step2a-scholarly-connectors.md, PR #6)
+- Done (feat/step2a-scholarly-connectors):
+  - **`PoliteClient`:** per-host limits from `limits.yaml`, retry with full jitter and `Retry-After`, a circuit breaker per source, a 5 MB body cap, and manual redirects.
+  - **SSRF-guarded transport:** checks every resolved address, unwraps mapped, NAT64, 6to4 and Teredo forms, and requires IPv6 to be in 2000::/3.
+  - **Cache and paper tables:** an UNLOGGED `http_cache` (allowlisted headers, ETag revalidation) and paper tables in migration 0002.
+  - **Eight keyless Tier-1 connectors:** OpenAlex (with a budget guard), arXiv, Crossref, OpenCitations (count-first, 5,000-row cap), DataCite, Europe PMC, PubMed and HF Papers. They are wired by `build_connectors`.
+  - **Identity resolution:** exact normalized IDs, then title trigram ≥ 0.92 + year ± 1 + first-author surname. Merging keeps per-field provenance.
+  - **Paper store:** `upsert`.
+  - **Federated search:** `federated_search` reports a quota or outage per source.
+  - **Nightly live checks:** the `nightly.yml` workflow.
+  - ADR 0008. The `add-scholarly-connector` skill.
+- Tests: backend 447 passed, 2 skipped; db 28 passed; nightly live run 10 passed (all eight sources, keyless). Connector tests replay vcrpy cassettes: 200s or deliberate 4xx only, with no cookie, key or email.
+- Review fixes worth remembering:
+  - Identifiers are quoted in paths and filters.
+  - Unreadable 2xx bodies raise `SourceUnavailable`.
+  - `set-cookie` is stripped from cassettes.
+  - Upsert ranks each field by its real source, so merged records keep their provenance.
+  - Non-Latin titles keep their letters, and weak titles never fuzzy-match. Postgres trigram candidates are re-checked in Python, because pg_trgm depends on the DB locale.
+  - A source may refresh its own fields.
+- CI: GitHub Actions stopped starting jobs on the private repo because of billing. The repo was made public and the reruns went green.
+- Rulings: arXiv search stays an AND of `all:` words, because a phrase clause hurt ranking and known titles come from OpenAlex and Crossref. OpenCitations citer lists are cached 7 days and reference lists 60 days. The `Connector.get` parameter is positional-only.
+- Deferred: see the plan's Deferred list (cache prune at step 9; author index, batching and upgrades at step 5; per-hop redirect pacing at step 2b; arXiv query tuning).
+- No features.json flips: search and the graph flip when the agents use them (step 3+).
+- Next: plan 2b (full-text ingestion: robots.txt, chunking, embeddings, hybrid search and rerank).

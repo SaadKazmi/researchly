@@ -1556,3 +1556,11 @@ async def federated_search(query: SearchQuery, connectors: Sequence[Connector]) 
 - Merging two stored papers that turn out to share an ID: a maintenance job when it shows up in practice.
 - `--block-network` in pytest once pytest-recording 0.14.1 clears the release-age gate (after 2026-11-09).
 - User's own `mailto` setting in Settings → Sources: step 9 (PoliteClient already accepts it).
+- Added during execution:
+  - Pruning expired `http_cache` rows: step 9 maintenance.
+  - `paper_author.author_id` index, author N+1 batching in `upsert`, race-safe author inserts, upgrading authors after the first write (e.g. ORCIDs from a later OpenAlex record): step 5 author work.
+  - Venue type by source priority (today the first source that supplies one wins): step 5.
+  - A 7-day path for OpenAlex `cited_by` (today it sits in the 60-day singleton cache): step 5 graph work.
+  - Per-hop pacing for cross-host redirects (hops are paced by the first host): step 2b, with full-text fetches.
+  - arXiv search tuning: AND of `all:` words today; a title-phrase pass for known-title lookups if federated search misses them (OpenAlex and Crossref cover them now).
+  - Non-Latin fuzzy matching on a C-locale Postgres: pg_trgm may return no candidates, so a duplicate row is possible (never a false merge); revisit if native pg0 runs with a C locale.

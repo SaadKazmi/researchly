@@ -412,8 +412,8 @@ Every default connector works with **no key, no account and no email**. Limits b
 | 1 | **OpenAlex** | **Enrichment hub** through singleton lookups: abstract, topics, `referenced_works`, `related_works`, `cited_by_count`, `fwci` / percentile, `best_oa_location`, `is_retracted`, licenses. Batch DOI resolution (`doi:a\|b\|…`, up to 100 per call). Autocomplete. Capped search | Keyless daily budget **$0.10 per IP** (`X-RateLimit-Limit-USD: 0.1`). **Singletons and autocomplete cost $0**. Filter/list $0.0001 per call; search $0.001 per call. Content/PDF API needs a key (not used) | CC0 |
 | 1 | **arXiv** | Primary preprint search; metadata; HTML/LaTeX source; PDFs | 1 request / 3 s, single connection | Metadata CC0; per-paper licenses; no implied endorsement |
 | 1 | **Crossref** | Search fallback, DOI metadata, references, licenses, funders, retractions | Public pool: single 5 rps (concurrency 1), list 1 rps (concurrency 1). Polite pool (10 rps / 3 rps) only if the user adds their own `mailto` | Metadata open |
-| 1 | **OpenCitations Index/Meta v2** | DOI↔DOI citations in both directions; citation counts (covers arXiv DataCite DOIs) | 180 req/min/IP (docs) | CC0 |
-| 1 | **DataCite** | arXiv ID ↔ `10.48550/arXiv.<id>` DOI mapping; datasets/software | No published limit; be polite | Open |
+| 1 | **OpenCitations Index/Meta v2** | DOI↔DOI citations in both directions; citation counts (covers arXiv DataCite DOIs). Lists are unpaged (one paper's citers can exceed 8 MB), so the count is read first and lists over 5,000 rows are refused | 180 req/min/IP (docs) | CC0 |
+| 1 | **DataCite** | Metadata for arXiv DataCite DOIs and other DataCite DOIs (datasets/software). The arXiv ↔ `10.48550/arXiv.<id>` mapping is derived locally, without a call | 500 / 5 min / IP unidentified (docs, 2026-11); 1,000 with an email, which Researchly never adds | Open |
 | 1 | **Europe PMC** | Biomedical search, citations/references, OA full-text XML | No limit headers; capped at 5 rps | Per-article licenses |
 | 1 | **PubMed E-utilities** | Biomedical search | 3 rps (`X-Ratelimit-Limit: 3`) | Public |
 | 1 | **Hugging Face Papers** | ML search, upvotes, linked repos/models/datasets | API 500 / 5 min; search 50 / 5 min | Public |
@@ -453,14 +453,14 @@ OpenAlex offers automatic key provisioning by email. It is used **only** if the 
 - **Search fan-out**, then local dedupe and rerank:
   - arXiv;
   - Crossref `query`;
-  - OpenAlex `search`, capped at **≤50/day per install**, with the rest of the budget kept for filters;
+  - OpenAlex `search.title_and_abstract` (plain `search` now matches full text and is noisier at the same cost), capped at **≤50/day per install**, with the rest of the budget kept for filters;
   - Europe PMC / PubMed when the query classifier says biomedical;
   - HF Papers when it says ML;
   - OpenAIRE and DBLP as low-rate extras in Deep runs.
-- **Identity:** arXiv ID → DataCite DOI. Batch DOI resolution goes through one OpenAlex `doi:` filter call (1 credit per 100 DOIs), or through singletons ($0) when the budget is low.
+- **Identity:** arXiv ID → DataCite DOI, derived locally (`10.48550/arxiv.<id>` without the version; no DataCite call). Batch DOI resolution goes through one OpenAlex `doi:` filter call (1 credit per 100 DOIs), or through singletons ($0) when the budget is low.
 - **Enrichment:** OpenAlex singleton ($0) first, then Crossref singleton (license, funders, retraction relations).
 - **References (backward):** the union of OpenAlex `referenced_works` ($0), Crossref references and OpenCitations `/references`.
-- **Citations (forward):** OpenCitations `/citations` first. OpenAlex `cites:` (1 credit per 200 citers) only for top-k seed papers, capped at 1,000 citers each. Europe PMC for biomedical papers.
+- **Citations (forward):** OpenCitations `/citations` first, after a `citation-count` check (lists over 5,000 rows raise `TooManyResults`, and the caller falls back to OpenAlex). OpenAlex `cites:` (1 credit per 200 citers) only for top-k seed papers, capped at 1,000 citers each. Europe PMC for biomedical papers.
 - **Full text:** OpenAlex `best_oa_location.pdf_url`, then arXiv HTML/LaTeX/PDF, then Europe PMC OA XML, then CORE. Always fetched directly from the host, never redistributed.
 - **Budget guard:** read `X-RateLimit-Remaining-USD` on every OpenAlex response. At ≤20% remaining, stop paid operations (search, list) and fall back to free singletons and the other sources. The UI shows "OpenAlex daily budget low", and the budget resets at midnight UTC.
 - **Shared IP caveat:** the keyless OpenAlex budget is per IP, so university or corporate NAT users may run out early. Researchly degrades gracefully and suggests the optional free key.
@@ -482,28 +482,30 @@ class Connector(Protocol):
     | OpenAlex | 5 rps | 2 |
     | Crossref single | 5 rps | 2 |
     | Crossref list | 1 rps | 1 |
-    | OpenCitations | 2 rps | — |
+    | OpenCitations | 2 rps | 1 |
     | arXiv | 1 per 3 s | 1 |
     | OpenReview | 1 per 3 s | — |
     | OpenAIRE | 1 per min | — |
-    | PubMed | 2 rps | — |
-    | Europe PMC | 5 rps | — |
-    | HF search | 8 per min | — |
+    | PubMed | 2 rps | 1 |
+    | Europe PMC | 5 rps | 2 |
+    | DataCite | 1 rps | 1 |
+    | HF API | 1 rps | 1 |
+    | HF search | 8 per min | 1 |
     | CORE | 8 per min | — |
 
-  - honors `Retry-After` and 429/503;
+  - honors `Retry-After` and 429/500/502/503/504 (GET only, at most 4 attempts, full jitter); a `Retry-After` over 120 s raises `QuotaExhausted` without waiting;
   - exponential backoff with jitter, plus a **circuit breaker per source**;
   - User-Agent `Researchly/<ver> (+https://github.com/SaadKazmi/researchly)`. A `mailto` is added **only** if the user sets their own; there is no shared project email;
   - `robots.txt` checks for non-API fetches;
-  - ETag/If-None-Match;
+  - ETag/If-None-Match only where the source sends an ETag (DataCite, HF); a 304 serves and refreshes the cached entry. The other Tier-1 APIs send no validators;
   - responses cached in `http_cache` (Postgres) keyed by normalized ID. TTLs: metadata and references 60 days, citation counts 7 days, search results 24 h. A singleton is never re-fetched within its TTL, and DOIs are deduped across agents before any call.
 - Each connector ships with recorded cassettes plus a contract test (the `add-scholarly-connector` skill).
 - When a quota is exhausted (e.g., the OpenAlex daily budget), the connector raises `QuotaExhausted`. The Lead is told, the UI shows a banner, and other sources continue.
 
 ### 8.3 Identity resolution
-1. Exact match on DOI (including the arXiv DataCite DOI `10.48550/arXiv.<id>`), arXiv ID, OpenAlex ID, PMID or S2 ID (when the optional key is used), via the `paper_ids` table.
-2. Otherwise a fuzzy match on normalized title (trigram ≥ 0.92) + year ± 1 + first-author surname.
-3. Merging keeps provenance per field (`field_sources` JSONB).
+1. Exact match on a normalized ID via the `paper_ids` table: DOI (lowercased, including the arXiv DataCite DOI `10.48550/arxiv.<id>`), arXiv ID (without version), OpenAlex ID (a paper may hold several), PMID, PMCID, or S2 ID (when the optional key is used).
+2. Otherwise a fuzzy match on normalized title (trigram ≥ 0.92) + year ± 1 + first-author surname. Titles are accent-folded and casefolded with letters of every script kept; a title with fewer than two letter-bearing words never fuzzy-matches.
+3. Merging keeps provenance per field (`field_sources` JSONB). A field is overwritten only by a source of equal or higher priority (OpenAlex, Crossref, PubMed, Europe PMC, DataCite, arXiv, HF, OpenCitations); null never overwrites.
 
 ### 8.4 Licensing
 - Each paper stores `license` and `license_source`.
@@ -685,16 +687,18 @@ run(id, project_id, thread_id, effort, status[pending|planning|awaiting_user|run
     plan jsonb, budget_usd, spent_usd, checkpoint_thread_id, parent_run_id, branch_from_checkpoint, started_at, ended_at)
 run_event(id, run_id, seq, type, agent, payload jsonb, ts)                -- AG-UI event log (replayable)
 llm_call(id, run_id, agent, role, provider, model, in_tok, cached_tok, out_tok, cost_usd, latency_ms, status, ts)
-paper(id, title, abstract, year, venue_id, doi, license, license_source, oa_url, is_oa, cited_by, fwci, pct, field_sources jsonb, updated_at)
+paper(id, title, title_norm (GIN trigram), abstract, year, venue_id, doi, license, license_source, oa_url, is_oa, cited_by, fwci, pct,
+      is_retracted, field_sources jsonb, updated_at)
 paper_ids(paper_id, scheme[doi|arxiv|openalex|s2|pmid|pmcid|dblp|acl|ads], value)  UNIQUE(scheme,value)
 author(id, name, orcid, openalex_id) ; paper_author(paper_id, author_id, position)
-venue(id, name, type, tier)
+venue(id, name, type, tier)  UNIQUE(lower(name))
 paper_embedding(paper_id, model_id, vec halfvec)                         -- title+abstract
 paper_specter(paper_id, vec halfvec(768))
 paper_section(id, paper_id, path, text) ; paper_figure(...) ; paper_table(...) ; paper_equation(...)
 chunk(id, paper_id, section_id, ord, text, context_prefix, tokens, bm25 index)
 chunk_embedding(chunk_id, model_id, vec halfvec)
-citation(src, dst, source, is_influential) ; concept(...) ; paper_concept(...) ; concept_edge(...)
+citation(src, dst, source, is_influential)                             -- arrives with the graph step (5)
+concept(...) ; paper_concept(...) ; concept_edge(...)
 collection(id, project_id, name) ; collection_paper(collection_id, paper_id, tags[], note)
 annotation(id, paper_id, project_id, anchor jsonb, text, color)
 evidence(id, run_id, project_id, paper_id, chunk_id, claim, quote, relevance, created_at)
@@ -705,7 +709,8 @@ extraction_table(id, project_id, columns jsonb) ; extraction_cell(table_id, pape
 saved_search(id, project_id, query jsonb, schedule, last_run_at) ; alert_item(id, saved_search_id, paper_id, seen)
 review(id, project_id, protocol jsonb) ; screening_decision(review_id, paper_id, stage, decision, reason, by)
 playbook_item(id, project_id, text, helpful, harmful, status, created_at)
-tool_cache(key, tool, result jsonb, created_at, ttl) ; http_cache(key, url, status, headers, body, etag, expires_at) UNLOGGED
+tool_cache(key, tool, result jsonb, created_at, ttl)
+http_cache(key, url, status, headers, body, etag, expires_at) UNLOGGED  -- url without query; headers allowlisted
 setting(key, value jsonb) ; capability(key, value jsonb) ; provider_config(id, provider, base_url, models jsonb, key_ref)
 -- plus: LangGraph checkpoint tables, Deep Agents store tables, procrastinate tables, memory-framework tables
 ```
@@ -802,7 +807,7 @@ Threat references: OWASP Top 10 for LLM Applications 2025 and OWASP Top 10 for A
 - Keys never enter LangGraph state, checkpoints, the store, logs, traces or fixtures. They are fetched inside the provider call. A logging filter redacts known key patterns.
 
 ### 19.3 SSRF-safe fetching
-- Resolve DNS once. Reject private, loopback, link-local, CGNAT, metadata (169.254.169.254), IPv6 ULA and IPv4-mapped addresses. Connect to the pinned IP with SNI.
+- Resolve DNS once and check every address. Reject private, loopback, link-local, CGNAT, metadata (169.254.169.254), multicast, IPv6 ULA and site-local, and zoned addresses; IPv6 must also be global unicast (2000::/3). IPv4-mapped, NAT64 (64:ff9b::/96), 6to4 and Teredo addresses are unwrapped and their embedded IPv4 is checked (some resolvers return mapped forms). Ports 80/443 only. Connect to the pinned IP with the URL, Host and SNI untouched (ADR 0008).
 - Re-check every redirect (max 5), cap the response size (50 MB PDF, 5 MB HTML), and allowlist content types.
 - In Docker mode the fetcher runs in the app container on a network with no route to `db` except through the app, and the DB listens only on the internal network.
 - Unit tests cover known bypasses (DNS rebinding, decimal and octal IPs, IPv6 forms, redirect to internal).
