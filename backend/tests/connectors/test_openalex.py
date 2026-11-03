@@ -183,8 +183,9 @@ async def test_get_many_is_one_filter_call_and_budget_low_falls_back_to_singleto
     async with client_for(handler) as client:
         conn = OpenAlexConnector(client)
         await conn.get(ids)
-        filters = [parse_qs(u.split("?")[1])["filter"][0] for u in urls]
-        assert sorted(filters) == ["doi:10.1234/a|10.48550/arxiv.1706.03762", "pmid:5"]
+        filters = [parse_qs(u.split("?")[1])["filter"][0] for u in urls if "filter=" in u]
+        assert filters == ["doi:10.1234/a|10.48550/arxiv.1706.03762"]  # the lone PMID is a free singleton
+        assert any("/works/pmid:5" in u for u in urls)
         remaining["v"] = 0.01
         await conn.get([ExternalId("openalex", "W1")])  # records the low budget
         urls.clear()
@@ -269,3 +270,143 @@ async def test_not_found(polite):
     conn = OpenAlexConnector(polite)
     assert await conn.get([ExternalId("openalex", "W1")]) == []
     assert await conn.citations(ExternalId("doi", "10.1038/doesnotexist0000"), "out") == []
+
+
+# ---- fix round 1 ---------------------------------------------------------------------------------------------------
+
+
+async def test_doi_with_reserved_characters_is_percent_encoded_in_the_path():
+    paths: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        paths.append(request.url.raw_path.decode())
+        return httpx.Response(200, json=WORK)
+
+    async with client_for(handler) as client:
+        conn = OpenAlexConnector(client)
+        await conn.get([ExternalId("doi", "10.1234/a#b")])
+        await conn.get([ExternalId("doi", "10.1234/a?x")])
+    assert "%23" in paths[0] and "%3F" in paths[1] and all("/works/doi:10.1234/a" in p for p in paths)
+
+
+async def test_doi_with_comma_or_pipe_never_enters_a_filter():
+    reqs: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        reqs.append(request.url.raw_path.decode())
+        return httpx.Response(200, json={"results": [WORK]} if request.url.path == "/works" else WORK)
+
+    ids_ = [ExternalId("doi", "10.1234/a,b"), ExternalId("doi", "10.1234/c|d")]
+    ids_ += [ExternalId("doi", "10.1234/e"), ExternalId("doi", "10.1234/f")]
+    async with client_for(handler) as client:
+        await OpenAlexConnector(client).get(ids_)
+    filters = [r for r in reqs if r.startswith("/works?")]
+    assert len(filters) == 1 and "a%2Cb" not in filters[0] and "c%7Cd" not in filters[0]
+    assert "10.1234%2Fe" in filters[0] or "10.1234/e" in filters[0]
+    assert sum(r.startswith("/works/doi:") for r in reqs) == 2
+
+
+async def test_budget_reading_goes_stale_at_utc_midnight(monkeypatch):
+    day = dt.date(2026, 11, 3)
+    monkeypatch.setattr(oa, "_today", lambda: day)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, headers=budget(0.01), json=WORK | {"results": [WORK]})
+
+    async with client_for(handler) as client:
+        conn = OpenAlexConnector(client)
+        await conn.get([ExternalId("openalex", "W1")])
+        assert conn.budget_low is True
+        with pytest.raises(QuotaExhausted):
+            await conn.search(SearchQuery("x"))
+        monkeypatch.setattr(oa, "_today", lambda: day + dt.timedelta(days=1))
+        assert conn.budget_low is False
+        assert await conn.search(SearchQuery("x"))  # no request needed first
+
+
+async def test_unreadable_200_body_is_source_unavailable():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text="<html>maintenance</html>")
+
+    async with client_for(handler) as client:
+        conn = OpenAlexConnector(client)
+        with pytest.raises(SourceUnavailable, match="unreadable response"):
+            await conn.get([ExternalId("openalex", "W1")])
+        with pytest.raises(SourceUnavailable, match="unreadable response"):
+            await conn.search(SearchQuery("x"))
+
+
+async def test_one_id_per_scheme_is_a_free_singleton_not_a_filter():
+    reqs: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        reqs.append(request.url.path)
+        return httpx.Response(200, json=WORK)
+
+    async with client_for(handler) as client:
+        await OpenAlexConnector(client).get([ExternalId("doi", "10.1234/a"), ExternalId("pmid", "5")])
+    assert reqs == ["/works/doi:10.1234/a", "/works/pmid:5"]
+
+
+async def test_references_out_reuses_the_full_record_request():
+    calls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request.url.query.decode())
+        return httpx.Response(200, json=WORK)
+
+    async with client_for(handler) as client:
+        conn = OpenAlexConnector(client)
+        refs = await conn.citations(ExternalId("openalex", "W1"), "out")
+        await conn.get([ExternalId("openalex", "W1")])
+    assert refs == [ExternalId("openalex", "W10"), ExternalId("openalex", "W11")]
+    assert calls[0] == calls[1]  # same request, hence the same cache entry
+
+
+def test_cache_keys_are_versioned():
+    assert oa.singleton_key("doi", "10.1234/a") == "openalex:v1:doi:10.1234/a"
+
+
+async def test_citers_recheck_the_budget_between_pages():
+    pages: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        page = parse_qs(request.url.query.decode())["page"][0]
+        pages.append(page)
+        rows = [{"id": f"https://openalex.org/W{(int(page) - 1) * 200 + i}"} for i in range(200)]
+        return httpx.Response(200, headers=budget(0.01), json={"results": rows})
+
+    async with client_for(handler) as client:
+        with pytest.raises(QuotaExhausted):
+            await OpenAlexConnector(client).citations(ExternalId("openalex", "W1"), "in")
+    assert pages == ["1"]
+
+
+async def test_citers_two_pages_are_unioned():
+    pages: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        page = parse_qs(request.url.query.decode())["page"][0]
+        pages.append(page)
+        n = 200 if page == "1" else 5
+        rows = [{"id": f"https://openalex.org/W{(int(page) - 1) * 1000 + i}"} for i in range(n)]
+        return httpx.Response(200, json={"results": rows})
+
+    async with client_for(handler) as client:
+        out = await OpenAlexConnector(client).citations(ExternalId("openalex", "W1"), "in")
+    assert pages == ["1", "2"] and len(out) == 205
+    assert ExternalId("openalex", "W199") in out and ExternalId("openalex", "W1004") in out
+
+
+def test_orcid_and_author_id_are_validated():
+    def author(orcid, aid):
+        work = {
+            "id": "https://openalex.org/W2",
+            "authorships": [{"author": {"display_name": "X", "orcid": orcid, "id": aid}}],
+        }
+        return oa.parse_work(work).authors[0]
+
+    good = author("https://orcid.org/0000-0002-1825-009X", "https://openalex.org/A5023888391")
+    assert (good.orcid, good.openalex_id) == ("0000-0002-1825-009X", "A5023888391")
+    bad = author("https://orcid.org/not-an-orcid", "https://openalex.org/I123")
+    assert (bad.orcid, bad.openalex_id) == (None, None)

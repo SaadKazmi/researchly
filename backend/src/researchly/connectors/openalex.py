@@ -2,8 +2,10 @@
 
 import hashlib
 import json
+import re
 from datetime import UTC, date, datetime
 from typing import Any, Literal
+from urllib.parse import quote
 
 from researchly.connectors import ids
 from researchly.connectors.base import (
@@ -23,19 +25,29 @@ LOW_BUDGET = 0.2  # remaining/limit at or below this: paid calls stop
 CITERS_CAP = 1000
 BATCH = 100  # max OR values in one filter
 
+# Changing SELECT changes what the cache holds: bump KEY ("openalex:v1" -> "openalex:v2") with it.
 SELECT = (
     "id,doi,title,publication_year,abstract_inverted_index,authorships,primary_location,best_oa_location,"
     "open_access,locations,ids,cited_by_count,fwci,citation_normalized_percentile,is_retracted,"
     "referenced_works,topics"
 )
+KEY = "openalex:v1"
+
+_ORCID = re.compile(r"\d{4}-\d{4}-\d{4}-\d{3}[\dX]")
+_AUTHOR = re.compile(r"A\d+")
 
 
 def _today() -> date:
     return datetime.now(UTC).date()
 
 
-def _strip(url: str | None, prefix: str) -> str | None:
-    return url.removeprefix(prefix) if url else None
+def _last_segment(url: str | None, pattern: re.Pattern[str]) -> str | None:
+    tail = (url or "").rstrip("/").rsplit("/", 1)[-1]
+    return tail if pattern.fullmatch(tail) else None
+
+
+def singleton_key(kind: str, value: str) -> str:
+    return f"{KEY}:{kind}:{value}"
 
 
 def rebuild_abstract(index: dict[str, list[int]] | None) -> str | None:
@@ -82,8 +94,8 @@ def parse_work(work: dict[str, Any]) -> PaperRecord:
     authors = [
         Author(
             name=a.get("display_name") or "",
-            orcid=_strip(a.get("orcid"), "https://orcid.org/"),
-            openalex_id=_strip(a.get("id"), "https://openalex.org/"),
+            orcid=_last_segment(a.get("orcid"), _ORCID),
+            openalex_id=_last_segment(a.get("id"), _AUTHOR),
         )
         for authorship in work.get("authorships") or []
         if (a := authorship.get("author") or {})
@@ -110,7 +122,7 @@ def parse_work(work: dict[str, Any]) -> PaperRecord:
 
 
 def _cache_key(prefix: str, params: dict[str, str | int]) -> str:
-    return f"openalex:{prefix}:" + hashlib.sha256(json.dumps(params, sort_keys=True).encode()).hexdigest()
+    return f"{KEY}:{prefix}:" + hashlib.sha256(json.dumps(params, sort_keys=True).encode()).hexdigest()
 
 
 class OpenAlexConnector:
@@ -120,11 +132,14 @@ class OpenAlexConnector:
         self._client = client
         self._remaining: float | None = None
         self._limit: float | None = None
+        self._budget_day = _today()  # the UTC day the budget headers were last read
         self._search_day = _today()
         self._searches = 0
 
     @property
     def budget_low(self) -> bool:
+        if self._budget_day != _today():
+            self._remaining = None  # the budget reset at midnight UTC: the old reading says nothing now
         if self._remaining is None or not self._limit:
             return False  # no budget headers seen yet (or none sent): the server enforces the hard cap
         return self._remaining / self._limit <= LOW_BUDGET
@@ -137,6 +152,7 @@ class OpenAlexConnector:
         try:
             self._remaining = float(fetched.headers["x-ratelimit-remaining-usd"])
             self._limit = float(fetched.headers["x-ratelimit-limit-usd"])
+            self._budget_day = _today()
         except (KeyError, ValueError):
             pass  # keep the last known budget; a cached or header-less answer says nothing new
         return fetched
@@ -145,16 +161,19 @@ class OpenAlexConnector:
         if self.budget_low:
             raise QuotaExhausted(self.name, "OpenAlex daily budget low")
 
-    async def _json(self, fetched: Fetched) -> Any:
+    def _json(self, fetched: Fetched) -> Any:
         if fetched.status == 404:
             return None
         if fetched.status != 200:
             raise SourceUnavailable(self.name, f"HTTP {fetched.status}")
-        return fetched.json()
+        try:
+            return fetched.json()
+        except ValueError as exc:  # JSONDecodeError (an HTML maintenance page) and bad UTF-8
+            raise SourceUnavailable(self.name, "unreadable response") from exc
 
     async def _list(self, params: dict[str, str | int], *, prefix: str, ttl: Any) -> list[dict[str, Any]]:
         fetched = await self._fetch("/works", params=params, cache_key=_cache_key(prefix, params), ttl=ttl)
-        body = await self._json(fetched)
+        body = self._json(fetched)
         return (body or {}).get("results") or []
 
     async def search(self, query: SearchQuery) -> list[PaperRecord]:
@@ -200,31 +219,31 @@ class OpenAlexConnector:
         return out
 
     async def _singleton(self, kind: str, value: str, select: str = SELECT) -> dict[str, Any] | None:
-        ref = value if kind == "openalex" else f"{kind}:{value}"
-        fetched = await self._fetch(
-            f"/works/{ref}",
-            params={"select": select},
-            cache_key=f"openalex:{kind}:{value}" + ("" if select == SELECT else f":{select}"),
-            ttl=TTL_METADATA,
-        )
-        return await self._json(fetched)
+        ref = quote(value if kind == "openalex" else f"{kind}:{value}", safe="/:")
+        key = singleton_key(kind, value) if select == SELECT else f"{KEY}:select={select}:{kind}:{value}"
+        fetched = await self._fetch(f"/works/{ref}", params={"select": select}, cache_key=key, ttl=TTL_METADATA)
+        return self._json(fetched)
 
     async def get(self, ids_: list[ExternalId]) -> list[PaperRecord]:
         lookups = self._lookups(ids_)
-        if len(lookups) < 2 or self.budget_low:
-            works = [w for kind, value in lookups if (w := await self._singleton(kind, value))]
-        else:
-            works = []
-            for kind in ("doi", "pmid", "openalex"):
-                values = [v for k, v in lookups if k == kind]
-                for i in range(0, len(values), BATCH):
-                    chunk = values[i : i + BATCH]
-                    params: dict[str, str | int] = {
-                        "filter": f"{kind}:{'|'.join(chunk)}",
-                        "per-page": BATCH,
-                        "select": SELECT,
-                    }
-                    works += await self._list(params, prefix="batch", ttl=TTL_METADATA)
+        works: list[dict[str, Any]] = []
+        for kind in ("doi", "pmid", "openalex"):
+            values = [v for k, v in lookups if k == kind]
+            # a "," or "|" would split a filter value; a lone ID is a free singleton, a filter costs a credit
+            batchable = [v for v in values if "," not in v and "|" not in v]
+            if len(batchable) < 2 or self.budget_low:
+                batchable = []
+            for i in range(0, len(batchable), BATCH):
+                chunk = batchable[i : i + BATCH]
+                params: dict[str, str | int] = {
+                    "filter": f"{kind}:{'|'.join(chunk)}",
+                    "per-page": BATCH,
+                    "select": SELECT,
+                }
+                works += await self._list(params, prefix="batch", ttl=TTL_METADATA)
+            for value in values:
+                if value not in batchable and (work := await self._singleton(kind, value)):
+                    works.append(work)
         return [parse_work(w) for w in works]
 
     async def _work_id(self, eid: ExternalId) -> str | None:
@@ -241,7 +260,7 @@ class OpenAlexConnector:
             if not (lookups := self._lookups([id])):
                 return []
             kind, value = lookups[0]
-            work = await self._singleton(kind, value, select="id,referenced_works")
+            work = await self._singleton(kind, value)  # the full record already has referenced_works
             return _refs(work) if work else []
         self._guard()
         work_id = await self._work_id(id)
@@ -250,6 +269,8 @@ class OpenAlexConnector:
         out: list[ExternalId] = []
         page = 1
         while len(out) < CITERS_CAP:
+            if page > 1:
+                self._guard()  # the budget may have dropped while paging
             params: dict[str, str | int] = {
                 "filter": f"cites:{work_id}",
                 "per-page": 200,

@@ -19,5 +19,10 @@ async def polite(request):
     from researchly.connectors.http import PoliteClient
 
     recording = request.config.getoption("--record-mode") not in (None, "none")
-    async with PoliteClient(limits=None if recording else {"default": (0.0, 1)}) as client:
+
+    async def no_sleep(_: float) -> None:
+        pass  # a recorded 429/5xx must never stall replay
+
+    client = PoliteClient() if recording else PoliteClient(limits={"default": (0.0, 1)}, sleep=no_sleep)
+    async with client:
         yield client
