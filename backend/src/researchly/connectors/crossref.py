@@ -82,9 +82,12 @@ class CrossrefConnector:
         if fetched.status != 200:
             raise SourceUnavailable(self.name, f"HTTP {fetched.status}")
         try:
-            return fetched.json()["message"]
+            message = fetched.json()["message"]
         except (ValueError, KeyError, TypeError) as exc:  # an HTML maintenance page, bad UTF-8, wrong envelope
             raise SourceUnavailable(self.name, "unreadable response") from exc
+        if not isinstance(message, dict):
+            raise SourceUnavailable(self.name, "unreadable response")
+        return message
 
     async def search(self, query: SearchQuery) -> list[PaperRecord]:
         params: dict[str, str | int] = {

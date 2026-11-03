@@ -105,6 +105,9 @@ async def test_other_errors_and_unreadable_bodies_are_source_unavailable():
             await conn.get([ExternalId("doi", "10.1234/x")])
         with pytest.raises(SourceUnavailable, match="unreadable response"):
             await conn.search(SearchQuery("x"))
+    async with client_for(lambda r: httpx.Response(200, json={"message": "x"})) as client:
+        with pytest.raises(SourceUnavailable, match="unreadable response"):
+            await CrossrefConnector(client).citations(ExternalId("doi", "10.1234/x"), "out")
 
 
 async def test_search_params_and_year_bounds():
