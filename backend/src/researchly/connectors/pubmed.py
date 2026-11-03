@@ -26,6 +26,7 @@ BATCH = 200  # IDs per efetch GET (NCBI advises POST beyond this)
 MAX_RESULTS = 200
 
 _ORCID = re.compile(r"\d{4}-\d{4}-\d{4}-\d{3}[\dX]")
+_YEAR = re.compile(r"\d{4}")
 _LINKNAME = {"in": "pubmed_pubmed_citedin", "out": "pubmed_pubmed_refs"}
 
 
@@ -62,8 +63,9 @@ def _year(article: Element) -> int | None:
     pub = article.find("Journal/JournalIssue/PubDate")
     if pub is None:
         return None
-    raw = _text(pub.find("Year")) or (_text(pub.find("MedlineDate")) or "")[:4]
-    return int(raw) if len(raw) == 4 and raw.isdigit() else None
+    raw = _text(pub.find("Year")) or _text(pub.find("MedlineDate")) or ""
+    match = _YEAR.search(raw)  # MedlineDate: "2015 Jan-Feb", "Spring 2015"
+    return int(match.group()) if match else None
 
 
 def _parse_article(node: Element, source: str) -> PaperRecord | None:

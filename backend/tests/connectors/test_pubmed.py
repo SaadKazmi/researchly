@@ -80,6 +80,13 @@ def client_for(handler) -> PoliteClient:
     return PoliteClient(transport=httpx.MockTransport(handler), limits={"default": (0.0, 1)})
 
 
+@pytest.mark.parametrize("medline", ["2015 Jan-Feb", "Spring 2015", "Winter 2014-2015"])
+def test_medline_date_year_is_the_first_four_digits(medline):
+    xml = SPARSE.replace("2015 Jan-Feb", medline)
+    [rec] = parse_articles(sets(xml).encode(), "pubmed")
+    assert rec.year == (2014 if medline.startswith("Winter") else 2015)
+
+
 def test_parse_article():
     [rec] = parse_articles(sets(ARTICLE).encode(), "pubmed")
     assert rec.title == "Deep learning"
