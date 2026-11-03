@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from urllib.parse import urlsplit
 
 from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
@@ -9,6 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from researchly.connectors.http import Fetched
 from researchly.db.models import HttpCacheRow
+
+CACHED_HEADERS = frozenset({"etag", "content-type", "content-language", "last-modified"})
 
 
 @dataclass(frozen=True)
@@ -31,12 +34,13 @@ class HttpCache:
         return Cached(fetched, row.etag, row.expires_at > datetime.now(UTC))
 
     async def put(self, key: str, fetched: Fetched, ttl: timedelta) -> None:
+        headers = {k: v for k, v in fetched.headers.items() if k.lower() in CACHED_HEADERS}
         values = {
-            "url": fetched.url,
+            "url": urlsplit(fetched.url)._replace(query="", fragment="").geturl(),  # never persist query params
             "status": fetched.status,
-            "headers": fetched.headers,
+            "headers": headers,
             "body": fetched.body,
-            "etag": fetched.headers.get("etag"),
+            "etag": headers.get("etag"),
             "expires_at": datetime.now(UTC) + ttl,
         }
         stmt = insert(HttpCacheRow).values(key=key, **values)

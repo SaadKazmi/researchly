@@ -123,6 +123,7 @@ class PaperAuthor(Base):
     position: Mapped[int] = mapped_column(Integer, primary_key=True)
 
 
+# ponytail: expired rows are never pruned; a startup sweep arrives with step 9 maintenance
 class HttpCacheRow(Base):
     """Response cache (spec §8.2). UNLOGGED: lost after a crash, by design."""
 

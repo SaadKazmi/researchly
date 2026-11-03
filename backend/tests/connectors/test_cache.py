@@ -33,6 +33,17 @@ async def test_put_get_refresh(cache):
     assert await store.get("missing") is None
 
 
+async def test_put_stores_only_safe_headers_and_no_query_string(cache):
+    store, _ = cache
+    headers = {"etag": '"e"', "content-type": "text/plain", "set-cookie": "s=1", "content-encoding": "gzip"}
+    fetched = Fetched(200, headers, b"x", "https://api.example.org/works?mailto=me@example.org&q=x#f")
+    await store.put("k", fetched, timedelta(days=1))
+    hit = await store.get("k")
+    assert hit
+    assert hit.fetched.headers == {"etag": '"e"', "content-type": "text/plain"}
+    assert hit.fetched.url == "https://api.example.org/works"
+
+
 async def test_http_cache_is_unlogged(cache):
     _, engine = cache
     async with engine.connect() as conn:
