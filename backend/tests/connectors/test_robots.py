@@ -70,3 +70,12 @@ async def test_rules_for_our_agent_win_over_the_wildcard():
     async with client:
         assert await robots.allowed("https://pub.example.org/paper.pdf")
         assert not await robots.allowed("https://pub.example.org/private/x.pdf")
+
+
+async def test_userinfo_is_never_sent_and_origins_ignore_case():
+    seen: list[str] = []
+    client, robots = make(lambda r: httpx.Response(200, text=ARXIV_ROBOTS), seen)
+    async with client:
+        await robots.allowed("https://user:secret@Pub.Example.org/a.pdf")
+        await robots.allowed("https://pub.example.org/b.pdf")
+    assert seen == ["https://pub.example.org/robots.txt"]

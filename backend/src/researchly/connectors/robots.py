@@ -22,7 +22,7 @@ class Robots:
 
     async def allowed(self, url: str) -> bool:
         parts = urlsplit(url)
-        origin = f"{parts.scheme}://{parts.netloc}"
+        origin = f"{parts.scheme}://{parts.netloc.rpartition('@')[2]}".lower()  # userinfo is never forwarded
         cached = self._rules.get(origin)
         if cached is None or cached[0] <= self._clock():
             rules = await self._fetch(origin, parts.hostname or "")
