@@ -38,6 +38,7 @@ async def target_for(session: AsyncSession, paper_id: uuid.UUID) -> Target:
 
 async def ingest_paper(session: AsyncSession, paper_id: uuid.UUID, *, fetcher: Fetcher, embedder: TextEmbedder) -> str:
     full = await fetcher.fetch(await target_for(session, paper_id))
+    await session.flush()  # expire_all below must never drop the caller's unflushed changes
     await session.execute(
         delete(PaperSection).where(PaperSection.paper_id == paper_id).execution_options(synchronize_session=False)
     )  # cascades to chunks, vectors in the database
