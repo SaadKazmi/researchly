@@ -457,3 +457,50 @@ async def test_an_unwanted_content_hop_releases_that_hosts_permit():
             await client.get("https://a.example.org/x", source="t", accept=frozenset({"application/pdf"}))
         fetched = await asyncio.wait_for(client.get("https://b.example.org/y", source="t"), 2)
     assert fetched.status == 200
+
+
+def retry_after_via_redirect(seconds: str, seen: list[str]):
+    def handler(request):
+        seen.append(request.url.host)
+        if request.url.host == "doi.example.org":
+            return httpx.Response(302, headers={"location": "https://arxiv.org/pdf/1"})
+        return httpx.Response(429, headers={"retry-after": seconds})
+
+    return handler
+
+
+async def test_a_quota_retry_after_from_a_redirect_target_blocks_that_host_only():
+    seen: list[str] = []
+    client = PoliteClient(
+        transport=httpx.MockTransport(retry_after_via_redirect("3600", seen)),
+        limits={"arxiv.org": (0.0, 1), "default": (0.0, 1)},
+    )
+    async with client:
+        with pytest.raises(QuotaExhausted):
+            await client.get("https://doi.example.org/1", source="t")
+        assert client.limit_for("https://arxiv.org/x", None).blocked_until > 0
+        assert client.limit_for("https://doi.example.org/x", None).blocked_until == 0
+        seen.clear()
+        with pytest.raises(QuotaExhausted):
+            await client.get("https://doi.example.org/2", source="t")
+    assert "arxiv.org" not in seen  # the blocked host is not fetched through the redirect
+
+
+async def test_a_short_retry_after_from_a_redirect_target_defers_that_host_only():
+    seen: list[str] = []
+    slept: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        slept.append(seconds)
+
+    client = PoliteClient(
+        transport=httpx.MockTransport(retry_after_via_redirect("7", seen)),
+        sleep=sleep,
+        clock=lambda: 100.0,
+        limits={"arxiv.org": (0.0, 1), "default": (0.0, 1)},
+    )
+    async with client:
+        with pytest.raises(SourceUnavailable):
+            await client.get("https://doi.example.org/1", source="t")
+    assert client.limit_for("https://doi.example.org/x", None)._next_at == 100.0
+    assert client.limit_for("https://arxiv.org/x", None)._next_at >= 107.0

@@ -252,15 +252,18 @@ class PoliteClient:
                     if self._cache and cache_key and ttl and fetched.status == 200:
                         await self._cache.put(cache_key, fetched, ttl)
                     return fetched
+                answering = limit
                 if fetched is not None:
                     wait = retry_after(fetched.headers.get("retry-after"))
+                    if urlsplit(fetched.url).hostname != urlsplit(url).hostname:  # a redirect target answered
+                        answering = self.limit_for(fetched.url, None)
                     if wait is not None and wait > LONG_WAIT:
                         block = min(wait, MAX_BLOCK)
-                        limit.blocked_until = self._clock() + block  # fail fast, never sleep
+                        answering.blocked_until = self._clock() + block  # fail fast, never sleep
                         breaker.failure(until=self._clock() + block)
                         raise QuotaExhausted(source, f"rate limited; retry after {wait:.0f} s")
                 if wait is not None:
-                    limit.defer(wait)  # the next `_send` waits it out
+                    answering.defer(wait)  # the next `_send` waits it out
                 if attempt == MAX_ATTEMPTS - 1:
                     break
                 if wait is None:
@@ -290,7 +293,10 @@ class PoliteClient:
                 if key != current:  # a new host: free the old permit, then wait for the new host's turn
                     await stack.aclose()
                     stack, current = contextlib.AsyncExitStack(), key
-                    await stack.enter_async_context(self.limit_for(str(request.url), hop_bucket))
+                    hop_limit = self.limit_for(str(request.url), hop_bucket)
+                    await stack.enter_async_context(hop_limit)
+                    if hop_limit.blocked_until > self._clock():  # never fetch a blocked host through a redirect
+                        raise QuotaExhausted(source, f"{request.url.host} is rate limited; try again later")
                 async with asyncio.timeout(TOTAL_TIMEOUT):  # network time only, never the pacing wait
                     result = await self._hop(request, source, accept, max_bytes)
                 if isinstance(result, Fetched):
