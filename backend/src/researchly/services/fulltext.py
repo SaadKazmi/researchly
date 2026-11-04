@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import quote, urlsplit
 
+from researchly.connectors import ids
 from researchly.connectors.base import ConnectorError
 from researchly.connectors.http import Fetched, PoliteClient
 from researchly.connectors.robots import Robots
@@ -59,7 +60,9 @@ class FullTextFetcher:
             return None
         return fetched if fetched.status == 200 else None
 
-    async def _arxiv_html(self, arxiv_id: str) -> FullText | None:
+    async def _arxiv_html(self, raw_id: str) -> FullText | None:
+        if (arxiv_id := ids.arxiv(raw_id)) is None:  # only a normalized id reaches the URL path
+            return None
         url = f"https://arxiv.org/html/{quote(arxiv_id, safe='/')}"  # old-style ids keep their slash
         if not await self._robots.allowed(url):
             return None

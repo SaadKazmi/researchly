@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 import uuid
 from collections.abc import Iterator
 
@@ -96,9 +97,20 @@ def db_url(pg_admin_url: str) -> Iterator[str]:
     admin.dispose()
 
 
+_EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+
+
 def _drop_set_cookie(response):
-    """NCBI sets an `ncbi_sid` session cookie on every answer: never keep one in a cassette."""
+    """NCBI sets an `ncbi_sid` session cookie on every answer: never keep one in a cassette.
+
+    Papers print their authors' addresses; cassettes keep none, so a secret scan stays clean.
+    """
     response["headers"] = {k: v for k, v in response["headers"].items() if k.lower() != "set-cookie"}
+    body = response["body"]["string"]
+    if isinstance(body, bytes):
+        response["body"]["string"] = _EMAIL.sub("redacted@example.org", body.decode("utf-8", "replace")).encode()
+    else:
+        response["body"]["string"] = _EMAIL.sub("redacted@example.org", body)
     return response
 
 
