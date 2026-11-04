@@ -51,3 +51,10 @@ def test_unreadable_or_foreign_xml_gives_none():
     assert parse_jats(b"not xml") is None
     bomb = b'<?xml version="1.0"?><!DOCTYPE a [<!ENTITY x "xx">]><article>&x;</article>'
     assert parse_jats(bomb) is None
+
+
+def test_hostile_input_never_raises():
+    assert (
+        parse_jats(b"<article><body>" + b"<sec>" * 3000 + b"<p>x</p>" + b"</sec>" * 3000 + b"</body></article>") is None
+    )
+    assert parse_jats(b'<?xml version="1.0" encoding="bogus"?><article/>') is None

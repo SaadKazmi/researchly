@@ -61,5 +61,5 @@ def parse_arxiv_html(body: bytes) -> FullText | None:
     for sec in (el for el in article.iter("section") if _is_section(el)):
         path = tuple(_title(a) for a in reversed(list(sec.iterancestors())) if _is_section(a)) + (_title(sec),)
         if blocks := _blocks(sec, sec):
-            sections.append(Section(tuple(p for p in path if p), "\n\n".join(blocks)))
+            sections.append(Section(tuple(p for p in path if p) or ("Body",), "\n\n".join(blocks)))
     return FullText("arxiv_html", sections) if sections else None

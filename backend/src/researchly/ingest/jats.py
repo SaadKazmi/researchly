@@ -34,7 +34,7 @@ def _walk(sec: Element, parent: tuple[str, ...], out: list[Section]) -> None:
         _walk(child, path, out)
 
 
-def parse_jats(body: bytes) -> FullText | None:
+def _parse(body: bytes) -> FullText | None:
     try:
         root = fromstring(body)
     except (DefusedXmlException, ParseError, ValueError):  # entity bombs, DTDs, HTML error pages, truncation
@@ -55,3 +55,10 @@ def parse_jats(body: bytes) -> FullText | None:
     lic = root.find("front/article-meta/permissions/license")
     license_ = (lic.get(_XLINK_HREF) or _text(lic) or None) if lic is not None else None
     return FullText("jats", sections, license_)
+
+
+def parse_jats(body: bytes) -> FullText | None:
+    try:
+        return _parse(body)
+    except Exception:  # untrusted input must never fail an ingest (deep nesting, bogus encodings, ...)
+        return None

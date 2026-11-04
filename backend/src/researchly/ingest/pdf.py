@@ -100,7 +100,7 @@ _BACK_MATTER = re.compile(r"^(?:[\dIVX]+\.?\s+)?(?:references|bibliography|works
 def markdown_sections(markdown: str) -> list[Section]:
     """Docling Markdown → flat sections: its heading levels are not reliable, so each heading is its own path."""
     sections: list[Section] = []
-    title, lines = "Body", []
+    title, lines, fenced = "Body", [], False
 
     def flush() -> None:
         paras = [clean(p) for p in "\n".join(lines).split("\n\n")]
@@ -110,7 +110,9 @@ def markdown_sections(markdown: str) -> list[Section]:
     for line in markdown.splitlines():
         if line.strip().startswith("<!--"):
             continue
-        if heading := _HEADING.match(line):
+        if line.strip().startswith("```"):
+            fenced = not fenced
+        if not fenced and (heading := _HEADING.match(line)):
             flush()
             title, lines = clean(heading.group(1)), []
         else:

@@ -47,3 +47,9 @@ def test_pages_without_an_article_or_text_give_none():
     assert parse_arxiv_html(b"<html><body><article class='ltx_document'></article></body></html>") is None
     assert parse_arxiv_html(b"") is None
     assert parse_arxiv_html(b"\x00\xff garbage") is None
+
+
+def test_a_section_without_a_heading_is_the_body():
+    page = b"<article><section class='ltx_section'><p>Loose text.</p></section></article>"
+    full = parse_arxiv_html(page)
+    assert full is not None and full.sections == [Section(("Body",), "Loose text.")]

@@ -40,3 +40,9 @@ def test_numbered_reference_headings_are_dropped_too():
 
 def test_empty_markdown_has_no_sections():
     assert markdown_sections("") == [] and markdown_sections("<!-- image -->\n") == []
+
+
+def test_headings_inside_code_fences_stay_in_the_body():
+    md = "## Method\n\n```python\n# comment\nx = 1\n```\n\nAfter.\n"
+    # paragraphs are whitespace-collapsed, so the fence reads as one line; what matters is no "comment" section
+    assert markdown_sections(md) == [Section(("Method",), "```python # comment x = 1 ```\n\nAfter.")]
