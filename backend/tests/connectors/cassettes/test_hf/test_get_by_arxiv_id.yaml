@@ -1,0 +1,102 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - huggingface.co
+    method: GET
+    uri: https://huggingface.co/api/papers/1706.03762
+  response:
+    body:
+      string: "{\"id\":\"1706.03762\",\"authors\":[{\"_id\":\"6411c77d6b75ddced38902b6\",\"user\":{\"_id\":\"60fe1b231a3e6f5129776bf9\",\"avatarUrl\":\"/avatars/4f5ba1df4118139a2a00d67a89c7b772.svg\",\"isPro\":false,\"fullname\":\"Ashish
+        Vaswani\",\"user\":\"ashishvaswanigoogle\",\"type\":\"user\",\"name\":\"ashishvaswanigoogle\"},\"name\":\"Ashish
+        Vaswani\",\"status\":\"extracted_pending\",\"statusLastChangedAt\":\"2023-03-15T09:40:25.803Z\",\"hidden\":false},{\"_id\":\"6411c77d6b75ddced38902b7\",\"name\":\"Noam
+        Shazeer\",\"hidden\":false},{\"_id\":\"6411c77d6b75ddced38902b8\",\"user\":{\"_id\":\"60fee8e1465daccb9f332e2f\",\"avatarUrl\":\"/avatars/9459b8659f51ec472ab0462b920eb05e.svg\",\"isPro\":false,\"fullname\":\"Niki
+        Parmar\",\"user\":\"nikip\",\"type\":\"user\",\"name\":\"nikip\"},\"name\":\"Niki
+        Parmar\",\"status\":\"extracted_pending\",\"statusLastChangedAt\":\"2023-03-15T09:40:25.803Z\",\"hidden\":false},{\"_id\":\"6411c77d6b75ddced38902b9\",\"name\":\"Jakob
+        Uszkoreit\",\"hidden\":false},{\"_id\":\"6411c77d6b75ddced38902ba\",\"user\":{\"_id\":\"650292f9c62f8710cd7316d1\",\"avatarUrl\":\"/avatars/1fe0d2c7f2daf72acc21ccfd454ed629.svg\",\"isPro\":false,\"fullname\":\"Llion
+        Jones\",\"user\":\"Tategami\",\"type\":\"user\",\"name\":\"Tategami\"},\"name\":\"Llion
+        Jones\",\"status\":\"claimed_verified\",\"statusLastChangedAt\":\"2025-10-14T10:25:07.707Z\",\"hidden\":false},{\"_id\":\"6411c77d6b75ddced38902bb\",\"name\":\"Aidan
+        N. Gomez\",\"hidden\":false},{\"_id\":\"6411c77d6b75ddced38902bc\",\"name\":\"Lukasz
+        Kaiser\",\"hidden\":false},{\"_id\":\"6411c77d6b75ddced38902bd\",\"name\":\"Illia
+        Polosukhin\",\"hidden\":false}],\"publishedAt\":\"2017-06-12T17:57:34.000Z\",\"title\":\"Attention
+        Is All You Need\",\"summary\":\"The dominant sequence transduction models
+        are based on complex recurrent or\\nconvolutional neural networks in an encoder-decoder
+        configuration. The best\\nperforming models also connect the encoder and decoder
+        through an attention\\nmechanism. We propose a new simple network architecture,
+        the Transformer, based\\nsolely on attention mechanisms, dispensing with recurrence
+        and convolutions\\nentirely. Experiments on two machine translation tasks
+        show these models to be\\nsuperior in quality while being more parallelizable
+        and requiring significantly\\nless time to train. Our model achieves 28.4
+        BLEU on the WMT 2014\\nEnglish-to-German translation task, improving over
+        the existing best results,\\nincluding ensembles by over 2 BLEU. On the WMT
+        2014 English-to-French\\ntranslation task, our model establishes a new single-model
+        state-of-the-art\\nBLEU score of 41.8 after training for 3.5 days on eight
+        GPUs, a small fraction\\nof the training costs of the best models from the
+        literature. We show that the\\nTransformer generalizes well to other tasks
+        by applying it successfully to\\nEnglish constituency parsing both with large
+        and limited training data.\",\"upvotes\":147,\"discussionId\":\"641192343ea54b1aa7e2f084\",\"ai_summary\":\"The
+        Transformer architecture, based purely on attention mechanisms, achieves superior
+        performance on machine translation and parsing tasks with improved parallelizability
+        and reduced training time.\",\"ai_keywords\":[\"recurrent neural networks\",\"convolutional
+        neural networks\",\"encoder-decoder configuration\",\"attention mechanism\",\"Transformer\",\"BLEU
+        score\",\"WMT 2014 English-to-German translation\",\"WMT 2014 English-to-French
+        translation\",\"English constituency parsing\"],\"ai_summary_model\":\"Qwen/Qwen2.5-Coder-32B-Instruct\",\"linkedModels\":[{\"author\":\"google\",\"authorData\":{\"_id\":\"5e6aca39878b8b2bf9806447\",\"avatarUrl\":\"https://cdn-avatars.huggingface.co/v1/production/uploads/5dd96eb166059660ed1ee413/WtA3YYitedOr9n02eHfJe.png\",\"fullname\":\"Google\",\"name\":\"google\",\"type\":\"org\",\"isHf\":false,\"isHfAdmin\":false,\"isMod\":false,\"plan\":\"enterprise\",\"followerCount\":72516,\"isUserFollowing\":false},\"downloads\":286689,\"gated\":\"manual\",\"id\":\"google/paligemma-3b-pt-224\",\"availableInferenceProviders\":[],\"lastModified\":\"2024-09-21T10:14:25.000Z\",\"likes\":697,\"pipeline_tag\":\"image-text-to-text\",\"private\":false,\"repoType\":\"model\",\"isLikedByUser\":false,\"widgetOutputUrls\":[],\"numParameters\":2923466480},{\"author\":\"nvidia\",\"authorData\":{\"_id\":\"60262b67268c201cdc8b7d43\",\"avatarUrl\":\"https://cdn-avatars.huggingface.co/v1/production/uploads/65df9200dc3292a8983e5017/Vs5FPVCH-VZBipV3qKTuy.png\",\"fullname\":\"NVIDIA\",\"name\":\"nvidia\",\"type\":\"org\",\"isHf\":false,\"isHfAdmin\":false,\"isMod\":false,\"plan\":\"plus\",\"followerCount\":74173,\"isUserFollowing\":false},\"downloads\":22714,\"gated\":false,\"id\":\"nvidia/canary-qwen-2.5b\",\"availableInferenceProviders\":[],\"lastModified\":\"2026-04-21T12:31:18.000Z\",\"likes\":474,\"pipeline_tag\":\"automatic-speech-recognition\",\"private\":false,\"repoType\":\"model\",\"isLikedByUser\":false,\"widgetOutputUrls\":[],\"numParameters\":2559447568},{\"author\":\"nvidia\",\"authorData\":{\"_id\":\"60262b67268c201cdc8b7d43\",\"avatarUrl\":\"https://cdn-avatars.huggingface.co/v1/production/uploads/65df9200dc3292a8983e5017/Vs5FPVCH-VZBipV3qKTuy.png\",\"fullname\":\"NVIDIA\",\"name\":\"nvidia\",\"type\":\"org\",\"isHf\":false,\"isHfAdmin\":false,\"isMod\":false,\"plan\":\"plus\",\"followerCount\":74173,\"isUserFollowing\":false},\"downloads\":2546,\"gated\":false,\"id\":\"nvidia/canary-1b\",\"availableInferenceProviders\":[],\"lastModified\":\"2025-12-03T22:22:05.000Z\",\"likes\":463,\"pipeline_tag\":\"automatic-speech-recognition\",\"private\":false,\"repoType\":\"model\",\"isLikedByUser\":false,\"widgetOutputUrls\":[]},{\"author\":\"nvidia\",\"authorData\":{\"_id\":\"60262b67268c201cdc8b7d43\",\"avatarUrl\":\"https://cdn-avatars.huggingface.co/v1/production/uploads/65df9200dc3292a8983e5017/Vs5FPVCH-VZBipV3qKTuy.png\",\"fullname\":\"NVIDIA\",\"name\":\"nvidia\",\"type\":\"org\",\"isHf\":false,\"isHfAdmin\":false,\"isMod\":false,\"plan\":\"plus\",\"followerCount\":74173,\"isUserFollowing\":false},\"downloads\":245498,\"gated\":false,\"id\":\"nvidia/canary-1b-v2\",\"availableInferenceProviders\":[],\"lastModified\":\"2026-08-31T19:01:49.000Z\",\"likes\":448,\"pipeline_tag\":\"automatic-speech-recognition\",\"private\":false,\"repoType\":\"model\",\"isLikedByUser\":false,\"numParameters\":978998272}],\"numTotalModels\":316,\"linkedDatasets\":[{\"author\":\"alpha-one-index\",\"downloads\":5132,\"gated\":false,\"id\":\"alpha-one-index/awesome-ai-index\",\"lastModified\":\"2026-03-25T05:18:24.000Z\",\"private\":false,\"repoType\":\"dataset\",\"likes\":2,\"isLikedByUser\":false,\"isBenchmark\":false,\"isTraces\":false,\"isEnvironment\":false},{\"author\":\"bird-of-paradise\",\"downloads\":190,\"gated\":false,\"id\":\"bird-of-paradise/transformer-from-scratch-tutorial\",\"lastModified\":\"2026-01-12T02:02:20.000Z\",\"private\":false,\"repoType\":\"dataset\",\"likes\":49,\"isLikedByUser\":false,\"isBenchmark\":false,\"isTraces\":false,\"isEnvironment\":false},{\"author\":\"NovBase-VTX\",\"downloads\":148,\"gated\":false,\"id\":\"NovBase-VTX/OSINT-Apple-Intelligence-Sample\",\"lastModified\":\"2026-05-13T04:06:27.000Z\",\"datasetsServerInfo\":{\"viewer\":\"viewer\",\"numRows\":145,\"libraries\":[\"datasets\",\"mlcroissant\"],\"formats\":[\"text\"],\"modalities\":[\"document\",\"text\"]},\"private\":false,\"repoType\":\"dataset\",\"likes\":0,\"isLikedByUser\":false,\"isBenchmark\":false,\"isTraces\":false,\"isEnvironment\":false},{\"author\":\"OrangeX4\",\"downloads\":101,\"gated\":false,\"id\":\"OrangeX4/SeaSlidesBench-Rich\",\"lastModified\":\"2026-10-25T10:59:15.000Z\",\"datasetsServerInfo\":{\"viewer\":\"viewer\",\"numRows\":32,\"libraries\":[\"datasets\",\"pandas\",\"polars\",\"mlcroissant\"],\"formats\":[\"json\"],\"modalities\":[\"document\",\"tabular\",\"text\"]},\"private\":false,\"repoType\":\"dataset\",\"likes\":0,\"isLikedByUser\":false,\"isBenchmark\":false,\"isTraces\":false,\"isEnvironment\":false}],\"numTotalDatasets\":9,\"linkedSpaces\":[{\"emoji\":\"\U0001F4C4\",\"id\":\"nielsr/MiniCPM-OCR-vs-Unlimited-OCR-2\",\"running\":true,\"shortDescription\":\"Side-by-side
+        OCR, MiniCPM-OCR 1.0 vs Unlimited-OCR-2\",\"featured\":false},{\"emoji\":\"\U0001F50D\",\"id\":\"fisherman611/english-vietnamese-machine-translation\",\"running\":false,\"featured\":false},{\"emoji\":\"\U0001F314\",\"id\":\"vikhyatk/moondream1\",\"running\":true,\"featured\":true},{\"emoji\":\"\U0001F916\",\"id\":\"lerobot/language-conditioned-policies\",\"running\":true,\"featured\":false},{\"emoji\":\"\U0001F399\uFE0F\",\"id\":\"nvidia/nemotron-diarization\",\"running\":true,\"featured\":false},{\"emoji\":\"\U0001F3DF\uFE0F\",\"id\":\"StentorLabs/SLM_Arena\",\"running\":true,\"shortDescription\":\"Compare
+        small models with OSS judging and analytics\",\"featured\":false},{\"emoji\":\"\U0001F339\U0001F4A8\",\"id\":\"keras-io/denoising-diffusion-implicit-models\",\"running\":false,\"featured\":true},{\"emoji\":\"\U0001F424\",\"id\":\"nvidia/canary-1b\",\"running\":false,\"featured\":true}],\"numTotalSpaces\":390}"
+    headers:
+      access-control-allow-origin:
+      - https://huggingface.co
+      access-control-expose-headers:
+      - X-Repo-Commit,X-HF-Warning,X-Request-Id,X-Error-Code,X-Error-Message,X-Total-Count,ETag,Link,Accept-Ranges,Content-Range,X-Linked-Size,X-Linked-ETag,X-Xet-Hash,RateLimit,RateLimit-Policy
+      access-control-max-age:
+      - '86400'
+      alt-svc:
+      - h3=":443"; ma=86400
+      connection:
+      - keep-alive
+      content-length:
+      - '8193'
+      content-type:
+      - application/json; charset=utf-8
+      cross-origin-opener-policy:
+      - same-origin
+      date:
+      - Tue, 03 Nov 2026 09:01:53 GMT
+      etag:
+      - W/"2001-s0qLxfqVKMogAx9Mm52ox3tCgVQ"
+      ratelimit:
+      - '"api";r=499;t=139'
+      ratelimit-policy:
+      - '"fixed window";"api";q=500;w=300'
+      referrer-policy:
+      - strict-origin-when-cross-origin
+      strict-transport-security:
+      - max-age=31536000
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      - Accept-Encoding
+      via:
+      - 1.1 e72271b7c8cb777dcacd6e49dcfab458.cloudfront.net (CloudFront)
+      x-amz-cf-id:
+      - UZU1YCWh6fu82YM3h3s9vZygYroKYlsWmRljXw3IRfghfO3wKW_BJQ==
+      x-amz-cf-pop:
+      - MCT50-P3
+      x-cache:
+      - Miss from cloudfront
+      x-powered-by:
+      - huggingface-moon
+      x-request-id:
+      - Root=1-6ae9a301-131c97f905734a8077eb3333
+    status:
+      code: 200
+      message: OK
+version: 1

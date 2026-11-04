@@ -1,0 +1,62 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - eutils.ncbi.nlm.nih.gov
+    method: GET
+    uri: https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?db=pubmed&dbfrom=pubmed&id=23456789&linkname=pubmed_pubmed_citedin&retmode=json
+  response:
+    body:
+      string: '{"header":{"type":"elink","version":"0.3"},"linksets":[{"dbfrom":"pubmed","ids":["23456789"],"linksetdbs":[{"dbto":"pubmed","linkname":"pubmed_pubmed_citedin","links":["42333381","42147228","41304192","41057590","38642146","38379709","37847431","37564472","36826717","35792549","35547406","33998094","32191271","31334365","30737961","30186960","29079897","25488965","24488549"]}]}]}
+
+        '
+    headers:
+      access-control-allow-origin:
+      - '*'
+      access-control-expose-headers:
+      - X-RateLimit-Limit,X-RateLimit-Remaining
+      alt-svc:
+      - clear
+      cache-control:
+      - private
+      content-length:
+      - '383'
+      content-security-policy:
+      - upgrade-insecure-requests
+      content-type:
+      - application/json; charset=UTF-8
+      date:
+      - Tue, 03 Nov 2026 08:35:17 GMT
+      ncbi-phid:
+      - 1D32115EE457D5250000723F187703CB.1.1.m_1
+      ncbi-sid:
+      - 6814BD2573D3E6FB_4E92SID
+      referrer-policy:
+      - origin-when-cross-origin
+      server:
+      - Finatra
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      transfer-encoding:
+      - chunked
+      via:
+      - 1.1 google
+      x-ratelimit-limit:
+      - '3'
+      x-ratelimit-remaining:
+      - '2'
+      x-ua-compatible:
+      - IE=Edge
+      x-xss-protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+version: 1

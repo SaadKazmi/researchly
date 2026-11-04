@@ -1738,6 +1738,19 @@ wheels = [
 ]
 
 [[package]]
+name = "pytest-recording"
+version = "0.14.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+    { name = "vcrpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5f/f1/0c995888c28d4c76c7b0efdafaa8e9f8f2337730c1ea8dc33329bc04dd2a/pytest_recording-0.14.0.tar.gz", hash = "sha256:175f62a71da36c0a019dbee47f92b9fa4c72dea18e215da1488282e8d4d08b35", size = 27084, upload-time = "2026-10-01T22:35:52.353Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/62/f1/7cb1ed94d6d37a585e28951a3f34af8bea09cd7c0cad562345b150489f60/pytest_recording-0.14.0-py3-none-any.whl", hash = "sha256:419f1a9325827987043d01a33a26dcafa69c1744521e1ed1ffa7c7b5fabc865c", size = 13879, upload-time = "2026-10-01T22:35:51.14Z" },
+]
+
+[[package]]
 name = "python-dateutil"
 version = "2.9.0.post0"
 source = { registry = "https://pypi.org/simple" }
@@ -1897,10 +1910,13 @@ source = { editable = "." }
 dependencies = [
     { name = "alembic" },
     { name = "cryptography" },
+    { name = "defusedxml" },
     { name = "deno" },
     { name = "docling-slim", extra = ["convert-core", "feat-ocr-rapidocr-onnx", "format-pdf-pypdfium2"] },
     { name = "fastapi" },
     { name = "fastembed" },
+    { name = "httpcore" },
+    { name = "httpx" },
     { name = "keyring" },
     { name = "langchain-core" },
     { name = "langchain-litellm" },
@@ -1917,21 +1933,25 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "claude-agent-sdk" },
-    { name = "httpx" },
     { name = "pyright" },
     { name = "pytest" },
+    { name = "pytest-recording" },
     { name = "ruff" },
     { name = "testcontainers" },
+    { name = "vcrpy" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "alembic", specifier = ">=1.16" },
     { name = "cryptography", specifier = ">=46" },
+    { name = "defusedxml", specifier = ">=0.7.1" },
     { name = "deno", specifier = "==2.9.8" },
     { name = "docling-slim", extras = ["format-pdf-pypdfium2", "convert-core", "feat-ocr-rapidocr-onnx"], specifier = "==2.142.1" },
     { name = "fastapi", specifier = ">=0.120" },
     { name = "fastembed", specifier = "==0.9.1" },
+    { name = "httpcore", specifier = "==1.0.9" },
+    { name = "httpx", specifier = "==0.28.1" },
     { name = "keyring", specifier = ">=25.6" },
     { name = "langchain-core", specifier = "==1.6.12" },
     { name = "langchain-litellm", specifier = "==0.11.1" },
@@ -1949,11 +1969,12 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "claude-agent-sdk", specifier = "==0.2.169" },
-    { name = "httpx", specifier = ">=0.28" },
     { name = "pyright", specifier = ">=1.1.405" },
     { name = "pytest", specifier = ">=8.4" },
+    { name = "pytest-recording", specifier = "==0.14.0" },
     { name = "ruff", specifier = ">=0.14" },
     { name = "testcontainers", extras = ["postgres"], specifier = ">=4.10" },
+    { name = "vcrpy", specifier = "==9.2.0" },
 ]
 
 [[package]]
@@ -2435,6 +2456,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/da/34/30e9280707135d2cfc589dfff3cb796bd07a3aeb1a3e415ba09dd89d7bb4/uvicorn-0.54.0.tar.gz", hash = "sha256:a2e33cbfaa0306f8e6b0c13e0cb89d7d7a2da3e62b90c66e18c33d9807b28620", size = 112283, upload-time = "2026-09-25T06:52:37.601Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/38/0c/b54a4fdd7f90a3af8b02ebc9ce6712c2c208b7926a2f7bad95c33ebbe943/uvicorn-0.54.0-py3-none-any.whl", hash = "sha256:505bdb0f318731d45f1f712071fc781a8981f6847a31c902c9f5e652d4f67faf", size = 87427, upload-time = "2026-09-25T06:52:35.829Z" },
+]
+
+[[package]]
+name = "vcrpy"
+version = "9.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyyaml" },
+    { name = "wrapt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9a/5e/7e75478db669231809ba9f4197f3460d1a4603e5ecb1d894b967cca5a7e8/vcrpy-9.2.0.tar.gz", hash = "sha256:c325fa276b175de06bc7afe1b2a45204dbe1fddd90d1b2a18ab14dff2e8e2e4a", size = 113323, upload-time = "2026-10-25T22:29:44.293Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2e/27/4a23141b26d604e5c1a67d5d9df726a517ca625499860bae4bf7a75b6faa/vcrpy-9.2.0-py3-none-any.whl", hash = "sha256:a22f6f2cd47687e363c64ff77fbc7b7bbfbc036db793b4413faf6dd9d6718f93", size = 54278, upload-time = "2026-10-25T22:29:42.674Z" },
 ]
 
 [[package]]

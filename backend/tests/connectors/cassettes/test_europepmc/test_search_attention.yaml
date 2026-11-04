@@ -1,0 +1,139 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - www.ebi.ac.uk
+    method: GET
+    uri: https://www.ebi.ac.uk/europepmc/webservices/rest/search?format=json&pageSize=3&query=attention+is+all+you+need&resultType=core
+  response:
+    body:
+      string: "{\"version\":\"6.9\",\"hitCount\":392845,\"nextCursorMark\":\"AoIIQVjXtCg0OTg3MzAxMw==\",\"nextPageUrl\":\"https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=attention+is+all+you+need&cursorMark=AoIIQVjXtCg0OTg3MzAxMw%3D%3D&resultType=core&pageSize=3&format=json\",\"request\":{\"queryString\":\"attention
+        is all you need\",\"resultType\":\"core\",\"cursorMark\":\"*\",\"pageSize\":3,\"sort\":\"\",\"synonym\":false},\"resultList\":{\"result\":[{\"id\":\"PPR1328024\",\"source\":\"PPR\",\"doi\":\"10.64898/2026.09.20.26363284\",\"title\":\"Attention
+        Is All You Need: A Universal Augmented Reality Surgical Navigation Framework\",\"authorString\":\"Zhao
+        D, Qiu Y, Guo Y, Luo X, Liu Y, Li X, Chen H, Cai X, Tian T.\",\"authorList\":{\"author\":[{\"fullName\":\"Zhao
+        D\",\"lastName\":\"Zhao\",\"firstName\":\"Danyang\",\"initials\":\"D\"},{\"fullName\":\"Qiu
+        Y\",\"lastName\":\"Qiu\",\"firstName\":\"Yu\",\"initials\":\"Y\"},{\"fullName\":\"Guo
+        Y\",\"lastName\":\"Guo\",\"firstName\":\"Yue\",\"initials\":\"Y\"},{\"fullName\":\"Luo
+        X\",\"lastName\":\"Luo\",\"firstName\":\"Xutao\",\"initials\":\"X\"},{\"fullName\":\"Liu
+        Y\",\"lastName\":\"Liu\",\"firstName\":\"Yuhan\",\"initials\":\"Y\"},{\"fullName\":\"Li
+        X\",\"lastName\":\"Li\",\"firstName\":\"Xinru\",\"initials\":\"X\"},{\"fullName\":\"Chen
+        H\",\"lastName\":\"Chen\",\"firstName\":\"Hui\",\"initials\":\"H\"},{\"fullName\":\"Cai
+        X\",\"lastName\":\"Cai\",\"firstName\":\"Xiaoxiao\",\"initials\":\"X\",\"authorId\":{\"type\":\"ORCID\",\"value\":\"0000-0002-5654-7414\"}},{\"fullName\":\"Tian
+        T\",\"lastName\":\"Tian\",\"firstName\":\"Taoran\",\"initials\":\"T\",\"authorId\":{\"type\":\"ORCID\",\"value\":\"0000-0002-8048-0328\"}}]},\"authorIdList\":{\"authorId\":[{\"type\":\"ORCID\",\"value\":\"0000-0002-5654-7414\"},{\"type\":\"ORCID\",\"value\":\"0000-0002-8048-0328\"}]},\"pubYear\":\"2026\",\"abstractText\":\"Hard-tissue
+        surgery requires precise spatial control, while conventional computer-assisted
+        navigation presents guidance separately from the operative field. Augmented
+        reality can bring navigation information closer to the surgeon, but how best
+        to translate this information into intuitive intraoperative guidance remains
+        underexplored. We therefore developed an augmented reality navigation system
+        (ANS) that translates real-time deviations from the planned trajectory into
+        co-located holographic action cues. Evaluation comprised typodont and ex vivo
+        porcine experiments, a randomized crossover study in 40 dental trainees, and
+        eight clinical cases. In porcine mandibles, ANS showed lower angular deviation
+        than static and dynamic navigation (1.78\xB0 vs 6.42\xB0 and 4.02\xB0). Among
+        trainees, accuracy was comparable with dynamic navigation, while workload
+        was lower (29.18 vs 33.15), usability higher (73.13 vs 68.88), and visual-focus
+        ratings improved (3.55 vs 2.28). Clinical cases supported feasibility. These
+        findings support co-located action guidance as an alternative interface paradigm
+        for surgical navigation.\",\"pubTypeList\":{\"pubType\":[\"Preprint\"]},\"bookOrReportDetails\":{\"publisher\":\"medRxiv\",\"yearOfPublication\":2026},\"fullTextUrlList\":{\"fullTextUrl\":[{\"availability\":\"Free\",\"availabilityCode\":\"F\",\"documentStyle\":\"doi\",\"site\":\"DOI\",\"url\":\"https://doi.org/10.64898/2026.09.20.26363284\"}]},\"isOpenAccess\":\"N\",\"inEPMC\":\"N\",\"inPMC\":\"N\",\"citedByCount\":0,\"hasReferences\":\"Y\",\"hasTextMinedTerms\":\"N\",\"hasDbCrossReferences\":\"N\",\"hasPDF\":\"N\",\"hasBook\":\"N\",\"hasSuppl\":\"N\",\"hasLabsLinks\":\"N\",\"hasData\":\"N\",\"license\":\"cc
+        by-nc-nd\",\"authMan\":\"N\",\"epmcAuthMan\":\"N\",\"nihAuthMan\":\"N\",\"hasTMAccessionNumbers\":\"N\",\"dateOfCreation\":\"2026-09-26\",\"firstPublicationDate\":\"2026-09-25\",\"firstIndexDate\":\"2026-09-26\",\"hasEvaluations\":\"N\"},{\"id\":\"42059664\",\"source\":\"MED\",\"pmid\":\"42059664\",\"pmcid\":\"PMC13130204\",\"fullTextIdList\":{\"fullTextId\":[\"PMC13130204\"]},\"doi\":\"10.1093/bib/bbag239\",\"title\":\"Correction
+        to: Attention is all you need: utilizing attention in AI-enabled drug discovery.\",\"journalInfo\":{\"issue\":\"2\",\"volume\":\"27\",\"journalIssueId\":4136578,\"dateOfPublication\":\"2026
+        Mar\",\"monthOfPublication\":3,\"yearOfPublication\":2026,\"journal\":{\"medlineAbbreviation\":\"Brief
+        Bioinform\",\"title\":\"Briefings in bioinformatics\",\"essn\":\"1477-4054\",\"issn\":\"1467-5463\",\"nlmid\":\"100912837\",\"isoabbreviation\":\"Brief
+        Bioinform\"},\"printPublicationDate\":\"2026-03-01\"},\"pubYear\":\"2026\",\"pageInfo\":\"bbag239\",\"publicationStatus\":\"ppublish\",\"language\":\"eng\",\"pubModel\":\"Print\",\"pubTypeList\":{\"pubType\":[\"Published
+        Erratum\",\"correction\"]},\"subsetList\":{\"subset\":[{\"code\":\"IM\",\"name\":\"Index
+        Medicus\"}]},\"fullTextUrlList\":{\"fullTextUrl\":[{\"availability\":\"Subscription
+        required\",\"availabilityCode\":\"S\",\"documentStyle\":\"doi\",\"site\":\"DOI\",\"url\":\"https://doi.org/10.1093/bib/bbag239\"},{\"availability\":\"Open
+        access\",\"availabilityCode\":\"OA\",\"documentStyle\":\"html\",\"site\":\"Europe_PMC\",\"url\":\"https://europepmc.org/articles/PMC13130204\"},{\"availability\":\"Open
+        access\",\"availabilityCode\":\"OA\",\"documentStyle\":\"pdf\",\"site\":\"Europe_PMC\",\"url\":\"https://europepmc.org/articles/PMC13130204?pdf=render\"}]},\"commentCorrectionList\":{\"commentCorrection\":[{\"source\":\"MED\",\"id\":\"38189543\",\"reference\":\"Brief
+        Bioinform. 2023 Nov 22;25(1):bbad467. doi: 10.1093/bib/bbad467.\",\"type\":\"Erratum
+        for\",\"orderIn\":1}]},\"isOpenAccess\":\"Y\",\"inEPMC\":\"Y\",\"inPMC\":\"Y\",\"citedByCount\":0,\"hasReferences\":\"N\",\"hasTextMinedTerms\":\"N\",\"hasDbCrossReferences\":\"N\",\"hasPDF\":\"Y\",\"hasBook\":\"N\",\"hasSuppl\":\"N\",\"hasLabsLinks\":\"N\",\"hasData\":\"N\",\"license\":\"cc
+        by-nc\",\"authMan\":\"N\",\"epmcAuthMan\":\"N\",\"nihAuthMan\":\"N\",\"hasTMAccessionNumbers\":\"N\",\"dateOfCreation\":\"2026-04-30\",\"dateOfRevision\":\"2026-05-02\",\"firstPublicationDate\":\"2026-03-01\",\"firstIndexDate\":\"2026-04-30\",\"fullTextReceivedDate\":\"2026-05-18\",\"hasEvaluations\":\"N\"},{\"id\":\"38189543\",\"source\":\"MED\",\"pmid\":\"38189543\",\"pmcid\":\"PMC10772984\",\"fullTextIdList\":{\"fullTextId\":[\"PMC10772984\"]},\"doi\":\"10.1093/bib/bbad467\",\"title\":\"Attention
+        is all you need: utilizing attention in AI-enabled drug discovery.\",\"authorString\":\"Zhang
+        Y, Liu C, Liu M, Liu T, Lin H, Huang CB, Ning L.\",\"authorList\":{\"author\":[{\"fullName\":\"Zhang
+        Y\",\"lastName\":\"Zhang\",\"firstName\":\"Yang\",\"initials\":\"Y\",\"authorId\":{\"type\":\"ORCID\",\"value\":\"0000-0002-1317-120X\"},\"authorAffiliationDetailsList\":{\"authorAffiliation\":[{\"affiliation\":\"Innovative
+        Institute of Chinese Medicine and Pharmacy, Academy for Interdiscipline, Chengdu
+        University of Traditional Chinese Medicine, Chengdu, China.\"}]}},{\"fullName\":\"Liu
+        C\",\"lastName\":\"Liu\",\"firstName\":\"Caiqi\",\"initials\":\"C\",\"authorAffiliationDetailsList\":{\"authorAffiliation\":[{\"affiliation\":\"Department
+        of Gastrointestinal Medical Oncology, Harbin Medical University Cancer Hospital,
+        No.150 Haping Road, Nangang District, Harbin, Heilongjiang 150081, China.\"},{\"affiliation\":\"Key
+        Laboratory of Molecular Oncology of Heilongjiang Province, No.150 Haping Road,
+        Nangang District, Harbin, Heilongjiang 150081, China.\"}]}},{\"fullName\":\"Liu
+        M\",\"lastName\":\"Liu\",\"firstName\":\"Mujiexin\",\"initials\":\"M\",\"authorAffiliationDetailsList\":{\"authorAffiliation\":[{\"affiliation\":\"Chongqing
+        Key Laboratory of Sichuan-Chongqing Co-construction for Diagnosis and Treatment
+        of Infectious Diseases Integrated Traditional Chinese and Western Medicine,
+        College of Medical Technology, Chengdu University of Traditional Chinese Medicine,
+        Chengdu, China.\"}]}},{\"fullName\":\"Liu T\",\"lastName\":\"Liu\",\"firstName\":\"Tianyuan\",\"initials\":\"T\",\"authorAffiliationDetailsList\":{\"authorAffiliation\":[{\"affiliation\":\"Graduate
+        School of Science and Technology, University of Tsukuba, Tsukuba, Japan.\"}]}},{\"fullName\":\"Lin
+        H\",\"lastName\":\"Lin\",\"firstName\":\"Hao\",\"initials\":\"H\",\"authorId\":{\"type\":\"ORCID\",\"value\":\"0000-0001-6265-2862\"},\"authorAffiliationDetailsList\":{\"authorAffiliation\":[{\"affiliation\":\"School
+        of Life Science and Technology, University of Electronic Science and Technology
+        of China, Chengdu 610054, China.\"}]}},{\"fullName\":\"Huang CB\",\"lastName\":\"Huang\",\"firstName\":\"Cheng-Bing\",\"initials\":\"CB\",\"authorAffiliationDetailsList\":{\"authorAffiliation\":[{\"affiliation\":\"School
+        of Computer Science and Technology, Aba Teachers University, Aba, China.\"}]}},{\"fullName\":\"Ning
+        L\",\"lastName\":\"Ning\",\"firstName\":\"Lin\",\"initials\":\"L\",\"authorId\":{\"type\":\"ORCID\",\"value\":\"0000-0001-6374-8823\"},\"authorAffiliationDetailsList\":{\"authorAffiliation\":[{\"affiliation\":\"Yangtze
+        Delta Region Institute (Quzhou), University of Electronic Science and Technology
+        of China, Quzhou, Zhejiang, China.\"},{\"affiliation\":\"School of Healthcare
+        Technology, Chengdu Neusoft University, Chengdu 611844, China.\"}]}}]},\"authorIdList\":{\"authorId\":[{\"type\":\"ORCID\",\"value\":\"0000-0001-6265-2862\"},{\"type\":\"ORCID\",\"value\":\"0000-0001-6374-8823\"},{\"type\":\"ORCID\",\"value\":\"0000-0001-7367-8128\"},{\"type\":\"ORCID\",\"value\":\"0000-0002-1317-120X\"},{\"type\":\"ORCID\",\"value\":\"0009-0000-6924-6429\"}]},\"dataLinksTagsList\":{\"dataLinkstag\":[\"altmetrics\",\"supporting_data\"]},\"journalInfo\":{\"issue\":\"1\",\"volume\":\"25\",\"journalIssueId\":3667622,\"dateOfPublication\":\"2023
+        Nov\",\"monthOfPublication\":11,\"yearOfPublication\":2023,\"journal\":{\"medlineAbbreviation\":\"Brief
+        Bioinform\",\"title\":\"Briefings in bioinformatics\",\"essn\":\"1477-4054\",\"issn\":\"1467-5463\",\"nlmid\":\"100912837\",\"isoabbreviation\":\"Brief
+        Bioinform\"},\"printPublicationDate\":\"2023-11-01\"},\"pubYear\":\"2023\",\"pageInfo\":\"bbad467\",\"abstractText\":\"Recently,
+        attention mechanism and derived models have gained significant traction in
+        drug development due to their outstanding performance and interpretability
+        in handling complex data structures. This review offers an in-depth exploration
+        of the principles underlying attention-based models and their advantages in
+        drug discovery. We further elaborate on their applications in various aspects
+        of drug development, from molecular screening and target binding to property
+        prediction and molecule generation. Finally, we discuss the current challenges
+        faced in the application of attention mechanisms and Artificial Intelligence
+        technologies, including data quality, model interpretability and computational
+        resource constraints, along with future directions for research. Given the
+        accelerating pace of technological advancement, we believe that attention-based
+        models will have an increasingly prominent role in future drug discovery.
+        We anticipate that these models will usher in revolutionary breakthroughs
+        in the pharmaceutical domain, significantly accelerating the pace of drug
+        development.\",\"affiliation\":\"Innovative Institute of Chinese Medicine
+        and Pharmacy, Academy for Interdiscipline, Chengdu University of Traditional
+        Chinese Medicine, Chengdu, China.\",\"publicationStatus\":\"ppublish\",\"language\":\"eng\",\"pubModel\":\"Print\",\"pubTypeList\":{\"pubType\":[\"Research
+        Support, Non-U.S. Gov't\",\"research-article\",\"Review\",\"Journal Article\"]},\"grantsList\":{\"grant\":[{\"agency\":\"Natural
+        Science Foundation of Sichuan Province\",\"grantId\":\"2023NSFSC0569\",\"orderIn\":0},{\"agency\":\"National
+        Natural Science Foundation of China\",\"grantId\":\"62202069\",\"orderIn\":0},{\"agency\":\"Sichuan
+        Province Postdoctoral Research Project Special Support Foundation\",\"grantId\":\"TB2023012\",\"orderIn\":0},{\"agency\":\"Natural
+        Science Foundation of Sichuan Province\",\"grantId\":\"2022NSFSC1610\",\"orderIn\":0},{\"agency\":\"China
+        Postdoctoral Science Foundation\",\"grantId\":\"2023\_M730507\",\"orderIn\":0},{\"agency\":\"National
+        Natural Science Foundation of China\",\"grantId\":\"62372088\",\"orderIn\":0},{\"agency\":\"Natural
+        Science Foundation of Sichuan Province\",\"grantId\":\"2023NSFSC0678\",\"orderIn\":0}]},\"meshHeadingList\":{\"meshHeading\":[{\"majorTopic_YN\":\"Y\",\"descriptorName\":\"Artificial
+        Intelligence\"},{\"majorTopic_YN\":\"Y\",\"descriptorName\":\"Drug Discovery\"},{\"majorTopic_YN\":\"N\",\"descriptorName\":\"Data
+        Accuracy\"},{\"majorTopic_YN\":\"N\",\"descriptorName\":\"Drug Development\"}]},\"keywordList\":{\"keyword\":[\"Artificial
+        intelligence\",\"drug discovery\",\"Transformer\",\"Molecular Representation\",\"Attention
+        Mechanism\",\"Molecule Generation\"]},\"subsetList\":{\"subset\":[{\"code\":\"IM\",\"name\":\"Index
+        Medicus\"}]},\"fullTextUrlList\":{\"fullTextUrl\":[{\"availability\":\"Free\",\"availabilityCode\":\"F\",\"documentStyle\":\"pdf\",\"site\":\"Unpaywall\",\"url\":\"https://academic.oup.com/bib/article-pdf/25/1/bbad467/55123365/bbad467.pdf\"},{\"availability\":\"Subscription
+        required\",\"availabilityCode\":\"S\",\"documentStyle\":\"doi\",\"site\":\"DOI\",\"url\":\"https://doi.org/10.1093/bib/bbad467\"},{\"availability\":\"Open
+        access\",\"availabilityCode\":\"OA\",\"documentStyle\":\"html\",\"site\":\"Europe_PMC\",\"url\":\"https://europepmc.org/articles/PMC10772984\"},{\"availability\":\"Open
+        access\",\"availabilityCode\":\"OA\",\"documentStyle\":\"pdf\",\"site\":\"Europe_PMC\",\"url\":\"https://europepmc.org/articles/PMC10772984?pdf=render\"}]},\"commentCorrectionList\":{\"commentCorrection\":[{\"source\":\"MED\",\"id\":\"42059664\",\"reference\":\"Brief
+        Bioinform. 2026 Mar 1;27(2):bbag239. doi: 10.1093/bib/bbag239.\",\"type\":\"Erratum
+        in\",\"orderIn\":1}]},\"isOpenAccess\":\"Y\",\"inEPMC\":\"Y\",\"inPMC\":\"Y\",\"citedByCount\":86,\"hasReferences\":\"Y\",\"hasTextMinedTerms\":\"Y\",\"hasDbCrossReferences\":\"N\",\"hasPDF\":\"Y\",\"hasBook\":\"N\",\"hasSuppl\":\"N\",\"hasLabsLinks\":\"Y\",\"hasData\":\"Y\",\"license\":\"cc
+        by-nc\",\"authMan\":\"N\",\"epmcAuthMan\":\"N\",\"nihAuthMan\":\"N\",\"hasTMAccessionNumbers\":\"Y\",\"tmAccessionTypeList\":{\"accessionType\":[\"doi\"]},\"dateOfCompletion\":\"2024-01-09\",\"dateOfCreation\":\"2024-01-08\",\"dateOfRevision\":\"2026-04-30\",\"firstPublicationDate\":\"2023-11-01\",\"firstIndexDate\":\"2024-01-09\",\"fullTextReceivedDate\":\"2025-02-03\",\"hasEvaluations\":\"N\"}]}}"
+    headers:
+      connection:
+      - keep-alive
+      content-length:
+      - '13085'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Tue, 03 Nov 2026 08:46:45 GMT
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      transfer-encoding:
+      - chunked
+      vary:
+      - origin,access-control-request-method,access-control-request-headers,accept-encoding
+    status:
+      code: 200
+      message: ''
+version: 1

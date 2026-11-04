@@ -1,0 +1,288 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - api.openalex.org
+    method: GET
+    uri: https://api.openalex.org/works?filter=cites%3AW2626778328&page=1&per-page=200&select=id%2Cdoi
+  response:
+    body:
+      string: '{"meta": {"notice": "No API key, so this request shares one free daily
+        budget ($0.10) with everyone on your network''s IP address. Get a free key
+        with its own $1/day at https://openalex.org/settings/api and add api_key=YOUR_KEY
+        to your requests. An AI agent can get one for its user in one call: POST https://api.openalex.org/api-keys
+        with {\"email\": \"<your user''s email>\"}; we email them a link, and the
+        key works once they click it. Docs for agents: https://help.openalex.org/llms.txt",
+        "count": 120129, "db_response_time_ms": 70, "page": 1, "per_page": 200, "groups_count":
+        null, "x_query": {"oql": "get works citing (W2626778328)", "x_new_oql": "get
+        works citing (W2626778328)", "oqo": {"get_rows": "works", "filter_rows": [{"column_id":
+        "referenced_works", "value": "W2626778328"}]}, "url": "/works?filter=referenced_works:W2626778328&per_page=200&page=1",
+        "order": "most cited (age-adjusted) first", "order_default": true}, "cost_usd":
+        0.0001}, "results": [{"id": "https://openalex.org/W2963341956", "doi": "https://doi.org/10.18653/v1/n19-1423"},
+        {"id": "https://openalex.org/W3177828909", "doi": "https://doi.org/10.1038/s41586-021-03819-2"},
+        {"id": "https://openalex.org/W2752782242", "doi": "https://doi.org/10.1109/cvpr.2018.00745"},
+        {"id": "https://openalex.org/W3138516171", "doi": "https://doi.org/10.1109/iccv48922.2021.00986"},
+        {"id": "https://openalex.org/W3030520226", "doi": "https://doi.org/10.1007/978-3-030-58452-8_13"},
+        {"id": "https://openalex.org/W4312933868", "doi": "https://doi.org/10.1109/cvpr52688.2022.01042"},
+        {"id": "https://openalex.org/W2970641574", "doi": "https://doi.org/10.18653/v1/d19-1410"},
+        {"id": "https://openalex.org/W2963420686", "doi": "https://doi.org/10.1109/tpami.2019.2913372"},
+        {"id": "https://openalex.org/W2963091558", "doi": "https://doi.org/10.1109/cvpr.2018.00813"},
+        {"id": "https://openalex.org/W2981731882", "doi": "https://doi.org/10.1016/j.inffus.2019.12.012"},
+        {"id": "https://openalex.org/W2982399380", "doi": "https://doi.org/10.18653/v1/2020.acl-main.703"},
+        {"id": "https://openalex.org/W2979826702", "doi": "https://doi.org/10.18653/v1/2020.emnlp-demos.6"},
+        {"id": "https://openalex.org/W4312443924", "doi": "https://doi.org/10.1109/cvpr52688.2022.01167"},
+        {"id": "https://openalex.org/W3177318507", "doi": "https://doi.org/10.1609/aaai.v35i12.17325"},
+        {"id": "https://openalex.org/W4323655724", "doi": "https://doi.org/10.1016/j.lindif.2023.102274"},
+        {"id": "https://openalex.org/W2955058313", "doi": "https://doi.org/10.1109/cvpr.2019.00326"},
+        {"id": "https://openalex.org/W2911489562", "doi": "https://doi.org/10.1093/bioinformatics/btz682"},
+        {"id": "https://openalex.org/W3133702157", "doi": "https://doi.org/10.1145/3442188.3445922"},
+        {"id": "https://openalex.org/W3152893301", "doi": "https://doi.org/10.1016/j.aiopen.2021.01.001"},
+        {"id": "https://openalex.org/W3159481202", "doi": "https://doi.org/10.1109/iccv48922.2021.00951"},
+        {"id": "https://openalex.org/W2983040767", "doi": "https://doi.org/10.18653/v1/2020.acl-main.747"},
+        {"id": "https://openalex.org/W4321232185", "doi": "https://doi.org/10.1007/978-3-031-25066-8_9"},
+        {"id": "https://openalex.org/W3109585842", "doi": "https://doi.org/10.1007/978-3-030-58452-8_24"},
+        {"id": "https://openalex.org/W3131500599", "doi": "https://doi.org/10.1109/iccv48922.2021.00061"},
+        {"id": "https://openalex.org/W3170544306", "doi": "https://doi.org/10.48550/arxiv.2105.15203"},
+        {"id": "https://openalex.org/W3207918547", "doi": "https://doi.org/10.1109/iccvw54120.2021.00210"},
+        {"id": "https://openalex.org/W3187418919", "doi": "https://doi.org/10.1109/tpami.2022.3152247"},
+        {"id": "https://openalex.org/W4225672218", "doi": "https://doi.org/10.1109/cvpr52688.2022.00564"},
+        {"id": "https://openalex.org/W4384071683", "doi": "https://doi.org/10.1038/s41586-023-06291-2"},
+        {"id": "https://openalex.org/W3170841864", "doi": "https://doi.org/10.1109/cvpr46437.2021.00681"},
+        {"id": "https://openalex.org/W2948223045", "doi": "https://doi.org/10.18653/v1/p19-1355"},
+        {"id": "https://openalex.org/W2979786244", "doi": "https://doi.org/10.1038/s42256-021-00302-5"},
+        {"id": "https://openalex.org/W3119997354", "doi": "https://doi.org/10.1145/3505244"},
+        {"id": "https://openalex.org/W4212875960", "doi": "https://doi.org/10.1109/wacv51458.2022.00181"},
+        {"id": "https://openalex.org/W4226069476", "doi": "https://doi.org/10.1109/cvpr52688.2022.00135"},
+        {"id": "https://openalex.org/W4382203079", "doi": "https://doi.org/10.1609/aaai.v37i9.26317"},
+        {"id": "https://openalex.org/W2982316857", "doi": "https://doi.org/10.1038/s41586-019-1724-z"},
+        {"id": "https://openalex.org/W3146366485", "doi": "https://doi.org/10.1016/j.neucom.2021.03.091"},
+        {"id": "https://openalex.org/W2892035503", "doi": "https://doi.org/10.1007/s10618-019-00619-1"},
+        {"id": "https://openalex.org/W3198377975", "doi": "https://doi.org/10.1007/s11263-022-01653-1"},
+        {"id": "https://openalex.org/W3146944767", "doi": "https://doi.org/10.1073/pnas.2016239118"},
+        {"id": "https://openalex.org/W2996331899", "doi": "https://doi.org/10.1016/j.ijforecast.2021.03.012"},
+        {"id": "https://openalex.org/W2963367478", "doi": "https://doi.org/10.1109/icdm.2018.00035"},
+        {"id": "https://openalex.org/W2970771982", "doi": "https://doi.org/10.18653/v1/d19-1371"},
+        {"id": "https://openalex.org/W2911286998", "doi": "https://doi.org/10.1145/3308558.3313562"},
+        {"id": "https://openalex.org/W2964110616", "doi": "https://doi.org/10.18653/v1/p19-1285"},
+        {"id": "https://openalex.org/W4391136507", "doi": "https://doi.org/10.1145/3641289"},
+        {"id": "https://openalex.org/W3097777922", "doi": "https://doi.org/10.21437/interspeech.2020-3015"},
+        {"id": "https://openalex.org/W4391109864", "doi": "https://doi.org/10.1038/s41467-024-44824-z"},
+        {"id": "https://openalex.org/W3152956381", "doi": "https://doi.org/10.18653/v1/2021.emnlp-main.243"},
+        {"id": "https://openalex.org/W4324046518", "doi": "https://doi.org/10.1080/14703297.2023.2190148"},
+        {"id": "https://openalex.org/W2981689412", "doi": "https://doi.org/10.1109/iccv.2019.00069"},
+        {"id": "https://openalex.org/W2990957769", "doi": "https://doi.org/10.1109/cvpr42600.2020.00499"},
+        {"id": "https://openalex.org/W2988916019", "doi": "https://doi.org/10.1007/s11263-019-01247-4"},
+        {"id": "https://openalex.org/W2885185669", "doi": "https://doi.org/10.18653/v1/d18-2012"},
+        {"id": "https://openalex.org/W2966926453", "doi": "https://doi.org/10.1109/cvpr.2019.00953"},
+        {"id": "https://openalex.org/W2884001105", "doi": "https://doi.org/10.1109/mci.2018.2840738"},
+        {"id": "https://openalex.org/W3156636935", "doi": "https://doi.org/10.18653/v1/2021.emnlp-main.552"},
+        {"id": "https://openalex.org/W3098605233", "doi": "https://doi.org/10.18653/v1/2020.findings-emnlp.139"},
+        {"id": "https://openalex.org/W4214755140", "doi": "https://doi.org/10.1109/iccv48922.2021.01595"},
+        {"id": "https://openalex.org/W3102100346", "doi": "https://doi.org/10.1016/j.inffus.2021.05.008"},
+        {"id": "https://openalex.org/W3147387781", "doi": "https://doi.org/10.1109/iccv48922.2021.00676"},
+        {"id": "https://openalex.org/W4286904999", "doi": "https://doi.org/10.1007/978-3-031-20047-2_1"},
+        {"id": "https://openalex.org/W4312349930", "doi": "https://doi.org/10.1109/cvpr52688.2022.01170"},
+        {"id": "https://openalex.org/W3204076343", "doi": "https://doi.org/10.1109/iccv48922.2021.00009"},
+        {"id": "https://openalex.org/W3212386989", "doi": "https://doi.org/10.1007/s41095-022-0271-y"},
+        {"id": "https://openalex.org/W4386047745", "doi": "https://doi.org/10.1109/cvpr52729.2023.01157"},
+        {"id": "https://openalex.org/W3111551570", "doi": "https://doi.org/10.1109/cvpr46437.2021.01268"},
+        {"id": "https://openalex.org/W2914598080", "doi": "https://doi.org/10.1109/dsaa.2018.00018"},
+        {"id": "https://openalex.org/W2789541106", "doi": "https://doi.org/10.18653/v1/n18-2074"},
+        {"id": "https://openalex.org/W4365512576", "doi": "https://doi.org/10.1016/j.iotcps.2023.04.003"},
+        {"id": "https://openalex.org/W3175515048", "doi": "https://doi.org/10.1007/s41095-022-0274-8"},
+        {"id": "https://openalex.org/W4312812783", "doi": "https://doi.org/10.1109/cvpr52688.2022.01716"},
+        {"id": "https://openalex.org/W3039448353", "doi": "https://doi.org/10.1109/tpami.2020.3005434"},
+        {"id": "https://openalex.org/W3121523901", "doi": "https://doi.org/10.1109/iccv48922.2021.00060"},
+        {"id": "https://openalex.org/W2933138175", "doi": "https://doi.org/10.18653/v1/n19-4009"},
+        {"id": "https://openalex.org/W3136635488", "doi": "https://doi.org/10.1109/iccv48922.2021.01196"},
+        {"id": "https://openalex.org/W3210586215", "doi": "https://doi.org/10.1109/iccvw54120.2021.00312"},
+        {"id": "https://openalex.org/W3177500196", "doi": "https://doi.org/10.1109/tpami.2021.3095381"},
+        {"id": "https://openalex.org/W2970231061", "doi": "https://doi.org/10.18653/v1/d19-1514"},
+        {"id": "https://openalex.org/W2982220924", "doi": "https://doi.org/10.1109/iccvw.2019.00246"},
+        {"id": "https://openalex.org/W3171125843", "doi": "https://doi.org/10.1109/cvpr46437.2021.01212"},
+        {"id": "https://openalex.org/W4312560592", "doi": "https://doi.org/10.1109/cvpr52688.2022.00320"},
+        {"id": "https://openalex.org/W4390872297", "doi": "https://doi.org/10.1109/iccv51070.2023.00387"},
+        {"id": "https://openalex.org/W4221163766", "doi": "https://doi.org/10.1007/978-3-031-08999-2_22"},
+        {"id": "https://openalex.org/W2945623882", "doi": "https://doi.org/10.1145/3292500.3330989"},
+        {"id": "https://openalex.org/W3016970897", "doi": "https://doi.org/10.1038/s42256-020-00257-z"},
+        {"id": "https://openalex.org/W3161838454", "doi": "https://doi.org/10.1109/iccv48922.2021.00717"},
+        {"id": "https://openalex.org/W3151130473", "doi": "https://doi.org/10.1109/iccv48922.2021.00041"},
+        {"id": "https://openalex.org/W2947476638", "doi": "https://doi.org/10.18653/v1/p19-1656"},
+        {"id": "https://openalex.org/W3046375318", "doi": "https://doi.org/10.1145/3458754"},
+        {"id": "https://openalex.org/W2798362442", "doi": "https://doi.org/10.18653/v1/w18-6319"},
+        {"id": "https://openalex.org/W4296032638", "doi": "https://doi.org/10.1126/science.add2187"},
+        {"id": "https://openalex.org/W3017961061", "doi": "https://doi.org/10.18653/v1/2020.acl-main.740"},
+        {"id": "https://openalex.org/W4319460874", "doi": "https://doi.org/10.2196/45312"},
+        {"id": "https://openalex.org/W3090449556", "doi": "https://doi.org/10.1007/978-3-030-58577-8_7"},
+        {"id": "https://openalex.org/W2888358068", "doi": "https://doi.org/10.1016/j.media.2019.01.012"},
+        {"id": "https://openalex.org/W3096947210", "doi": "https://doi.org/10.1109/access.2021.3086020"},
+        {"id": "https://openalex.org/W4388979610", "doi": "https://doi.org/10.1016/j.neucom.2023.127063"},
+        {"id": "https://openalex.org/W3027225766", "doi": "https://doi.org/10.3390/rs12101662"},
+        {"id": "https://openalex.org/W3209984917", "doi": "https://doi.org/10.1109/jstsp.2022.3188113"},
+        {"id": "https://openalex.org/W2963966654", "doi": "https://doi.org/10.1109/cvpr.2018.00143"},
+        {"id": "https://openalex.org/W4360884927", "doi": "https://doi.org/10.1109/tpami.2023.3261988"},
+        {"id": "https://openalex.org/W4312310776", "doi": "https://doi.org/10.1109/cvpr52688.2022.01631"},
+        {"id": "https://openalex.org/W2998249728", "doi": "https://doi.org/10.1609/aaai.v34i07.6865"},
+        {"id": "https://openalex.org/W2886641317", "doi": "https://doi.org/10.18653/v1/p18-1238"},
+        {"id": "https://openalex.org/W3022643593", "doi": "https://doi.org/10.1098/rsta.2020.0209"},
+        {"id": "https://openalex.org/W3035725276", "doi": "https://doi.org/10.1109/tkde.2021.3090866"},
+        {"id": "https://openalex.org/W2884159461", "doi": "https://doi.org/10.1109/tnnls.2020.2979670"},
+        {"id": "https://openalex.org/W2970476646", "doi": "https://doi.org/10.18653/v1/d19-1250"},
+        {"id": "https://openalex.org/W3155072588", "doi": "https://doi.org/10.1109/tpami.2022.3204461"},
+        {"id": "https://openalex.org/W2962753370", "doi": "https://doi.org/10.1162/tacl_a_00300"},
+        {"id": "https://openalex.org/W2997848713", "doi": "https://doi.org/10.1609/aaai.v34i01.5477"},
+        {"id": "https://openalex.org/W3166285241", "doi": "https://doi.org/10.1109/cvpr46437.2021.00881"},
+        {"id": "https://openalex.org/W4386076493", "doi": "https://doi.org/10.1109/cvpr52729.2023.01548"},
+        {"id": "https://openalex.org/W3105966348", "doi": "https://doi.org/10.18653/v1/2020.findings-emnlp.372"},
+        {"id": "https://openalex.org/W3011667710", "doi": "https://doi.org/10.1109/tkde.2020.2981333"},
+        {"id": "https://openalex.org/W3091588028", "doi": "https://doi.org/10.1007/978-3-030-58577-8_8"},
+        {"id": "https://openalex.org/W3214897310", "doi": "https://doi.org/10.1145/3381831"},
+        {"id": "https://openalex.org/W3145450063", "doi": "https://doi.org/10.1109/iccv48922.2021.00950"},
+        {"id": "https://openalex.org/W2952370363", "doi": "https://doi.org/10.1109/taslp.2021.3124365"},
+        {"id": "https://openalex.org/W3169483174", "doi": "https://doi.org/10.18653/v1/2021.naacl-main.41"},
+        {"id": "https://openalex.org/W3172752666", "doi": "https://doi.org/10.1109/cvpr46437.2021.01422"},
+        {"id": "https://openalex.org/W3011594683", "doi": "https://doi.org/10.1109/tkde.2020.2981314"},
+        {"id": "https://openalex.org/W3036851434", "doi": "https://doi.org/10.1109/tsp.2021.3071210"},
+        {"id": "https://openalex.org/W4391876619", "doi": "https://doi.org/10.1162/tacl_a_00638"},
+        {"id": "https://openalex.org/W2970419734", "doi": "https://doi.org/10.18653/v1/d19-1387"},
+        {"id": "https://openalex.org/W3012871709", "doi": "https://doi.org/10.1145/3366423.3380027"},
+        {"id": "https://openalex.org/W3142630836", "doi": "https://doi.org/10.1109/cvpr46437.2021.00803"},
+        {"id": "https://openalex.org/W2983365766", "doi": "https://doi.org/10.1109/ism46123.2019.00049"},
+        {"id": "https://openalex.org/W4399790131", "doi": "https://doi.org/10.1186/s40561-024-00316-7"},
+        {"id": "https://openalex.org/W4283732315", "doi": "https://doi.org/10.1109/jas.2022.105686"},
+        {"id": "https://openalex.org/W3006881356", "doi": "https://doi.org/10.1162/tacl_a_00349"},
+        {"id": "https://openalex.org/W3011574394", "doi": "https://doi.org/10.1007/s11431-020-1647-3"},
+        {"id": "https://openalex.org/W3001434439", "doi": "https://doi.org/10.1162/tacl_a_00343"},
+        {"id": "https://openalex.org/W2980708516", "doi": "https://doi.org/10.1007/978-3-030-32381-3_16"},
+        {"id": "https://openalex.org/W2964080601", "doi": "https://doi.org/10.1109/cvpr.2018.00378"},
+        {"id": "https://openalex.org/W4312938066", "doi": "https://doi.org/10.1007/978-3-031-20071-7_2"},
+        {"id": "https://openalex.org/W3202579583", "doi": "https://doi.org/10.1109/iccv48922.2021.00082"},
+        {"id": "https://openalex.org/W3198685994", "doi": "https://doi.org/10.18653/v1/2021.emnlp-main.685"},
+        {"id": "https://openalex.org/W4386693657", "doi": "https://doi.org/10.1007/s12599-023-00834-7"},
+        {"id": "https://openalex.org/W2953356739", "doi": "https://doi.org/10.18653/v1/p19-1139"},
+        {"id": "https://openalex.org/W3180045188", "doi": "https://doi.org/10.1109/tgrs.2021.3095166"},
+        {"id": "https://openalex.org/W3047863327", "doi": "https://doi.org/10.1016/j.ejor.2020.07.063"},
+        {"id": "https://openalex.org/W4388654737", "doi": "https://doi.org/10.1126/science.adi2336"},
+        {"id": "https://openalex.org/W4226334005", "doi": "https://doi.org/10.1109/cvpr52688.2022.01166"},
+        {"id": "https://openalex.org/W4367595583", "doi": "https://doi.org/10.1109/jas.2023.123618"},
+        {"id": "https://openalex.org/W3180637455", "doi": "https://doi.org/10.1109/tgrs.2021.3130716"},
+        {"id": "https://openalex.org/W4313007769", "doi": "https://doi.org/10.1109/cvpr52688.2022.01181"},
+        {"id": "https://openalex.org/W4400881081", "doi": "https://doi.org/10.1016/j.media.2024.103280"},
+        {"id": "https://openalex.org/W3171649327", "doi": "https://doi.org/10.1016/j.aiopen.2022.10.001"},
+        {"id": "https://openalex.org/W4312894406", "doi": "https://doi.org/10.1007/978-3-031-20077-9_1"},
+        {"id": "https://openalex.org/W4392168151", "doi": "https://doi.org/10.1038/s41592-024-02201-0"},
+        {"id": "https://openalex.org/W3202698164", "doi": "https://doi.org/10.1109/iccv48922.2021.00675"},
+        {"id": "https://openalex.org/W2953337107", "doi": "https://doi.org/10.18653/v1/w19-4828"},
+        {"id": "https://openalex.org/W3109476562", "doi": "https://doi.org/10.1109/cvpr46437.2021.01018"},
+        {"id": "https://openalex.org/W4283450732", "doi": "https://doi.org/10.1016/j.isprsjprs.2022.06.008"},
+        {"id": "https://openalex.org/W3122484828", "doi": "https://doi.org/10.1109/cvpr46437.2021.01625"},
+        {"id": "https://openalex.org/W4390692489", "doi": "https://doi.org/10.1109/tkde.2024.3352100"},
+        {"id": "https://openalex.org/W3097300053", "doi": "https://doi.org/10.1145/3535101"},
+        {"id": "https://openalex.org/W4295951577", "doi": "https://doi.org/10.1038/s41591-022-01981-2"},
+        {"id": "https://openalex.org/W4312820606", "doi": "https://doi.org/10.1109/cvpr52688.2022.01055"},
+        {"id": "https://openalex.org/W3203588026", "doi": "https://doi.org/10.1038/s41592-021-01252-x"},
+        {"id": "https://openalex.org/W2991046523", "doi": "https://doi.org/10.1007/978-3-030-60990-0_12"},
+        {"id": "https://openalex.org/W2891177506", "doi": "https://doi.org/10.18653/v1/d18-2029"},
+        {"id": "https://openalex.org/W3123909522", "doi": "https://doi.org/10.1016/j.eswa.2022.117921"},
+        {"id": "https://openalex.org/W4362603432", "doi": "https://doi.org/10.1016/j.media.2023.102802"},
+        {"id": "https://openalex.org/W2937843571", "doi": "https://doi.org/10.1109/iccv.2019.00338"},
+        {"id": "https://openalex.org/W2946417913", "doi": "https://doi.org/10.18653/v1/p19-1452"},
+        {"id": "https://openalex.org/W3100366369", "doi": "https://doi.org/10.1561/2200000071"},
+        {"id": "https://openalex.org/W3002104146", "doi": "https://doi.org/10.18653/v1/2021.eacl-main.20"},
+        {"id": "https://openalex.org/W3171581326", "doi": "https://doi.org/10.1109/cvpr46437.2021.00264"},
+        {"id": "https://openalex.org/W2948947170", "doi": "https://doi.org/10.18653/v1/p19-1356"},
+        {"id": "https://openalex.org/W2976122994", "doi": "https://doi.org/10.1007/978-3-030-58539-6_11"},
+        {"id": "https://openalex.org/W3092172514", "doi": "https://doi.org/10.1145/3447548.3467401"},
+        {"id": "https://openalex.org/W3144314306", "doi": "https://doi.org/10.1109/iccv48922.2021.01028"},
+        {"id": "https://openalex.org/W3021397474", "doi": "https://doi.org/10.1145/3397271.3401075"},
+        {"id": "https://openalex.org/W3094897602", "doi": "https://doi.org/10.1109/wacv48630.2021.00360"},
+        {"id": "https://openalex.org/W2793978524", "doi": "https://doi.org/10.18653/v1/w18-2501"},
+        {"id": "https://openalex.org/W2965669158", "doi": "https://doi.org/10.1109/cvprw.2019.00247"},
+        {"id": "https://openalex.org/W4386075524", "doi": "https://doi.org/10.1109/cvpr52729.2023.00995"},
+        {"id": "https://openalex.org/W4385763767", "doi": "https://doi.org/10.24963/ijcai.2023/759"},
+        {"id": "https://openalex.org/W4411403346", "doi": "https://doi.org/10.1145/3744746"},
+        {"id": "https://openalex.org/W2995753487", "doi": "https://doi.org/10.1109/cvpr42600.2020.01059"},
+        {"id": "https://openalex.org/W3146097248", "doi": "https://doi.org/10.1109/iccv48922.2021.00010"},
+        {"id": "https://openalex.org/W2895340641", "doi": "https://doi.org/10.1007/978-3-030-01240-3_17"},
+        {"id": "https://openalex.org/W2998718632", "doi": "https://doi.org/10.1016/j.inffus.2020.06.014"},
+        {"id": "https://openalex.org/W3204251186", "doi": "https://doi.org/10.1109/iccv48922.2021.01474"},
+        {"id": "https://openalex.org/W4386790226", "doi": "https://doi.org/10.1007/s11263-023-01891-x"},
+        {"id": "https://openalex.org/W2963096510", "doi": "https://doi.org/10.18653/v1/p18-1082"},
+        {"id": "https://openalex.org/W3153469116", "doi": "https://doi.org/10.18653/v1/2021.emnlp-main.595"},
+        {"id": "https://openalex.org/W4386083034", "doi": "https://doi.org/10.1109/cvpr52729.2023.02142"},
+        {"id": "https://openalex.org/W4327808545", "doi": "https://doi.org/10.1109/tip.2023.3256763"},
+        {"id": "https://openalex.org/W3137147200", "doi": "https://doi.org/10.1201/9781003162810-13"},
+        {"id": "https://openalex.org/W3203841574", "doi": "https://doi.org/10.1007/978-3-030-87193-2_11"},
+        {"id": "https://openalex.org/W2981851019", "doi": "https://doi.org/10.1109/iccv.2019.00756"},
+        {"id": "https://openalex.org/W4322766882", "doi": "https://doi.org/10.1038/s42256-023-00626-4"},
+        {"id": "https://openalex.org/W4378838672", "doi": "https://doi.org/10.1038/s41586-023-06139-9"},
+        {"id": "https://openalex.org/W4288079542", "doi": "https://doi.org/10.1145/3395046"},
+        {"id": "https://openalex.org/W2963854351", "doi": "https://doi.org/10.18653/v1/p19-1441"}],
+        "group_by": []}'
+    headers:
+      access-control-allow-headers:
+      - Accept, Accept-Language, Accept-Encoding, Authorization, Content-Type, X-OpenAlex-UI,
+        X-Impersonate-User
+      access-control-allow-methods:
+      - GET, HEAD, POST, PATCH, DELETE, OPTIONS
+      access-control-allow-origin:
+      - '*'
+      access-control-expose-headers:
+      - Cache-Control, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Onetime-Remaining,
+        X-RateLimit-Credits-Used, X-RateLimit-Credits-Required, X-RateLimit-Reset,
+        X-RateLimit-Limit-USD, X-RateLimit-Remaining-USD, X-RateLimit-Prepaid-Remaining-USD,
+        X-RateLimit-Cost-USD, X-RateLimit-Cost-Required-USD, Retry-After, Location,
+        Content-Disposition, X-OpenAlex-UI-Token
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a5473c6a592215a7-KHI
+      connection:
+      - keep-alive
+      content-length:
+      - '20236'
+      content-type:
+      - application/json
+      date:
+      - Tue, 03 Nov 2026 00:24:26 GMT
+      nel:
+      - '{"report_to":"heroku-nel","response_headers":["Via"],"max_age":3600,"success_fraction":0.01,"failure_fraction":0.1}'
+      report-to:
+      - '{"group":"heroku-nel","endpoints":[{"url":"https://nel.heroku.com/reports?s=GV%2FFlrFytN07CWl1Rw%2F0OCqlC9A4CUxfEMFc76j1hsA%3D\u0026sid=c46efe9b-d3d2-4a0c-8c76-bfafa16c5add\u0026ts=1793665466"}],"max_age":3600}'
+      reporting-endpoints:
+      - heroku-nel="https://nel.heroku.com/reports?s=GV%2FFlrFytN07CWl1Rw%2F0OCqlC9A4CUxfEMFc76j1hsA%3D&sid=c46efe9b-d3d2-4a0c-8c76-bfafa16c5add&ts=1793665466"
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      via:
+      - 2.0 heroku-router
+      x-ratelimit-cost-usd:
+      - '0.0001'
+      x-ratelimit-credits-used:
+      - '1'
+      x-ratelimit-limit:
+      - '1000'
+      x-ratelimit-limit-usd:
+      - '0.1'
+      x-ratelimit-onetime-remaining:
+      - '0'
+      x-ratelimit-prepaid-remaining-usd:
+      - '0'
+      x-ratelimit-remaining:
+      - '998'
+      x-ratelimit-remaining-usd:
+      - '0.0998'
+      x-ratelimit-reset:
+      - '84934'
+    status:
+      code: 200
+      message: OK
+version: 1

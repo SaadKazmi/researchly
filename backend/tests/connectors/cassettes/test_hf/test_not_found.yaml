@@ -1,0 +1,72 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - huggingface.co
+    method: GET
+    uri: https://huggingface.co/api/papers/1001.0001
+  response:
+    body:
+      string: '{"error":"Paper not found. For an arXiv paper to appear on Hugging
+        Face, its arxiv.org URL needs to be mentioned in at least one model, dataset
+        or Space''s README.md.\n\nIf this paper exists, cite https://arxiv.org/abs/1001.0001
+        in any of your repos'' README.md for the paper to have its own page here."}'
+    headers:
+      access-control-allow-origin:
+      - https://huggingface.co
+      access-control-expose-headers:
+      - X-Repo-Commit,X-HF-Warning,X-Request-Id,X-Error-Code,X-Error-Message,X-Total-Count,ETag,Link,Accept-Ranges,Content-Range,X-Linked-Size,X-Linked-ETag,X-Xet-Hash,RateLimit,RateLimit-Policy
+      access-control-max-age:
+      - '86400'
+      alt-svc:
+      - h3=":443"; ma=86400
+      connection:
+      - keep-alive
+      content-length:
+      - '302'
+      content-type:
+      - application/json; charset=utf-8
+      cross-origin-opener-policy:
+      - same-origin
+      date:
+      - Tue, 03 Nov 2026 09:01:54 GMT
+      etag:
+      - W/"12e-Buw/EMd2BCV9zSIjnx22ZgXdAiE"
+      ratelimit:
+      - '"api";r=498;t=138'
+      ratelimit-policy:
+      - '"fixed window";"api";q=500;w=300'
+      referrer-policy:
+      - strict-origin-when-cross-origin
+      strict-transport-security:
+      - max-age=31536000
+      vary:
+      - Origin
+      via:
+      - 1.1 75c7bd551167fd85669c596619dca276.cloudfront.net (CloudFront)
+      x-amz-cf-id:
+      - Aj5FMbmDIkBApJbBJG4WYnh9oxWc_133YT6lc5SNZBsF76o-Q37ohg==
+      x-amz-cf-pop:
+      - MCT50-P3
+      x-cache:
+      - Error from cloudfront
+      x-error-message:
+      - Paper not found. For an arXiv paper to appear on Hugging Face, its arxiv.org
+        URL needs to be mentioned in at least one model, dataset or Space's README.md.
+        If this paper exists, cite https://arxiv.org/abs/1001.0001 in any of your
+        repos' README.md for the paper to have its own page here.
+      x-powered-by:
+      - huggingface-moon
+      x-request-id:
+      - Root=1-6ae9a302-3a76fded79deee75008faff2
+    status:
+      code: 404
+      message: Not Found
+version: 1

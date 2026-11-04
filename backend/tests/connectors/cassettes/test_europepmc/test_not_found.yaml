@@ -1,0 +1,37 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - www.ebi.ac.uk
+    method: GET
+    uri: https://www.ebi.ac.uk/europepmc/webservices/rest/search?format=json&pageSize=2&query=%28EXT_ID%3A999999999+AND+SRC%3AMED%29&resultType=core
+  response:
+    body:
+      string: '{"version":"6.9","hitCount":0,"request":{"queryString":"(EXT_ID:999999999
+        AND SRC:MED)","internalQuery":"(EXT_ID:999999999 AND SRC:MED)","resultType":"CORE","cursorMark":"*","pageSize":2,"sort":"","synonym":false},"resultList":{"result":[]}}'
+    headers:
+      connection:
+      - keep-alive
+      content-length:
+      - '241'
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Tue, 03 Nov 2026 08:35:55 GMT
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      transfer-encoding:
+      - chunked
+      vary:
+      - origin,access-control-request-method,access-control-request-headers,accept-encoding
+    status:
+      code: 200
+      message: ''
+version: 1

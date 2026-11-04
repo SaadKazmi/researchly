@@ -8,7 +8,18 @@ from researchly.db import migrate
 from researchly.db.base import Base
 
 pytestmark = pytest.mark.db
-TABLES = {"setting", "capability", "provider_config", "llm_call"}
+TABLES = {
+    "setting",
+    "capability",
+    "provider_config",
+    "llm_call",
+    "venue",
+    "paper",
+    "paper_ids",
+    "author",
+    "paper_author",
+    "http_cache",
+}
 
 
 def test_upgrade_downgrade_upgrade(db_url):

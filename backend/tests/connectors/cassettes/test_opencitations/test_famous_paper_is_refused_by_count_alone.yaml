@@ -1,0 +1,50 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - api.opencitations.net
+    method: GET
+    uri: https://api.opencitations.net/index/v2/citation-count/pmid:26017442
+  response:
+    body:
+      string: "[\n    {\n        \"count\": \"73495\"\n    }\n]"
+    headers:
+      accept-ranges:
+      - bytes
+      access-control-allow-headers:
+      - Accept, Authorization, Content-Type, Origin, X-Requested-With
+      access-control-allow-methods:
+      - GET, POST, HEAD, OPTIONS
+      access-control-allow-origin:
+      - '*'
+      access-control-expose-headers:
+      - Content-Length, Content-Range, X-Total-Count
+      access-control-max-age:
+      - '86400'
+      age:
+      - '33021'
+      content-length:
+      - '40'
+      content-type:
+      - application/json
+      date:
+      - Mon, 02 Nov 2026 23:09:58 GMT
+      server:
+      - Apache/2.4.10 (Win32)
+      x-cache:
+      - HIT
+      x-redis-cache:
+      - MISS
+      x-varnish:
+      - 53052038 48599558
+    status:
+      code: 200
+      message: OK
+version: 1

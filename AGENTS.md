@@ -70,6 +70,12 @@ The default `python` on dev machines may be old; always go through `uv`.
 - No torch: never add Docling model extras (they pull torch or `onnxruntime-gpu`); `backend/tests/test_lock.py` guards both locks. `docling-slim` is pinned exactly because `ingest/pdf.py` patches private behaviour (ADR 0005). onnxruntime is held at 1.23.2 on Intel Macs, the last x86_64 wheel (ADR 0007).
 - Light cells (`sandbox/light.py`): pass Deno paths as `Path.resolve().as_posix()` (Deno denies Windows 8.3 short names); Deno checks a link's own path, so `run_cell` refuses workdirs holding links. Deno/Pyodide bumps re-run the escape tests on all five OS (ADR 0006).
 - Native SearXNG: bumping the pin means a new commit SHA, tarball sha256 and regenerated `searxng-requirements.txt` (command in its header), plus the compose image tag (ADR 0004).
+- Connectors (`backend/src/researchly/connectors/`, ADR 0008; checklist in the `add-scholarly-connector` skill):
+  - Per-host limits live in `connectors/limits.yaml`.
+  - Record cassettes live, keyless and with no email, using `pytest tests/connectors/test_<name>.py --record-mode=once`. Before committing, grep them for `mailto`, `cookie`, `authorization` and email addresses, and never commit a 429 or 5xx.
+  - The live checks run nightly (`-m nightly`, `.github/workflows/nightly.yml`), not in CI.
+  - Local sidecars (SearXNG, GROBID) will be the only HTTP outside `PoliteClient`, through a loopback-only client, from step 2b/2c.
+- A backend dependency change needs `uv lock --directory cli` too: the CLI locks the editable backend, and CI fails on a stale `cli/uv.lock`.
 - Native mode: `pg0.Pg0.drop()` deletes the data dir; only test teardown may call it. In a Windows venv, `sys.executable` is a launcher whose child is the real interpreter (the supervisor's PID is the launcher's; kill-on-close jobs chain).
 
 ## Compact instructions
