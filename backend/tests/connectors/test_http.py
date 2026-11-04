@@ -135,6 +135,21 @@ def test_breaker_opens_after_five_failures_and_allows_one_probe():
     breaker.before("t")  # closed again
 
 
+def test_only_the_probe_releases_the_probe():
+    now = [0.0]
+    breaker = Breaker(clock=lambda: now[0])
+    assert breaker.before("t") is False  # an ordinary call, started before the breaker opened
+    for _ in range(5):
+        breaker.failure()
+    now[0] = 61.0
+    assert breaker.before("t") is True  # the half-open probe
+    breaker.release(False)  # the older call finishes
+    with pytest.raises(SourceUnavailable):
+        breaker.before("t")  # the probe is still held
+    breaker.release(True)
+    assert breaker.before("t") is True
+
+
 async def test_buckets_and_hosts_are_paced_separately():
     async with PoliteClient(
         transport=httpx.MockTransport(lambda r: httpx.Response(200)),

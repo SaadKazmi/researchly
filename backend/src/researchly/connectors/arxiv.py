@@ -75,7 +75,6 @@ def _parse_entry(entry: Element, source: str) -> PaperRecord | None:
         abstract=_text(entry, f"{_ATOM}summary"),
         year=int(published[:4]) if published[:4].isdigit() else None,
         authors=[Author(name=n) for a in entry.findall(f"{_ATOM}author") if (n := _text(a, f"{_ATOM}name"))],
-        venue=_text(entry, f"{_ARXIV}journal_ref"),
         oa_url=pdf,
         is_oa=True,
         extra={"categories": [t for c in entry.findall(f"{_ATOM}category") if (t := c.get("term"))]},
@@ -92,7 +91,7 @@ def parse_feed(body: bytes, source: str) -> list[PaperRecord]:
     out: list[PaperRecord] = []
     for entry in root.findall(f"{_ATOM}entry"):
         if "/api/errors" in (_text(entry, f"{_ATOM}id") or ""):  # arXiv reports errors as HTTP 200
-            raise SourceUnavailable(source, _text(entry, f"{_ATOM}summary") or "arXiv error")
+            raise SourceUnavailable(source, "arXiv rejected the request")  # fixed text: errors reach prompts
         if rec := _parse_entry(entry, source):
             out.append(rec)
     return out

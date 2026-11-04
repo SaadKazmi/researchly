@@ -38,7 +38,7 @@ def test_parse_item():
     rec = cr.parse_item(ITEM)
     assert rec.source == "crossref" and rec.ids == [ExternalId("doi", "10.1038/nature14539")]
     assert rec.title == "Deep learning" and rec.year == 2015 and rec.venue == "Nature"
-    assert rec.venue_type == "journal-article" and rec.cited_by == 79000
+    assert rec.venue_type is None and rec.cited_by == 79000  # Crossref "type" is a work type, not a venue type
     assert rec.license == "https://www.springer.com/tdm" and rec.is_retracted is True
     assert [(a.name, a.orcid) for a in rec.authors] == [
         ("Yann LeCun", "0000-0002-1825-009X"),
@@ -210,7 +210,7 @@ async def test_search_attention(polite):
 async def test_get_by_doi(polite):
     [rec] = await CrossrefConnector(polite).get([ExternalId("doi", "10.1038/nature14539")])
     assert rec.title == "Deep learning" and rec.year == 2015 and rec.venue == "Nature"
-    assert rec.id("doi") == "10.1038/nature14539" and rec.venue_type == "journal-article"
+    assert rec.id("doi") == "10.1038/nature14539" and rec.venue_type is None
     assert rec.authors and rec.authors[0].name == "Yann LeCun"
     assert rec.cited_by and rec.cited_by > 50_000 and rec.license and rec.is_retracted is False
     assert any(r.scheme == "doi" for r in rec.references)

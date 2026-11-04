@@ -18,6 +18,8 @@ from researchly.connectors.base import ExternalId
         ("10.1000/x(1)", "10.1000/x(1)"),
         ("https://doi.org/10.1000/abc?utm=1#frag", "10.1000/abc"),
         ("10.1000/a?b#c", "10.1000/a?b#c"),
+        ("10.1234/../../works/10.5555/real", None),  # dot segments would reach another API path
+        ("10.1234/a/./b", None),
     ],
 )
 def test_doi(raw, expected):

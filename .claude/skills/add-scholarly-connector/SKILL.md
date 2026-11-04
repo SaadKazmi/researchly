@@ -32,7 +32,7 @@ Read ADR 0008 (`docs/adr/0008-scholarly-http.md`) and spec §8 first. Copy the c
 - [ ] Never put an identifier raw into a path or query expression:
   - Path values go through `quote(value, safe="/:")`.
   - Values containing filter separators (`,`, `|`, quotes) are escaped or sent one by one.
-  - Unit-test DOI `10.1234/a#b`.
+  - Unit-test DOI `10.1234/a#b`. `ids.doi` rejects dot segments (`10.1234/../x`), so a crafted DOI cannot reach another API path.
 - [ ] Normalize every identifier through `connectors/ids.py`:
   - A record carrying an arXiv ID also carries `ids.arxiv_doi(...)`.
   - ORCIDs are bare `0000-…`, else None.

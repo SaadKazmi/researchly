@@ -480,7 +480,7 @@ class Connector(Protocol):
     | Host | Rate | Concurrency |
     |---|---|---|
     | OpenAlex | 5 rps | 2 |
-    | Crossref single | 5 rps | 2 |
+    | Crossref single | 5 rps | 1 |
     | Crossref list | 1 rps | 1 |
     | OpenCitations | 2 rps | 1 |
     | arXiv | 1 per 3 s | 1 |

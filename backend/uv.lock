@@ -1971,10 +1971,10 @@ dev = [
     { name = "claude-agent-sdk", specifier = "==0.2.169" },
     { name = "pyright", specifier = ">=1.1.405" },
     { name = "pytest", specifier = ">=8.4" },
-    { name = "pytest-recording", specifier = ">=0.14" },
+    { name = "pytest-recording", specifier = "==0.14.0" },
     { name = "ruff", specifier = ">=0.14" },
     { name = "testcontainers", extras = ["postgres"], specifier = ">=4.10" },
-    { name = "vcrpy", specifier = ">=9.2" },
+    { name = "vcrpy", specifier = "==9.2.0" },
 ]
 
 [[package]]

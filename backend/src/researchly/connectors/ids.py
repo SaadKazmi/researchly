@@ -33,7 +33,9 @@ def doi(raw: str) -> str | None:
     while value and (value[-1] in ".,;" or (value[-1] == ")" and value.count(")") > value.count("("))):
         value = value[:-1]
     value = value.lower()  # DOIs are case-insensitive; OpenAlex and DataCite store arXiv DOIs lowercased
-    return value if _DOI.match(value) else None
+    if not _DOI.match(value) or {".", ".."} & set(value.split("/")):  # dot segments would reach another API path
+        return None
+    return value
 
 
 def arxiv(raw: str) -> str | None:

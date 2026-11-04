@@ -1,6 +1,6 @@
 # Per-host pacing for PoliteClient: [interval_seconds, concurrency]. Set just below the observed limits (spec §8.2).
 api.openalex.org: [0.2, 2]
-api.crossref.org: [0.2, 2]          # single pool, 5 rps
+api.crossref.org: [0.2, 1]          # single pool, 5 rps, concurrency 1
 api.crossref.org/list: [1.0, 1]     # list pool, 1 rps, concurrency 1
 api.opencitations.net: [0.5, 1]     # 180/min/IP
 export.arxiv.org: [3.0, 1]          # one request every 3 s, single connection

@@ -59,7 +59,6 @@ def parse_item(item: dict[str, Any]) -> PaperRecord:
         year=_year(item),
         authors=authors,
         venue=(item.get("container-title") or [None])[0],
-        venue_type=item.get("type"),
         cited_by=item.get("is-referenced-by-count"),
         license=next((lic["URL"] for lic in item.get("license") or [] if lic.get("URL")), None),
         is_retracted=any(u.get("type") == "retraction" for u in item.get("updated-by") or []),

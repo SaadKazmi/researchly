@@ -118,16 +118,19 @@ class Breaker:
         self._open_until = 0.0
         self._probing = False
 
-    def before(self, source: str) -> None:
+    def before(self, source: str) -> bool:
+        """Admit a call; True when it is the half-open probe."""
         if self._failures < self._threshold:
-            return
+            return False
         if self._clock() < self._open_until or self._probing:
             raise SourceUnavailable(source, "circuit open after repeated failures")
         self._probing = True
+        return True
 
-    def release(self) -> None:
+    def release(self, probe: bool) -> None:
         """Give up a half-open probe without counting an outcome (cancellation, unexpected exit)."""
-        self._probing = False
+        if probe:
+            self._probing = False
 
     def success(self) -> None:
         self._failures, self._cooldown, self._probing = 0, self._base, False
@@ -212,7 +215,7 @@ class PoliteClient:
         if limit.blocked_until > self._clock():
             raise QuotaExhausted(source, f"{urlsplit(url).hostname} is rate limited; try again later")
         breaker = self._breakers[source]
-        breaker.before(source)
+        probe = breaker.before(source)
         try:
             for attempt in range(MAX_ATTEMPTS):
                 wait: float | None = None
@@ -252,7 +255,7 @@ class PoliteClient:
             breaker.failure()
             raise SourceUnavailable(source, f"no answer from {urlsplit(url).hostname} after {MAX_ATTEMPTS} attempts")
         finally:
-            breaker.release()  # a half-open probe is never left held (cancellation, unexpected exit)
+            breaker.release(probe)  # a half-open probe is never left held (cancellation, unexpected exit)
 
     async def _send(
         self, url: str, params: Mapping[str, str | int] | None, headers: dict[str, str], max_bytes: int, source: str
@@ -264,7 +267,7 @@ class PoliteClient:
             try:
                 response = await self._http.send(request, stream=True)
             except httpx.UnsupportedProtocol as exc:  # httpx refuses a redirect to file://, ftp:// … while building it
-                raise SourceUnavailable(source, f"disallowed scheme: {exc}") from exc
+                raise SourceUnavailable(source, "disallowed redirect scheme") from exc
             try:
                 if response.next_request is not None:  # set for every redirect because follow_redirects=False
                     request = response.next_request

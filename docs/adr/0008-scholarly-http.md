@@ -18,9 +18,9 @@ It must also stay replayable in tests. Research is in `docs/research/2026-11-03-
 - **SSRF:** httpx has no public hook to connect to a pre-checked IP while keeping URL, Host and SNI.
 
 ## Decision
-- **Client:** `httpx==0.28.1` and `httpcore==1.0.9` (runtime dependencies, pinned exactly), wrapped by `PoliteClient` in `connectors/http.py`. No other module imports httpx or httpcore.
+- **Client:** `httpx==0.28.1` and `httpcore==1.0.9` (runtime dependencies, pinned exactly), wrapped by `PoliteClient` in `connectors/http.py`. Only `connectors/http.py` and its SSRF guard `connectors/ssrf.py` import httpx or httpcore.
 - **Limits:** a custom `HostLimit` (next-at time plus a semaphore) per host or bucket, read from `connectors/limits.yaml`. The same state absorbs a short `Retry-After`. A long one (over 120 s) blocks the host and raises `QuotaExhausted` without waiting.
-- **Retry:** a hand-rolled loop, GET only. It retries on transport errors and on 429, 500, 502, 503 and 504, with at most 4 attempts. Backoff is full jitter, `uniform(0, min(60, 2**attempt))`. Every attempt re-enters the limiter and the breaker.
+- **Retry:** a hand-rolled loop, GET only. It retries on transport errors and on 429, 500, 502, 503 and 504, with at most 4 attempts. Backoff is full jitter, `uniform(0, min(60, 2**attempt))`. Every attempt re-enters the limiter. The breaker admits the call once; only a half-open probe holds it.
 - **Breaker:** a custom breaker per source. It opens after 5 consecutive failures, cools down for 60 s doubling to 900 s, and allows one half-open probe. 400 and 404 count as answers, not failures. An SSRF refusal is neither retried nor counted as a failure.
 - **Cache:** a custom UNLOGGED `http_cache` table, keyed by a versioned, normalized ID (`<source>:v1:…`):
   - It stores only the `etag`, `content-type`, `content-language` and `last-modified` headers, and the URL without its query string.

@@ -52,7 +52,7 @@ def test_parse_entry():
     assert rec.abstract == "The dominant sequence models."
     assert rec.year == 2017
     assert [a.name for a in rec.authors] == ["Ashish Vaswani", "Noam Shazeer"]
-    assert rec.venue == "NeurIPS 2017"
+    assert rec.venue is None  # journal_ref is free text ("Phys. Rev. Lett. 99, 123 (2007)"), not a venue name
     assert rec.ids == [
         ExternalId("arxiv", "1706.03762"),
         ExternalId("doi", "10.48550/arxiv.1706.03762"),
@@ -70,12 +70,12 @@ def test_sparse_entry_and_empty_feed():
     assert parse_feed(feed().encode(), "arxiv") == []
 
 
-def test_error_entry_raises_with_the_summary():
+def test_error_entry_raises_a_fixed_message():
     err = (
         "<entry><id>https://arxiv.org/api/errors#incorrect_id_format_for_abc</id>"
         "<title>Error</title><summary>incorrect id format for abc</summary></entry>"
     )
-    with pytest.raises(SourceUnavailable, match="incorrect id format for abc"):
+    with pytest.raises(SourceUnavailable, match="^arxiv: arXiv rejected the request$"):
         parse_feed(feed(err).encode(), "arxiv")
 
 

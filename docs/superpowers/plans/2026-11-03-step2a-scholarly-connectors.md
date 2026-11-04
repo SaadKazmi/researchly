@@ -12,9 +12,9 @@
 
 ## Global Constraints
 
-- All outbound HTTP goes through `PoliteClient` in `backend/src/researchly/connectors/http.py`; no module except `connectors/http.py` imports `httpx` or `httpcore` (tests excepted).
+- All outbound HTTP goes through `PoliteClient` in `backend/src/researchly/connectors/http.py`; no module except `connectors/http.py` and its SSRF guard `connectors/ssrf.py` imports `httpx` or `httpcore` (tests excepted).
 - Keyless: no connector requires a key, an account or an email. User-Agent: `Researchly/<version> (+https://github.com/SaadKazmi/researchly)`; `; mailto:<addr>` is appended only when the caller passes the user's own address. There is no project email.
-- Per-host limits (`limits.yaml`), as interval seconds / concurrency: OpenAlex 0.2/2; Crossref single 0.2/2; Crossref list 1.0/1; OpenCitations 0.5/1; arXiv API 3.0/1; DataCite 1.0/1; Europe PMC 0.2/2; PubMed 0.5/1; HF api 1.0/1; HF search 7.5/1; any other host 1.0/1.
+- Per-host limits (`limits.yaml`), as interval seconds / concurrency: OpenAlex 0.2/2; Crossref single 0.2/1 (spec §8.1; was 0.2/2 until the final review); Crossref list 1.0/1; OpenCitations 0.5/1; arXiv API 3.0/1; DataCite 1.0/1; Europe PMC 0.2/2; PubMed 0.5/1; HF api 1.0/1; HF search 7.5/1; any other host 1.0/1.
 - Retry: GET only; on transport errors and 429/500/502/503/504; at most 4 attempts; full jitter `uniform(0, min(60, 2**attempt))`; a `Retry-After` (seconds or HTTP-date) defers the host instead; `Retry-After` > 120 s raises `QuotaExhausted` without waiting.
 - Circuit breaker per source: opens after 5 consecutive failed calls; cool-down 60 s doubling to 900 s; one half-open probe; 400/404 are answers, not failures.
 - SSRF: resolve once, check every address (not `is_private` alone; unwrap IPv4-mapped, 6to4, Teredo, NAT64), connect to the checked IP with URL/Host/SNI untouched; ports 80/443 only; `trust_env=False`; manual redirects, at most 5; response body cap 5 MB by default.
@@ -1563,4 +1563,5 @@ async def federated_search(query: SearchQuery, connectors: Sequence[Connector]) 
   - A 7-day path for OpenAlex `cited_by` (today it sits in the 60-day singleton cache): step 5 graph work.
   - Per-hop pacing for cross-host redirects (hops are paced by the first host): step 2b, with full-text fetches.
   - arXiv search tuning: AND of `all:` words today; a title-phrase pass for known-title lookups if federated search misses them (OpenAlex and Crossref cover them now).
+  - OpenAlex searches served from the 24 h cache still count against the 50/day budget and the low-budget guard (errs safe): count only uncached searches when step 3 agents issue them.
   - Non-Latin fuzzy matching on a C-locale Postgres: pg_trgm may return no candidates, so a duplicate row is possible (never a false merge); revisit if native pg0 runs with a C locale.
