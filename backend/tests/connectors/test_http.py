@@ -354,7 +354,7 @@ async def test_a_cross_host_hop_waits_for_its_own_host():
     async with client:
         await client.get("https://doi.example.org/1", source="t")
         await client.get("https://doi.example.org/2", source="t")
-    assert [s for s in slept if s] == [5.0]  # the second hop to pub.example.org waited for its 5 s slot
+    assert slept == [5.0]  # the second hop to pub.example.org waited for its 5 s slot
 
 
 async def test_a_redirect_back_to_a_held_host_does_not_deadlock():
@@ -388,3 +388,72 @@ def test_crawl_delay_raises_but_never_lowers_a_host_interval():
 
 def test_limits_file_paces_arxiv_org_per_robots_crawl_delay():
     assert http._load_limits()["arxiv.org"] == (15.0, 1)
+
+
+async def test_requests_crossing_hosts_in_opposite_directions_do_not_deadlock():
+    arrived = asyncio.Event()
+    first_hops = []
+
+    async def handler(request):
+        if request.url.path == "/start":  # both first hops must be in flight at once
+            first_hops.append(request.url.host)
+            if len(first_hops) == 2:
+                arrived.set()
+            await arrived.wait()
+            other = "b.example.org" if request.url.host == "a.example.org" else "a.example.org"
+            return httpx.Response(302, headers={"location": f"https://{other}/end"})
+        return httpx.Response(200, content=b"ok")
+
+    client = PoliteClient(
+        transport=httpx.MockTransport(handler),
+        limits={"a.example.org": (0.0, 1), "b.example.org": (0.0, 1), "default": (0.0, 1)},
+    )
+    async with client:
+        first, second = await asyncio.wait_for(
+            asyncio.gather(
+                client.get("https://a.example.org/start", source="t"),
+                client.get("https://b.example.org/start", source="t"),
+            ),
+            timeout=2,
+        )
+    assert first.body == second.body == b"ok"
+
+
+async def test_a_quota_block_survives_a_crawl_delay():
+    client = PoliteClient(limits={"default": (1.0, 1)})
+    client.limit_for("https://pub.example.org/x", None).blocked_until = 99.0
+    client.set_crawl_delay("pub.example.org", 10.0)
+    limit = client.limit_for("https://pub.example.org/x", None)
+    assert limit.interval == 10.0 and limit.blocked_until == 99.0
+
+
+async def test_unwanted_content_does_not_open_the_breaker():
+    kind = ["text/html"]
+
+    def handler(request):
+        return httpx.Response(200, headers={"content-type": kind[0]}, content=b"x")
+
+    async with client_for(handler, []) as client:
+        for _ in range(6):
+            with pytest.raises(UnwantedContent):
+                await client.get("https://pub.example.org/p.pdf", source="t", accept=frozenset({"application/pdf"}))
+        kind[0] = "application/pdf"
+        fetched = await client.get("https://pub.example.org/p.pdf", source="t", accept=frozenset({"application/pdf"}))
+    assert fetched.status == 200
+
+
+async def test_an_unwanted_content_hop_releases_that_hosts_permit():
+    def handler(request):
+        if request.url.host == "a.example.org":
+            return httpx.Response(302, headers={"location": "https://b.example.org/landing"})
+        return httpx.Response(200, headers={"content-type": "text/html"}, content=b"<html>")
+
+    client = PoliteClient(
+        transport=httpx.MockTransport(handler),
+        limits={"a.example.org": (0.0, 1), "b.example.org": (0.0, 1), "default": (0.0, 1)},
+    )
+    async with client:
+        with pytest.raises(UnwantedContent):
+            await client.get("https://a.example.org/x", source="t", accept=frozenset({"application/pdf"}))
+        fetched = await asyncio.wait_for(client.get("https://b.example.org/y", source="t"), 2)
+    assert fetched.status == 200

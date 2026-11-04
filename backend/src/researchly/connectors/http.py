@@ -36,7 +36,7 @@ RETRY_STATUS = frozenset({429, 500, 502, 503, 504})
 MAX_ATTEMPTS = 4
 LONG_WAIT = 120.0  # a longer Retry-After is a quota, not a hiccup
 MAX_BLOCK = 3600.0  # cap on how long a server's Retry-After can lock a host out
-TOTAL_TIMEOUT = 120.0  # per attempt, whatever the server drips
+TOTAL_TIMEOUT = 120.0  # per hop of network time (send + body), whatever the server drips
 MAX_REDIRECTS = 5
 LIMITS_FILE = Path(__file__).with_name("limits.yaml")
 
@@ -201,8 +201,12 @@ class PoliteClient:
         """Honour a robots.txt Crawl-delay: never faster than the site asks, never slower than we already are."""
         interval, _ = self._limit_specs.get(host, self._limit_specs["default"])
         if seconds > interval:
+            old = self._limits.get(host) or self._limits.get("default")
             self._limit_specs[host] = (seconds, 1)
-            self._limits.pop(host, None)  # the next request builds the slower limit
+            new = self._limits[host] = HostLimit(seconds, 1, sleep=self._sleep, clock=self._clock)
+            if old:  # keep a quota block and the pending slot
+                new.blocked_until = old.blocked_until
+                new._next_at = max(old._next_at, self._clock() + seconds)
 
     async def get(
         self,
@@ -231,11 +235,7 @@ class PoliteClient:
             for attempt in range(MAX_ATTEMPTS):
                 wait: float | None = None
                 try:
-                    async with limit:
-                        async with asyncio.timeout(TOTAL_TIMEOUT):
-                            fetched = await self._send(
-                                url, params, headers, max_bytes, source, accept, self._limit_key(url, bucket)
-                            )
+                    fetched = await self._send(url, params, headers, max_bytes, source, accept, bucket)
                 except (httpx.TransportError, TimeoutError) as exc:
                     if isinstance(exc.__cause__, Blocked):  # a refusal, not an outage: no retry, no breaker strike
                         raise SourceUnavailable(source, f"refused: {exc.__cause__}") from exc.__cause__
@@ -260,7 +260,7 @@ class PoliteClient:
                         breaker.failure(until=self._clock() + block)
                         raise QuotaExhausted(source, f"rate limited; retry after {wait:.0f} s")
                 if wait is not None:
-                    limit.defer(wait)  # the next `async with limit` waits it out
+                    limit.defer(wait)  # the next `_send` waits it out
                 if attempt == MAX_ATTEMPTS - 1:
                     break
                 if wait is None:
@@ -278,48 +278,63 @@ class PoliteClient:
         max_bytes: int,
         source: str,
         accept: frozenset[str] | None,
-        first_key: str,
+        bucket: str | None,
     ) -> Fetched:
+        """Follow redirects holding one host's permit at a time (two requests crossing hosts must not deadlock)."""
         request = self._http.build_request("GET", url, params=params, headers=headers)
-        async with contextlib.AsyncExitStack() as hops:
-            held = {first_key}
-            for _ in range(MAX_REDIRECTS + 1):
-                key = self._limit_key(str(request.url), None)
-                if key not in held:  # a cross-host hop waits its own host's turn; a held host is not re-entered
-                    held.add(key)
-                    await hops.enter_async_context(self.limit_for(str(request.url), None))
-                try:
-                    response = await self._http.send(request, stream=True)
-                except httpx.UnsupportedProtocol as exc:  # a redirect to file://, ftp:// … refused while building
-                    raise SourceUnavailable(source, "disallowed redirect scheme") from exc
-                try:
-                    if response.next_request is not None:  # set for every redirect because follow_redirects=False
-                        request = response.next_request
-                        request.headers.pop("if-none-match", None)  # a validator for the first URL, not the hop
-                        if request.url.scheme not in ("http", "https"):  # a mock transport would not refuse it
-                            raise SourceUnavailable(source, f"disallowed scheme: {request.url.scheme}")
-                        continue
-                    if accept is not None and response.status_code == 200:
-                        media = response.headers.get("content-type", "").split(";")[0].strip().lower()
-                        if media not in accept:
-                            raise UnwantedContent(source, f"content type {media or 'missing'}")
-                    try:
-                        declared = int(response.headers.get("content-length") or 0)
-                    except ValueError:
-                        declared = 0  # malformed: ignore it, the streamed cap still applies
-                    if declared > max_bytes:
-                        raise ResponseTooLarge(source, f"{declared} bytes > {max_bytes}")
-                    body = bytearray()
-                    async for chunk in response.aiter_bytes():  # decoded bytes, so a gzip bomb is capped too
-                        body += chunk
-                        if len(body) > max_bytes:
-                            raise ResponseTooLarge(source, f"body > {max_bytes} bytes")
-                    return Fetched(
-                        response.status_code,
-                        {k.lower(): v for k, v in response.headers.items()},
-                        bytes(body),
-                        str(response.url),
-                    )
-                finally:
-                    await response.aclose()
+        stack, current = contextlib.AsyncExitStack(), None
+        try:
+            for hop in range(MAX_REDIRECTS + 1):
+                hop_bucket = bucket if hop == 0 else None
+                key = self._limit_key(str(request.url), hop_bucket)
+                if key != current:  # a new host: free the old permit, then wait for the new host's turn
+                    await stack.aclose()
+                    stack, current = contextlib.AsyncExitStack(), key
+                    await stack.enter_async_context(self.limit_for(str(request.url), hop_bucket))
+                async with asyncio.timeout(TOTAL_TIMEOUT):  # network time only, never the pacing wait
+                    result = await self._hop(request, source, accept, max_bytes)
+                if isinstance(result, Fetched):
+                    return result
+                request = result
             raise SourceUnavailable(source, f"more than {MAX_REDIRECTS} redirects")
+        finally:
+            await stack.aclose()
+
+    async def _hop(
+        self, request: httpx.Request, source: str, accept: frozenset[str] | None, max_bytes: int
+    ) -> "Fetched | httpx.Request":
+        """One request: the answer, or the next request when it redirects."""
+        try:
+            response = await self._http.send(request, stream=True)
+        except httpx.UnsupportedProtocol as exc:  # a redirect to file://, ftp:// ... refused while building
+            raise SourceUnavailable(source, "disallowed redirect scheme") from exc
+        try:
+            if response.next_request is not None:  # set for every redirect because follow_redirects=False
+                nxt = response.next_request
+                nxt.headers.pop("if-none-match", None)  # a validator for the first URL, not the hop
+                if nxt.url.scheme not in ("http", "https"):  # a mock transport would not refuse it
+                    raise SourceUnavailable(source, f"disallowed scheme: {nxt.url.scheme}")
+                return nxt
+            if accept is not None and response.status_code == 200:
+                media = response.headers.get("content-type", "").split(";")[0].strip().lower()
+                if media not in accept:
+                    raise UnwantedContent(source, f"content type {media or 'missing'}")
+            try:
+                declared = int(response.headers.get("content-length") or 0)
+            except ValueError:
+                declared = 0  # malformed: ignore it, the streamed cap still applies
+            if declared > max_bytes:
+                raise ResponseTooLarge(source, f"{declared} bytes > {max_bytes}")
+            body = bytearray()
+            async for chunk in response.aiter_bytes():  # decoded bytes, so a gzip bomb is capped too
+                body += chunk
+                if len(body) > max_bytes:
+                    raise ResponseTooLarge(source, f"body > {max_bytes} bytes")
+            return Fetched(
+                response.status_code,
+                {k.lower(): v for k, v in response.headers.items()},
+                bytes(body),
+                str(response.url),
+            )
+        finally:
+            await response.aclose()
