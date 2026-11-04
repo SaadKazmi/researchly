@@ -296,7 +296,7 @@ class PoliteClient:
                     hop_limit = self.limit_for(str(request.url), hop_bucket)
                     await stack.enter_async_context(hop_limit)
                     if hop_limit.blocked_until > self._clock():  # never fetch a blocked host through a redirect
-                        raise QuotaExhausted(source, f"{request.url.host} is rate limited; try again later")
+                        raise QuotaExhausted(source, "a redirect target is rate limited")  # fixed text
                 async with asyncio.timeout(TOTAL_TIMEOUT):  # network time only, never the pacing wait
                     result = await self._hop(request, source, accept, max_bytes)
                 if isinstance(result, Fetched):
