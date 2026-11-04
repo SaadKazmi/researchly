@@ -81,7 +81,8 @@ jobs:
         run: |
           docker build -t researchly-postgres-test ../infra/postgres
           docker run -d --name pg -e POSTGRES_PASSWORD=postgres -p 5432:5432 researchly-postgres-test
-          for i in $(seq 1 30); do docker exec pg pg_isready -U postgres && break; sleep 2; done
+          for i in $(seq 1 30); do docker exec pg pg_isready -h 127.0.0.1 -U postgres && exit 0; sleep 2; done  # TCP: the init-time server listens on the socket only
+          docker logs pg; exit 1
       - run: uv sync --locked
       - run: uv run pytest -m db -q
 
