@@ -344,6 +344,15 @@ wheels = [
 ]
 
 [[package]]
+name = "dill"
+version = "0.4.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/81/e1/56027a71e31b02ddc53c7d65b01e68edf64dea2932122fe7746a516f75d5/dill-0.4.1.tar.gz", hash = "sha256:423092df4182177d4d8ba8290c8a5b640c66ab35ec7da59ccfa00f6fa3eea5fa", size = 187315, upload-time = "2026-01-19T02:36:56.85Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1e/77/dc8c558f7593132cf8fefec57c4f60c83b16941c574ac5f619abb3ae7933/dill-0.4.1-py3-none-any.whl", hash = "sha256:1e1ce33e978ae97fcfcff5638477032b801c46c7c65cf717f95fbc2248f79a9d", size = 120019, upload-time = "2026-01-19T02:36:55.663Z" },
+]
+
+[[package]]
 name = "distro"
 version = "1.9.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1867,6 +1876,7 @@ dependencies = [
     { name = "psycopg", extra = ["binary"] },
     { name = "pydantic-settings" },
     { name = "pyyaml" },
+    { name = "semchunk" },
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "transformers" },
     { name = "uvicorn" },
@@ -1895,6 +1905,7 @@ requires-dist = [
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2" },
     { name = "pydantic-settings", specifier = ">=2.10" },
     { name = "pyyaml", specifier = ">=6.0.2" },
+    { name = "semchunk", specifier = "==4.1.1" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.1" },
     { name = "transformers", specifier = ">=4.50,<5" },
     { name = "uvicorn", specifier = ">=0.40" },
@@ -2105,6 +2116,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/1c/03/e834bcd866f2f8a49a85eaff47340affa3bfa391ee9912a952a1faa68c7b/secretstorage-3.5.0.tar.gz", hash = "sha256:f04b8e4689cbce351744d5537bf6b1329c6fc68f91fa666f60a380edddcd11be", size = 19884, upload-time = "2025-11-23T19:02:53.191Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b7/46/f5af3402b579fd5e11573ce652019a67074317e18c1935cc0b4ba9b35552/secretstorage-3.5.0-py3-none-any.whl", hash = "sha256:0ce65888c0725fcb2c5bc0fdb8e5438eece02c523557ea40ce0703c266248137", size = 15554, upload-time = "2025-11-23T19:02:51.545Z" },
+]
+
+[[package]]
+name = "semchunk"
+version = "4.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "dill", marker = "sys_platform == 'win32'" },
+    { name = "tqdm" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b4/ab/74030fb91d965e3feecaad2bea1fbc5adeef8836cc5f15aab492d6bc0319/semchunk-4.1.1.tar.gz", hash = "sha256:f27dc85716a0e9509a3f99c78b961cc476b3120efe711ee9a9a950ed1bd0f8ba", size = 24910, upload-time = "2026-06-13T00:45:02.446Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ac/67/892571d1a035a146c8f3cad38306b90cb6a7cd4e042aa8e5554144757d9e/semchunk-4.1.1-py3-none-any.whl", hash = "sha256:acbc535e89824dce954a554e297438b2ee3506b71505f1472eb2bf8057fcba3c", size = 18706, upload-time = "2026-06-13T00:45:00.974Z" },
 ]
 
 [[package]]
