@@ -27,6 +27,7 @@ dependencies = [
   "onnxruntime>=1.23; sys_platform != 'darwin' or platform_machine != 'x86_64'",
   "httpx==0.28.1",  # PoliteClient's guarded transport replaces a private attribute (connectors/ssrf.py)
   "httpcore==1.0.9",
+  "pgvector==0.5.1",  # halfvec columns and binds (MIT)
   "defusedxml>=0.7.1",  # untrusted XML (arXiv, PubMed)
 ]
 

@@ -5,6 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
+from pgvector.sqlalchemy import HALFVEC
 from sqlalchemy import (
     Boolean,
     DateTime,
@@ -19,10 +20,12 @@ from sqlalchemy import (
     func,
     text,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from researchly.db.base import Base
+
+EMBED_DIM = 1024  # Qwen3-Embedding-0.6B, ADR 0007
 
 
 class Setting(Base):
@@ -90,6 +93,8 @@ class Paper(Base):
     pct: Mapped[float | None] = mapped_column(Double)
     is_retracted: Mapped[bool | None] = mapped_column(Boolean)
     field_sources: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default=text("'{}'::jsonb"))
+    fulltext_source: Mapped[str | None] = mapped_column(Text)  # arxiv_html | jats | pdf | none (tried, nothing usable)
+    fulltext_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     __table_args__ = (
         Index(
@@ -121,6 +126,55 @@ class PaperAuthor(Base):
     paper_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("paper.id", ondelete="CASCADE"), primary_key=True)
     author_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("author.id"))
     position: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+
+class PaperSection(Base):
+    __tablename__ = "paper_section"
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
+    paper_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("paper.id", ondelete="CASCADE"), index=True)
+    ord: Mapped[int] = mapped_column(Integer)
+    path: Mapped[list[str]] = mapped_column(ARRAY(Text))
+    text: Mapped[str] = mapped_column(Text)
+
+
+# BM25 objects (ix_*_bm25, bm25_tsv) depend on the engine (spec §9.3), so they live in migration 0003 only.
+class Chunk(Base):
+    __tablename__ = "chunk"
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
+    paper_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("paper.id", ondelete="CASCADE"), index=True)
+    section_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("paper_section.id", ondelete="CASCADE"), index=True)
+    ord: Mapped[int] = mapped_column(Integer)
+    text: Mapped[str] = mapped_column(Text)
+    context_prefix: Mapped[str | None] = mapped_column(Text)
+    tokens: Mapped[int] = mapped_column(Integer)
+
+
+def _hnsw(name: str) -> Index:
+    return Index(
+        name,
+        "vec",
+        postgresql_using="hnsw",
+        postgresql_with={"m": 16, "ef_construction": 64},
+        postgresql_ops={"vec": "halfvec_cosine_ops"},
+    )
+
+
+class PaperEmbedding(Base):
+    """Title + abstract (spec §9.2)."""
+
+    __tablename__ = "paper_embedding"
+    paper_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("paper.id", ondelete="CASCADE"), primary_key=True)
+    model_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    vec: Mapped[Any] = mapped_column(HALFVEC(EMBED_DIM))
+    __table_args__ = (_hnsw("ix_paper_embedding_hnsw"),)
+
+
+class ChunkEmbedding(Base):
+    __tablename__ = "chunk_embedding"
+    chunk_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("chunk.id", ondelete="CASCADE"), primary_key=True)
+    model_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    vec: Mapped[Any] = mapped_column(HALFVEC(EMBED_DIM))
+    __table_args__ = (_hnsw("ix_chunk_embedding_hnsw"),)
 
 
 # ponytail: expired rows are never pruned; a startup sweep arrives with step 9 maintenance

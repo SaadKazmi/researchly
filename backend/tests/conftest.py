@@ -84,7 +84,13 @@ def db_url(pg_admin_url: str) -> Iterator[str]:
     admin = create_engine(pg_admin_url, isolation_level="AUTOCOMMIT")
     with admin.connect() as conn:
         conn.execute(text(f'CREATE DATABASE "{name}"'))
-    yield make_url(pg_admin_url).set(database=name).render_as_string(hide_password=False)
+    url = make_url(pg_admin_url).set(database=name)
+    fresh = create_engine(url, isolation_level="AUTOCOMMIT")
+    with fresh.connect() as conn:
+        if conn.scalar(text("SELECT 1 FROM pg_available_extensions WHERE name = 'pg_textsearch'")):
+            conn.execute(text("CREATE EXTENSION pg_textsearch"))  # provisioning does this in the product (spec §16.1)
+    fresh.dispose()
+    yield url.render_as_string(hide_password=False)
     with admin.connect() as conn:
         conn.execute(text(f'DROP DATABASE "{name}" WITH (FORCE)'))
     admin.dispose()

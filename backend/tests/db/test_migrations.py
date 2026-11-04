@@ -22,6 +22,10 @@ TABLES = {
 }
 
 
+def _not_bm25(obj, name, type_, reflected, compare_to):
+    return not (name and "bm25" in name)  # engine-specific BM25 objects live in migration 0003 only (spec §9.3)
+
+
 def test_upgrade_downgrade_upgrade(db_url):
     migrate.upgrade(db_url)
     migrate.downgrade(db_url)
@@ -47,7 +51,7 @@ def test_models_match_migrations(db_url):
     migrate.upgrade(db_url)
     engine = create_engine(db_url)
     with engine.connect() as conn:
-        diff = compare_metadata(MigrationContext.configure(conn), Base.metadata)
+        diff = compare_metadata(MigrationContext.configure(conn, opts={"include_object": _not_bm25}), Base.metadata)
     engine.dispose()
     assert diff == []
 
