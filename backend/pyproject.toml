@@ -5,6 +5,7 @@ description = "Local-first multi-agent research assistant"
 license = "Apache-2.0"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+  "protego==0.7.0",  # robots.txt (RFC 9309) for full-text fetches
   "fastapi>=0.120",
   "uvicorn>=0.40",
   "sqlalchemy[asyncio]>=2.1",
