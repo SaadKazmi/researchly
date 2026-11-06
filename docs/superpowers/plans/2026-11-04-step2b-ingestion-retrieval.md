@@ -2206,3 +2206,6 @@ git commit -m "docs: step 2b ADR, spec updates and progress"
 - **arXiv HTML `ltx_ERROR` count** as a quality signal: step 4.
 - **Rerank depth and passage truncation:** step 4 benchmark (ADR 0007).
 - **Carried from step 2a:** cached OpenAlex searches count against the daily budget (step 3).
+- **robots.txt on redirects:** it is checked only for the first PDF host, not for redirect hops (PoliteClient follows redirects internally).
+- **Ingest transaction:** `ingest_paper` fetches inside the caller's open transaction. The step 3 job wrapper should split read, fetch and write.
+- **Scoped lexical search on pg_textsearch:** it filters after the index top-`CANDIDATES`, so a narrow `within`/`paper_ids` scope over a large library can starve the lexical list (the dense side uses iterative scan). Revisit with a real library at step 4.
