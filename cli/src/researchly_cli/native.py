@@ -78,11 +78,14 @@ def start(secrets: state.Secrets, searxng_home: Path | None = None) -> state.Sta
             str(port),
         ]
         env = {**os.environ, "RESEARCHLY_DATABASE_URL": app_url, "RESEARCHLY_LOCAL_TOKEN": secrets.local_token}
-        logs = state.log_dir()
-        supervisor = spawn(supervisor_cmd(logs / "app.log", uvicorn), logs / "supervisor.log", env)
+        env.pop("RESEARCHLY_SEARXNG_URL", None)  # web search is off unless this start runs SearXNG
         sx_port = None
         if searxng_home is not None:  # web search is optional: the app runs without it
-            sx_port = state.free_port(searxng.PORT)
+            sx_port = state.free_port(searxng.PORT)  # known before the app starts, so the app can be told
+            env["RESEARCHLY_SEARXNG_URL"] = f"http://127.0.0.1:{sx_port}"
+        logs = state.log_dir()
+        supervisor = spawn(supervisor_cmd(logs / "app.log", uvicorn), logs / "supervisor.log", env)
+        if searxng_home is not None and sx_port is not None:
             sx_env = searxng.env(searxng_home, searxng_home / "settings.yml", secrets.searxng)
             sx_cmd = supervisor_cmd(logs / "searxng.log", searxng.command(searxng_home, sx_port))
             sx_supervisor = spawn(sx_cmd, logs / "supervisor.log", sx_env)

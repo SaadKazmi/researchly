@@ -139,7 +139,9 @@ def test_auto_runtime_switch_warns_about_the_separate_database(monkeypatch, heal
     state.save_config({"last_mode": "native"})
     monkeypatch.setattr(main, "_select", lambda: engines.Selection("docker", "colima is ready", DESKTOP))
     monkeypatch.setattr(
-        docker, "start", lambda secrets, compose: state.State(mode="docker", port=9996, compose=tuple(compose))
+        docker,
+        "start",
+        lambda secrets, compose, web_search=True: state.State(mode="docker", port=9996, compose=tuple(compose)),
     )
     result = runner.invoke(app, ["start"])
     assert result.exit_code == 0
@@ -205,7 +207,9 @@ def test_start_docker_uses_the_engine_compose_command(monkeypatch, healthy):
     monkeypatch.setattr(
         docker,
         "start",
-        lambda secrets, compose: seen.append(compose) or state.State(mode="docker", port=9998, compose=tuple(compose)),
+        lambda secrets, compose, web_search=True: (
+            seen.append(compose) or state.State(mode="docker", port=9998, compose=tuple(compose))
+        ),
     )
     assert runner.invoke(app, ["start"]).exit_code == 0
     assert seen == [("podman", "compose")]
@@ -270,7 +274,9 @@ def test_pinned_docker_without_an_engine_fails(monkeypatch):
 def test_docker_desktop_licence_note_is_shown_once(monkeypatch, healthy):
     monkeypatch.setattr(main, "_select", lambda: engines.Selection("docker", "ready", DESKTOP))
     monkeypatch.setattr(
-        docker, "start", lambda secrets, compose: state.State(mode="docker", port=9996, compose=tuple(compose))
+        docker,
+        "start",
+        lambda secrets, compose, web_search=True: state.State(mode="docker", port=9996, compose=tuple(compose)),
     )
     first = runner.invoke(app, ["start"]).stdout
     state.clear_state()

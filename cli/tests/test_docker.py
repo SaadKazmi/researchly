@@ -4,6 +4,7 @@ import urllib.request
 import uuid
 
 import pytest
+import yaml
 
 from researchly_cli import docker, engines, state
 
@@ -105,3 +106,29 @@ def test_docker_stack_serves_health_with_bm25(monkeypatch):
     finally:
         docker.stop(run, secrets)
     assert not state.healthy(run.port)
+
+
+def test_start_runs_searxng_without_blocking_the_app(runs):
+    docker.start(state.load_secrets(), ("docker", "compose"))
+    ups = [cmd[cmd.index("up") :] for cmd, _ in runs if "up" in cmd]
+    assert ups[-2:] == [["up", "-d", "searxng"], ["up", "-d", "--wait", "app"]]
+    assert runs[-1][1]["env"]["RESEARCHLY_SEARXNG_URL"] == "http://searxng:8080"
+
+
+def test_start_with_web_search_off_leaves_searxng_down(runs):
+    docker.start(state.load_secrets(), ("docker", "compose"), web_search=False)
+    assert not any("searxng" in cmd for cmd, _ in runs)
+    assert runs[-1][1]["env"]["RESEARCHLY_SEARXNG_URL"] == ""
+
+
+def test_compose_points_the_app_at_searxng_with_a_healthcheck():
+    services = yaml.safe_load(docker.COMPOSE_FILE.read_text("utf-8"))["services"]
+    assert services["app"]["environment"]["RESEARCHLY_SEARXNG_URL"] == "${RESEARCHLY_SEARXNG_URL-http://searxng:8080}"
+    assert "searxng" not in services["app"].get("depends_on", {})  # web search is optional
+    assert services["searxng"]["healthcheck"]["test"] == [
+        "CMD",
+        "wget",
+        "-q",
+        "--spider",
+        "http://127.0.0.1:8080/healthz",
+    ]

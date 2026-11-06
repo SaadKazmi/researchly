@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tarfile
 import threading
+import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
@@ -22,6 +23,15 @@ REPO = Path(__file__).resolve().parents[2]
 def test_native_settings_match_the_docker_settings():
     docker_settings = yaml.safe_load((REPO / "infra" / "searxng" / "settings.yml").read_text("utf-8"))
     assert yaml.safe_load(searxng.settings_text()) == docker_settings
+
+
+def test_settings_keep_only_the_general_and_code_engines():
+    settings = yaml.safe_load(searxng.settings_text())
+    assert settings["use_default_settings"] == {"engines": {"keep_only": ["brave", "mojeek", "yahoo", "github"]}}
+    assert settings["search"]["formats"] == ["json"]  # the HTML UI's search answers 403
+    assert settings["outgoing"]["request_timeout"] == 5.0
+    assert settings["engines"] == [{"name": "mojeek", "inactive": False}, {"name": "yahoo", "disabled": False}]
+    assert settings["server"] == {"limiter": False, "public_instance": False, "image_proxy": False}
 
 
 def test_command_binds_loopback_with_one_worker(tmp_path):
@@ -183,11 +193,16 @@ def test_native_start_supervises_searxng_and_records_it(fakes, tmp_path):
     assert env["SEARXNG_SETTINGS_PATH"] == str(tmp_path / "settings.yml")
     assert secrets.searxng not in " ".join(cmd)
     assert (run.searxng_pid, run.searxng_created) == (102, 102.0)
+    _, _, _, app_env = spawns[0]
+    assert app_env["RESEARCHLY_SEARXNG_URL"] == f"http://127.0.0.1:{run.searxng_port}"
 
 
-def test_native_start_without_searxng_spawns_none(fakes):
+def test_native_start_without_searxng_spawns_none(fakes, monkeypatch):
+    monkeypatch.setenv("RESEARCHLY_SEARXNG_URL", "http://127.0.0.1:1")  # a stale value must not reach the app
     run = native.start(state.load_secrets(), searxng_home=None)
-    assert len([e for e in fakes if e[0] == "spawn"]) == 1
+    spawns = [e for e in fakes if e[0] == "spawn"]
+    assert len(spawns) == 1
+    assert "RESEARCHLY_SEARXNG_URL" not in spawns[0][3]
     assert run.searxng_port is None and run.searxng_pid is None
 
 
@@ -247,6 +262,19 @@ def test_start_still_works_when_the_install_fails(web_search, monkeypatch):
     assert result.exit_code == 0, result.output
     assert "warning: web search is off: no network" in result.output
     assert web_search["home"] is None
+
+
+def test_start_with_web_search_off_skips_searxng(web_search, monkeypatch):
+    monkeypatch.setenv("RESEARCHLY_WEB_SEARCH", "OFF")
+
+    def never(home):
+        raise AssertionError("web search is off: nothing is installed")
+
+    monkeypatch.setattr(searxng, "install", never)
+    result = runner.invoke(main.app, ["start"])
+    assert result.exit_code == 0, result.output
+    assert web_search["home"] is None
+    assert "Web search is off" in result.output
 
 
 def test_start_warns_when_searxng_never_gets_healthy(web_search, monkeypatch):
@@ -331,3 +359,27 @@ def test_installs_and_answers_json_from_a_mock_engine(tmp_path):
     finally:
         supervise.terminate_tree(proc.pid)
         mock.shutdown()
+
+
+@pytest.mark.searxng
+def test_real_settings_enable_exactly_the_four_engines(tmp_path):
+    home = tmp_path / "sx"
+    searxng.install(home)
+    settings_file = tmp_path / "settings.yml"
+    settings_file.write_text(searxng.settings_text(), "utf-8")
+    port = state.free_port(0)
+    proc = subprocess.Popen(  # noqa: S603
+        searxng.command(home, port), env=searxng.env(home, settings_file, "test-secret-0123456789abcdef")
+    )
+    try:
+        assert state.wait_until(lambda: searxng.healthy(port), 120)
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/config", timeout=30) as response:  # noqa: S310 - fixed loopback URL
+            config = json.load(response)
+        assert {e["name"]: e["enabled"] for e in config["engines"]} == dict.fromkeys(
+            ("brave", "mojeek", "yahoo", "github"), True
+        )
+        with pytest.raises(urllib.error.HTTPError) as refused:
+            urllib.request.urlopen(f"http://127.0.0.1:{port}/search?q=hello", timeout=30)  # noqa: S310 - fixed loopback URL
+        assert refused.value.code == 403  # HTML format is not enabled
+    finally:
+        supervise.terminate_tree(proc.pid)
