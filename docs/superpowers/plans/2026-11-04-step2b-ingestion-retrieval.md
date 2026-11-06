@@ -2209,3 +2209,5 @@ git commit -m "docs: step 2b ADR, spec updates and progress"
 - **robots.txt on redirects:** it is checked only for the first PDF host, not for redirect hops (PoliteClient follows redirects internally).
 - **Ingest transaction:** `ingest_paper` fetches inside the caller's open transaction. The step 3 job wrapper should split read, fetch and write.
 - **Scoped lexical search on pg_textsearch:** it filters after the index top-`CANDIDATES`, so a narrow `within`/`paper_ids` scope over a large library can starve the lexical list (the dense side uses iterative scan). Revisit with a real library at step 4.
+- **Docling limits:** an untrusted PDF of up to 50 MB is converted with no page cap or timeout, and a `to_thread` call cannot be cancelled. The step 3 job wrapper should add a page cap or run conversion in a subprocess with a timeout.
+- **BM25 objects follow the runtime mode:** a Docker database carries `USING bm25` indexes and `bm25_engine = pg_textsearch`. A runtime switch or a restore into the other mode (F10.1, step 9) must rebuild the BM25 objects and update the capability.

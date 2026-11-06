@@ -106,6 +106,7 @@ Newest entries at the bottom. Each session appends: date, plan + task, what chan
   - Tests, not a DDL string assert, guard BM25 index-expression drift.
   - Namespaced JATS roots and UTF-16 HTML are unhandled; those papers fall back to PDF.
   - `tokenizers` stays transitive via fastembed.
-- Deferred: robots.txt on redirect hops; the ingest transaction split (step 3 job wrapper); scoped lexical search on pg_textsearch (step 4); the rest are in the plan's Deferred list (SPECTER2 at step 5, GROBID at 2c/4, rich tables at step 4, re-embedding at step 9).
+- Final review (opus) fixes: the tsvector query cast its OR-ed lexemes with `to_tsquery`, which stemmed them twice ("disease" never matched); a failed re-fetch deleted the stored full text; `expire_all` left the caller's objects unusable in async; the PDF failure log carried the full URL.
+- Deferred: Docling page cap and timeout (step 3); BM25 objects on a runtime switch (step 9); robots.txt on redirect hops; the ingest transaction split (step 3 job wrapper); scoped lexical search on pg_textsearch (step 4); the rest are in the plan's Deferred list (SPECTER2 at step 5, GROBID at 2c/4, rich tables at step 4, re-embedding at step 9).
 - No features.json flips.
 - Next: plan 2c (GROBID and local sidecars), then step 3 (run manager).

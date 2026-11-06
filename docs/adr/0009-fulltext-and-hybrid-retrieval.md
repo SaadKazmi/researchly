@@ -24,7 +24,7 @@ Step 2b turns a paper record into verified, searchable full text. It needs a fet
   - `pg_textsearch`: `USING bm25` indexes, `text_config = 'english'`.
   - `tsvector`: a generated `bm25_tsv` column with a GIN index, the `'english'` config.
   - The BM25 objects (`bm25_tsv`, `ix_paper_bm25`, `ix_chunk_bm25`) are created only in the migration, never in the models, and `test_models_match_migrations` skips them.
-  - Query text is OR-ed: `to_tsquery` over `plainto_tsquery`'s lexemes, because `websearch_to_tsquery` ANDs every word and returns nothing for questions (R-search §3).
+  - Query text is OR-ed: `plainto_tsquery`'s lexemes joined with `|` and cast back with `::tsquery` (not `to_tsquery`, which would stem them a second time: `diseas` becomes `disea`), because `websearch_to_tsquery` ANDs every word and returns nothing for questions (R-search §3).
   - The `backend-bm25` CI job builds `infra/postgres` and runs `-m db` with `RESEARCHLY_EXPECT_BM25=pg_textsearch`. The default `backend` job covers tsvector.
 - **Fusion:** RRF (k = 60, 100 candidates per list) of the lexical and dense lists in one SQL statement. The rerank is a separate step after it.
 - **SPECTER2:** deferred to step 5. It needs an ONNX export that we host, and where to host it is the user's decision (R-search §1).

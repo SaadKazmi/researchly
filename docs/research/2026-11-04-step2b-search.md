@@ -77,6 +77,8 @@ SELECT id, ts_rank_cd(tsv, q, 32) r
 FROM paper, to_tsquery('english', replace(plainto_tsquery('english', $1)::text, ' & ', ' | ')) q
 WHERE tsv @@ q ORDER BY r DESC LIMIT 50;
 ```
+
+Correction (step 2b final review): `to_tsquery` re-stems the already-stemmed lexemes, so words such as "disease" or "database" never match. Cast instead: `replace(plainto_tsquery('english', $1)::text, ' & ', ' | ')::tsquery`.
 `websearch_to_tsquery('english','how does retrieval augmented generation reduce hallucination')` matched 0 rows; the OR rewrite matched 3,336. `'english'` stems (`generate` matched 3,335 rows of `generating`; `'simple'` matched 0) and keeps `crispr-cas9` and `brca1` as lexemes; use `'english'` in both engines so results are comparable. Weakness: `ts_rank_cd` has no IDF and the OR query reads every matching row, so cap candidates. Non-English papers: accept English stemming for now, partial index per language is the later path.
 
 ## 4. pgvector
