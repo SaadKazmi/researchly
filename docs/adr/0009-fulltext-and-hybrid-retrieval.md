@@ -41,5 +41,5 @@ Step 2b turns a paper record into verified, searchable full text. It needs a fet
 ## Evidence
 - **R-fulltext:** 15 of 16 arXiv HTML probes returned 200 (the 16th was a made-up ID); the Europe PMC and PDF probes set the content-type allowlist and the `%PDF-` sniff; robots.txt and Protego facts.
 - **R-search:** the OR-ed query, `relaxed_order` and `ef_search` behaviour, and the SPECTER2 hosting question.
-- **Tests at bc6962c:** backend 510 passed, 2 skipped; `-m db` 43 passed on tsvector (pgvector pg18) and 43 passed on pg_textsearch (the `infra/postgres` image).
-- CI run: pending
+- **Tests at 87a13c0:** backend 512 passed, 2 skipped; `-m db` 45 passed on tsvector (pgvector pg18) and 45 passed on pg_textsearch (the `infra/postgres` image).
+- **CI run 42223460180** (756eafa): every job green, including `backend-bm25`.

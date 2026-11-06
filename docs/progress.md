@@ -98,7 +98,7 @@ Newest entries at the bottom. Each session appends: date, plan + task, what chan
   - **Services:** `ingest_paper` and hybrid retrieval (BM25 + dense, one-statement RRF, then rerank).
   - **CI:** the `backend-bm25` job runs the DB tests on the `infra/postgres` image.
   - ADR 0009.
-- Tests: backend 510 passed, 2 skipped; `-m db` 43 passed on tsvector (pgvector pg18) and 43 on pg_textsearch. The platform check measured a mean of 392 and a max of 420 Qwen3 tokens per chunk on synthetic text (research: about 350 on real papers). CI run: pending.
+- Tests: backend 512 passed, 2 skipped; `-m db` 45 passed on tsvector (pgvector pg18) and 45 on pg_textsearch; CI run 42223460180 green on every job. The platform check measured a mean of 392 and a max of 420 Qwen3 tokens per chunk on synthetic text (research: about 350 on real papers). CI run: pending.
 - Rulings:
   - Hold one host permit at a time across redirects, with pacing outside the total timeout (the planned held-set design could deadlock).
   - A blocked hop resets the breaker's failure count like any non-outage answer.
