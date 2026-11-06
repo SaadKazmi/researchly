@@ -77,6 +77,8 @@ The default `python` on dev machines may be old; always go through `uv`.
   - Local sidecars (SearXNG, GROBID) will be the only HTTP outside `PoliteClient`, through a loopback-only client, from step 2b/2c.
 - A backend dependency change needs `uv lock --directory cli` too: the CLI locks the editable backend, and CI fails on a stale `cli/uv.lock`.
 - Native mode: `pg0.Pg0.drop()` deletes the data dir; only test teardown may call it. In a Windows venv, `sys.executable` is a launcher whose child is the real interpreter (the supervisor's PID is the launcher's; kill-on-close jobs chain).
+- BM25 objects are engine-specific (pg_textsearch index or a tsvector column plus GIN), have `bm25` in their names, live only in migrations and are skipped by `test_models_match_migrations`. The `backend-bm25` CI job runs the DB tests with pg_textsearch (ADR 0009).
+- Full-text fetches pass the host as the breaker `source` (`arxiv.org`, the PDF host), so one blocked publisher cannot open a shared breaker.
 
 ## Compact instructions
 When compacting, keep: current plan path and task number, failing test names and errors, files changed this session, decisions made and why. Drop: full file dumps, passing test output, exploration dead ends.

@@ -484,6 +484,7 @@ class Connector(Protocol):
     | Crossref list | 1 rps | 1 |
     | OpenCitations | 2 rps | 1 |
     | arXiv | 1 per 3 s | 1 |
+    | arxiv.org (HTML/PDF) | 1 per 15 s (robots Crawl-delay) | 1 |
     | OpenReview | 1 per 3 s | — |
     | OpenAIRE | 1 per min | — |
     | PubMed | 2 rps | 1 |
@@ -519,21 +520,21 @@ class Connector(Protocol):
 ## 9. Ingestion & retrieval
 
 ### 9.1 Full-text pipeline
-1. **arXiv HTML** (`arxiv.org/html/<id>`), else **LaTeX source** parsed to sections (pylatexenc/plasTeX-lite), else the PDF.
+1. **Tiers, in order:** **arXiv HTML** (`arxiv.org/html/<id>`); then **Europe PMC JATS** for open-access papers with a PMCID; then the PDF (step 2). LaTeX source is dropped (`Disallow: /e-print` in arxiv.org's robots.txt; ADR 0009).
 2. **PDF**: **Docling** in-process, torch-free (pypdfium2 text, Heron ONNX layout, RapidOCR ONNX for image-only pages) for body text and reading order. Docling's table and formula models are torch-only, so tables are flattened text unless GROBID's TEI tables are available (ADR 0005; TableFormer-in-ONNX is re-evaluated at step 2/4). **GROBID** adds the header and references whenever it can run (Docker mode, or native Linux/macOS). **MinerU / PaddleOCR-VL** is an optional GPU mode.
 3. **References**: preferred from OpenAlex `referenced_works`, Crossref and OpenCitations. Parsed references (GROBID, or the LLM parsing reference strings followed by Crossref/OpenAlex matching) are a fallback.
 4. **Output**: `paper_sections`, `paper_figures` (image + caption + referencing paragraphs), `paper_tables`, `paper_equations` and `paper_refs`.
 
 ### 9.2 Chunking & embeddings
 - **All papers:** title + abstract are embedded.
-- **Ingested papers only:** full text is chunked by section, with ~350-token chunks, 15% overlap, and the section path recorded.
+- **Ingested papers only:** full text is chunked by section, with semchunk at `chunk_size` 512 and 15% overlap, measured in Qwen3 tokens (mean about 350), and the section path recorded.
 - **Default embedder:** Qwen3-Embedding-0.6B (Apache-2.0) as ONNX on CPU through onnxruntime via fastembed (`Qwen/Qwen3-Embedding-0.6B-Q`, int8; Researchly adds the Qwen3 query instruction, which fastembed does not), 1024 dims, L2-normalised, stored as `halfvec(1024)` (ADR 0007).
 - **Alternatives:** Ollama embeddings, provider embeddings, or bge-m3.
 - Every vector set records `embed_model_id` and `dim`. Changing the model triggers a background re-embed job.
-- **Paper-to-paper similarity:** SPECTER2 (`allenai/specter2_base`, Apache-2.0) computed **locally** from title + abstract (`paper_specter halfvec(768)`). This replaces the S2-hosted vectors, with no key needed.
+- **Paper-to-paper similarity:** SPECTER2 (`allenai/specter2_base`, Apache-2.0) computed **locally** from title + abstract (`paper_specter halfvec(768)`). This replaces the S2-hosted vectors, with no key needed. It is `specter2_base` plus the proximity adapter, exported once to ONNX, and is deferred to step 5 (the export's hosting is a user decision).
 
 ### 9.3 Search
-- **Hybrid:** BM25 (pg_textsearch, or the tsvector fallback) + dense (pgvector HNSW, `iterative_scan=relaxed_order`), fused with RRF (k=60).
+- **Hybrid:** BM25 (pg_textsearch, or the tsvector fallback) + dense (pgvector HNSW, `iterative_scan=relaxed_order`), fused with RRF (k=60). Both engines use the `'english'` config. Query text falls back to an OR-ed `plainto_tsquery`, because AND-ing every word returns nothing for questions. Dense search sets `iterative_scan=relaxed_order` and `ef_search` 100.
 - **Rerank:** cross-encoder **bge-reranker-v2-m3** (Apache-2.0, int8 ONNX via fastembed) on the top candidates. The depth and passage truncation are set at step 4 from a relevance-vs-latency benchmark: 50 pairs take 11–51 s on CPU CI runners (ADR 0007). Optionally an LLM rerank with the `cheap` role.
 - **Contextual retrieval:** opt-in per collection. The `cheap` model writes a 50–100 token context prefix per chunk, using prompt caching per paper. A cost estimate is shown first.
 - **Graph-aware expansion:** personalized PageRank over the citation + concept subgraph (NetworkX), seeded by top hits, HippoRAG-style.
@@ -688,15 +689,16 @@ run(id, project_id, thread_id, effort, status[pending|planning|awaiting_user|run
 run_event(id, run_id, seq, type, agent, payload jsonb, ts)                -- AG-UI event log (replayable)
 llm_call(id, run_id, agent, role, provider, model, in_tok, cached_tok, out_tok, cost_usd, latency_ms, status, ts)
 paper(id, title, title_norm (GIN trigram), abstract, year, venue_id, doi, license, license_source, oa_url, is_oa, cited_by, fwci, pct,
-      is_retracted, field_sources jsonb, updated_at)
+      is_retracted, field_sources jsonb, fulltext_source, fulltext_at, updated_at)
 paper_ids(paper_id, scheme[doi|arxiv|openalex|s2|pmid|pmcid|dblp|acl|ads], value)  UNIQUE(scheme,value)
 author(id, name, orcid, openalex_id) ; paper_author(paper_id, author_id, position)
 venue(id, name, type, tier)  UNIQUE(lower(name))
-paper_embedding(paper_id, model_id, vec halfvec)                         -- title+abstract
+paper_embedding(paper_id, model_id, vec halfvec)  PK(paper_id, model_id)  -- title+abstract
 paper_specter(paper_id, vec halfvec(768))
-paper_section(id, paper_id, path, text) ; paper_figure(...) ; paper_table(...) ; paper_equation(...)
-chunk(id, paper_id, section_id, ord, text, context_prefix, tokens, bm25 index)
-chunk_embedding(chunk_id, model_id, vec halfvec)
+paper_section(id, paper_id, ord, path text[], text) ; paper_figure(...) ; paper_table(...) ; paper_equation(...)
+chunk(id, paper_id, section_id, ord, text, context_prefix, tokens)
+-- BM25 is engine-specific and lives in migration 0003 only: pg_textsearch `ix_paper_bm25`/`ix_chunk_bm25` (bm25), or a generated `bm25_tsv` plus GIN `ix_*_bm25` (tsvector)
+chunk_embedding(chunk_id, model_id, vec halfvec)  PK(chunk_id, model_id)
 citation(src, dst, source, is_influential)                             -- arrives with the graph step (5)
 concept(...) ; paper_concept(...) ; concept_edge(...)
 collection(id, project_id, name) ; collection_paper(collection_id, paper_id, tags[], note)
@@ -808,7 +810,7 @@ Threat references: OWASP Top 10 for LLM Applications 2025 and OWASP Top 10 for A
 
 ### 19.3 SSRF-safe fetching
 - Resolve DNS once and check every address. Reject private, loopback, link-local, CGNAT, metadata (169.254.169.254), multicast, IPv6 ULA and site-local, and zoned addresses; IPv6 must also be global unicast (2000::/3). IPv4-mapped, NAT64 (64:ff9b::/96), 6to4 and Teredo addresses are unwrapped and their embedded IPv4 is checked (some resolvers return mapped forms). Ports 80/443 only. Connect to the pinned IP with the URL, Host and SNI untouched (ADR 0008).
-- Re-check every redirect (max 5), cap the response size (50 MB PDF, 5 MB HTML), and allowlist content types.
+- Re-check every redirect (max 5), cap the response size (50 MB PDF, 5 MB HTML), and allowlist content types per tier (HTML `text/html`; JATS `application/xml` or `text/xml`; PDF `application/pdf` or `application/octet-stream`). A PDF must also start with `%PDF-`.
 - In Docker mode the fetcher runs in the app container on a network with no route to `db` except through the app, and the DB listens only on the internal network.
 - Unit tests cover known bypasses (DNS rebinding, decimal and octal IPs, IPv6 forms, redirect to internal).
 

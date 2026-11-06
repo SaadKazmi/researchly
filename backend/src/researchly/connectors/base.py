@@ -88,3 +88,7 @@ class TooManyResults(ConnectorError):
 
 class ResponseTooLarge(ConnectorError):
     """The body exceeded PoliteClient's size cap."""
+
+
+class UnwantedContent(ConnectorError):
+    """The server answered with a content type the caller did not ask for (a landing page instead of a PDF)."""

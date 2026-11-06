@@ -4,6 +4,7 @@ api.crossref.org: [0.2, 1]          # single pool, 5 rps, concurrency 1
 api.crossref.org/list: [1.0, 1]     # list pool, 1 rps, concurrency 1
 api.opencitations.net: [0.5, 1]     # 180/min/IP
 export.arxiv.org: [3.0, 1]          # one request every 3 s, single connection
+arxiv.org: [15.0, 1]                # robots.txt Crawl-delay: 15 (HTML and PDF pages)
 api.datacite.org: [1.0, 1]          # 500 per 5 min per IP, unidentified
 www.ebi.ac.uk: [0.2, 2]             # Europe PMC, no published limit
 eutils.ncbi.nlm.nih.gov: [0.5, 1]   # 3 rps keyless

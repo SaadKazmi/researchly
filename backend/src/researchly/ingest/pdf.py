@@ -6,6 +6,7 @@ adds structured tables where it runs.
 """
 
 import importlib.machinery
+import re
 import sys
 import threading
 import types
@@ -25,6 +26,8 @@ from docling.datamodel.pipeline_options import (
     RapidOcrOptions,
 )
 from docling.document_converter import DocumentConverter, PdfFormatOption
+
+from researchly.ingest.document import Section, clean
 
 
 @dataclass(frozen=True)
@@ -88,3 +91,31 @@ def _converter(ocr: bool) -> DocumentConverter:
 def convert_pdf(path: Path, *, ocr: bool = False) -> ConvertedPdf:
     doc = _converter(ocr).convert(path).document
     return ConvertedPdf(markdown=doc.export_to_markdown(), pages=doc.num_pages(), tables=len(doc.tables))
+
+
+_HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*$")
+_BACK_MATTER = re.compile(r"^(?:[\dIVX]+\.?\s+)?(?:references|bibliography|works cited)$", re.I)
+
+
+def markdown_sections(markdown: str) -> list[Section]:
+    """Docling Markdown → flat sections: its heading levels are not reliable, so each heading is its own path."""
+    sections: list[Section] = []
+    title, lines, fenced = "Body", [], False
+
+    def flush() -> None:
+        paras = [clean(p) for p in "\n".join(lines).split("\n\n")]
+        if (text := "\n\n".join(p for p in paras if p)) and not _BACK_MATTER.match(title):
+            sections.append(Section((title,), text))
+
+    for line in markdown.splitlines():
+        if line.strip().startswith("<!--"):
+            continue
+        if line.strip().startswith("```"):
+            fenced = not fenced
+        if not fenced and (heading := _HEADING.match(line)):
+            flush()
+            title, lines = clean(heading.group(1)), []
+        else:
+            lines.append(line)
+    flush()
+    return sections

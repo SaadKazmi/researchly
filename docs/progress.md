@@ -87,3 +87,26 @@ Newest entries at the bottom. Each session appends: date, plan + task, what chan
 - Deferred: see the plan's Deferred list (cache prune at step 9; author index, batching and upgrades at step 5; per-hop redirect pacing at step 2b; arXiv query tuning).
 - No features.json flips: search and the graph flip when the agents use them (step 3+).
 - Next: plan 2b (full-text ingestion: robots.txt, chunking, embeddings, hybrid search and rerank).
+
+## 2026-11-06 — Step 2b full-text ingestion and hybrid retrieval (plan docs/superpowers/plans/2026-11-04-step2b-ingestion-retrieval.md)
+- Done (feat/step2b-ingestion-retrieval):
+  - **PoliteClient:** content-type gate with `max_bytes`, per-hop host pacing, and `Crawl-delay` applied to the limiter; `arxiv.org` limited to 1 per 15 s.
+  - **robots.txt:** Protego 0.7.0 under RFC 9309 (4xx allow, 5xx disallow, 24 h cache, over 60 s skipped).
+  - **Full text:** arXiv HTML, then Europe PMC JATS, then PDF through Docling (`%PDF-` sniff, 50 MB cap). LaTeX tier dropped.
+  - **Chunking:** semchunk at 512 with 15% overlap, using the Qwen3 tokenizer.
+  - **Migration 0003:** sections, chunks, `halfvec(1024)` embeddings with HNSW, and BM25 by engine (pg_textsearch or tsvector).
+  - **Services:** `ingest_paper` and hybrid retrieval (BM25 + dense, one-statement RRF, then rerank).
+  - **CI:** the `backend-bm25` job runs the DB tests on the `infra/postgres` image.
+  - ADR 0009.
+- Tests: backend 512 passed, 2 skipped; `-m db` 45 passed on tsvector (pgvector pg18) and 45 on pg_textsearch; CI run 42223460180 green on every job. The platform check measured a mean of 392 and a max of 420 Qwen3 tokens per chunk on synthetic text (research: about 350 on real papers).
+- Rulings:
+  - Hold one host permit at a time across redirects, with pacing outside the total timeout (the planned held-set design could deadlock).
+  - A blocked hop resets the breaker's failure count like any non-outage answer.
+  - Stricter-than-RFC robots limits kept (over 5 redirects, over 500 KB: disallow).
+  - Tests, not a DDL string assert, guard BM25 index-expression drift.
+  - Namespaced JATS roots and UTF-16 HTML are unhandled; those papers fall back to PDF.
+  - `tokenizers` stays transitive via fastembed.
+- Final review (opus) fixes: the tsvector query cast its OR-ed lexemes with `to_tsquery`, which stemmed them twice ("disease" never matched); a failed re-fetch deleted the stored full text; `expire_all` left the caller's objects unusable in async; the PDF failure log carried the full URL.
+- Deferred: Docling page cap and timeout (step 3); BM25 objects on a runtime switch (step 9); robots.txt on redirect hops; the ingest transaction split (step 3 job wrapper); scoped lexical search on pg_textsearch (step 4); the rest are in the plan's Deferred list (SPECTER2 at step 5, GROBID at 2c/4, rich tables at step 4, re-embedding at step 9).
+- No features.json flips.
+- Next: plan 2c (GROBID and local sidecars), then step 3 (run manager).

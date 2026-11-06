@@ -59,6 +59,33 @@ jobs:
       - run: uv run pyright
       - run: uv run pytest -q
 
+  backend-bm25:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      RESEARCHLY_TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/postgres
+      RESEARCHLY_EXPECT_BM25: pg_textsearch
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: "0.12.10"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Postgres with pg_textsearch (the Docker-mode image)
+        run: |
+          docker build -t researchly-postgres-test ../infra/postgres
+          docker run -d --name pg -e POSTGRES_PASSWORD=postgres -p 5432:5432 researchly-postgres-test
+          for i in $(seq 1 30); do docker exec pg pg_isready -h 127.0.0.1 -U postgres && exit 0; sleep 2; done  # TCP: the init-time server listens on the socket only
+          docker logs pg; exit 1
+      - run: uv sync --locked
+      - run: uv run pytest -m db -q
+
   platform:
     name: platform (${{ matrix.os }})
     runs-on: ${{ matrix.os }}

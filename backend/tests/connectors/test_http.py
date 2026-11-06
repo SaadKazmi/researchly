@@ -8,7 +8,7 @@ import httpx
 import pytest
 
 from researchly.connectors import http
-from researchly.connectors.base import QuotaExhausted, ResponseTooLarge, SourceUnavailable
+from researchly.connectors.base import QuotaExhausted, ResponseTooLarge, SourceUnavailable, UnwantedContent
 from researchly.connectors.http import Breaker, HostLimit, PoliteClient, retry_after
 
 pytestmark = pytest.mark.anyio
@@ -295,3 +295,212 @@ async def test_a_first_url_with_a_bad_scheme_is_refused():
     async with client_for(lambda r: httpx.Response(200), []) as client:
         with pytest.raises(SourceUnavailable, match="scheme"):
             await client.get("file:///etc/passwd", source="t")
+
+
+async def test_accept_rejects_other_content_types_before_reading_the_body():
+    def handler(request):
+        return httpx.Response(
+            200, headers={"content-type": "text/html; charset=utf-8"}, content=b"<html>landing</html>"
+        )
+
+    async with client_for(handler, []) as client:
+        with pytest.raises(UnwantedContent, match="text/html"):
+            await client.get("https://pub.example.org/paper.pdf", source="t", accept=frozenset({"application/pdf"}))
+
+
+async def test_accept_matches_the_media_type_ignoring_parameters():
+    def handler(request):
+        return httpx.Response(200, headers={"content-type": "Application/PDF; qs=0.9"}, content=b"%PDF-1.7")
+
+    async with client_for(handler, []) as client:
+        fetched = await client.get("https://pub.example.org/p.pdf", source="t", accept=frozenset({"application/pdf"}))
+    assert fetched.body == b"%PDF-1.7"
+
+
+async def test_accept_ignores_non_200_answers():
+    async with client_for(lambda r: httpx.Response(404, headers={"content-type": "text/html"}), []) as client:
+        fetched = await client.get("https://pub.example.org/p.pdf", source="t", accept=frozenset({"application/pdf"}))
+    assert fetched.status == 404
+
+
+def redirecting(hops: dict[str, str]):
+    def handler(request):
+        target = hops.get(str(request.url))
+        if target:
+            return httpx.Response(302, headers={"location": target})
+        return httpx.Response(200, content=b"ok")
+
+    return handler
+
+
+async def test_a_cross_host_hop_waits_for_its_own_host():
+    slept: list[float] = []
+    now = [0.0]
+
+    async def sleep(seconds: float) -> None:
+        slept.append(seconds)
+        now[0] += seconds
+
+    hops = {
+        "https://doi.example.org/1": "https://pub.example.org/1",
+        "https://doi.example.org/2": "https://pub.example.org/2",
+    }
+    client = PoliteClient(
+        transport=httpx.MockTransport(redirecting(hops)),
+        sleep=sleep,
+        clock=lambda: now[0],
+        limits={"doi.example.org": (0.0, 1), "pub.example.org": (5.0, 1), "default": (0.0, 1)},
+    )
+    async with client:
+        await client.get("https://doi.example.org/1", source="t")
+        await client.get("https://doi.example.org/2", source="t")
+    assert slept == [5.0]  # the second hop to pub.example.org waited for its 5 s slot
+
+
+async def test_a_redirect_back_to_a_held_host_does_not_deadlock():
+    hops = {"https://a.example.org/1": "https://b.example.org/1", "https://b.example.org/1": "https://a.example.org/2"}
+    client = PoliteClient(
+        transport=httpx.MockTransport(redirecting(hops)),
+        limits={"a.example.org": (0.0, 1), "b.example.org": (0.0, 1), "default": (0.0, 1)},
+    )
+    async with client:
+        fetched = await asyncio.wait_for(client.get("https://a.example.org/1", source="t"), timeout=2)
+    assert fetched.body == b"ok"
+
+
+async def test_unknown_hosts_sharing_the_default_limit_do_not_deadlock_on_a_hop():
+    hops = {"https://x.example.org/1": "https://y.example.org/1"}
+    client = PoliteClient(transport=httpx.MockTransport(redirecting(hops)), limits={"default": (0.0, 1)})
+    async with client:
+        fetched = await asyncio.wait_for(client.get("https://x.example.org/1", source="t"), timeout=2)
+    assert fetched.body == b"ok"
+
+
+def test_crawl_delay_raises_but_never_lowers_a_host_interval():
+    client = PoliteClient(limits={"arxiv.org": (15.0, 1), "default": (1.0, 1)})
+    client.set_crawl_delay("pub.example.org", 10.0)
+    assert client.limit_for("https://pub.example.org/x", None).interval == 10.0
+    client.set_crawl_delay("arxiv.org", 2.0)
+    assert client.limit_for("https://arxiv.org/html/1", None).interval == 15.0
+    client.set_crawl_delay("quick.example.org", 0.5)  # below the default: the default still applies
+    assert client.limit_for("https://quick.example.org/x", None).interval == 1.0
+
+
+def test_limits_file_paces_arxiv_org_per_robots_crawl_delay():
+    assert http._load_limits()["arxiv.org"] == (15.0, 1)
+
+
+async def test_requests_crossing_hosts_in_opposite_directions_do_not_deadlock():
+    arrived = asyncio.Event()
+    first_hops = []
+
+    async def handler(request):
+        if request.url.path == "/start":  # both first hops must be in flight at once
+            first_hops.append(request.url.host)
+            if len(first_hops) == 2:
+                arrived.set()
+            await arrived.wait()
+            other = "b.example.org" if request.url.host == "a.example.org" else "a.example.org"
+            return httpx.Response(302, headers={"location": f"https://{other}/end"})
+        return httpx.Response(200, content=b"ok")
+
+    client = PoliteClient(
+        transport=httpx.MockTransport(handler),
+        limits={"a.example.org": (0.0, 1), "b.example.org": (0.0, 1), "default": (0.0, 1)},
+    )
+    async with client:
+        first, second = await asyncio.wait_for(
+            asyncio.gather(
+                client.get("https://a.example.org/start", source="t"),
+                client.get("https://b.example.org/start", source="t"),
+            ),
+            timeout=2,
+        )
+    assert first.body == second.body == b"ok"
+
+
+async def test_a_quota_block_survives_a_crawl_delay():
+    client = PoliteClient(limits={"default": (1.0, 1)})
+    client.limit_for("https://pub.example.org/x", None).blocked_until = 99.0
+    client.set_crawl_delay("pub.example.org", 10.0)
+    limit = client.limit_for("https://pub.example.org/x", None)
+    assert limit.interval == 10.0 and limit.blocked_until == 99.0
+
+
+async def test_unwanted_content_does_not_open_the_breaker():
+    kind = ["text/html"]
+
+    def handler(request):
+        return httpx.Response(200, headers={"content-type": kind[0]}, content=b"x")
+
+    async with client_for(handler, []) as client:
+        for _ in range(6):
+            with pytest.raises(UnwantedContent):
+                await client.get("https://pub.example.org/p.pdf", source="t", accept=frozenset({"application/pdf"}))
+        kind[0] = "application/pdf"
+        fetched = await client.get("https://pub.example.org/p.pdf", source="t", accept=frozenset({"application/pdf"}))
+    assert fetched.status == 200
+
+
+async def test_an_unwanted_content_hop_releases_that_hosts_permit():
+    def handler(request):
+        if request.url.host == "a.example.org":
+            return httpx.Response(302, headers={"location": "https://b.example.org/landing"})
+        return httpx.Response(200, headers={"content-type": "text/html"}, content=b"<html>")
+
+    client = PoliteClient(
+        transport=httpx.MockTransport(handler),
+        limits={"a.example.org": (0.0, 1), "b.example.org": (0.0, 1), "default": (0.0, 1)},
+    )
+    async with client:
+        with pytest.raises(UnwantedContent):
+            await client.get("https://a.example.org/x", source="t", accept=frozenset({"application/pdf"}))
+        fetched = await asyncio.wait_for(client.get("https://b.example.org/y", source="t"), 2)
+    assert fetched.status == 200
+
+
+def retry_after_via_redirect(seconds: str, seen: list[str]):
+    def handler(request):
+        seen.append(request.url.host)
+        if request.url.host == "doi.example.org":
+            return httpx.Response(302, headers={"location": "https://arxiv.org/pdf/1"})
+        return httpx.Response(429, headers={"retry-after": seconds})
+
+    return handler
+
+
+async def test_a_quota_retry_after_from_a_redirect_target_blocks_that_host_only():
+    seen: list[str] = []
+    client = PoliteClient(
+        transport=httpx.MockTransport(retry_after_via_redirect("3600", seen)),
+        limits={"arxiv.org": (0.0, 1), "default": (0.0, 1)},
+    )
+    async with client:
+        with pytest.raises(QuotaExhausted):
+            await client.get("https://doi.example.org/1", source="t")
+        assert client.limit_for("https://arxiv.org/x", None).blocked_until > 0
+        assert client.limit_for("https://doi.example.org/x", None).blocked_until == 0
+        seen.clear()
+        with pytest.raises(QuotaExhausted):
+            await client.get("https://doi.example.org/2", source="t")
+    assert "arxiv.org" not in seen  # the blocked host is not fetched through the redirect
+
+
+async def test_a_short_retry_after_from_a_redirect_target_defers_that_host_only():
+    seen: list[str] = []
+    slept: list[float] = []
+
+    async def sleep(seconds: float) -> None:
+        slept.append(seconds)
+
+    client = PoliteClient(
+        transport=httpx.MockTransport(retry_after_via_redirect("7", seen)),
+        sleep=sleep,
+        clock=lambda: 100.0,
+        limits={"arxiv.org": (0.0, 1), "default": (0.0, 1)},
+    )
+    async with client:
+        with pytest.raises(SourceUnavailable):
+            await client.get("https://doi.example.org/1", source="t")
+    assert client.limit_for("https://doi.example.org/x", None)._next_at == 100.0
+    assert client.limit_for("https://arxiv.org/x", None)._next_at >= 107.0

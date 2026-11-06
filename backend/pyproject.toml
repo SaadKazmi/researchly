@@ -5,6 +5,7 @@ description = "Local-first multi-agent research assistant"
 license = "Apache-2.0"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+  "protego==0.7.0",  # robots.txt (RFC 9309) for full-text fetches
   "fastapi>=0.120",
   "uvicorn>=0.40",
   "sqlalchemy[asyncio]>=2.1",
@@ -19,6 +20,7 @@ dependencies = [
   "langchain-litellm==0.11.1",
   "deno==2.9.8",  # Deno runtime as a wheel: light code cells (ADR 0006)
   "fastembed==0.9.1",  # ONNX embedder + reranker on CPU, no torch (ADR 0007)
+  "semchunk==4.1.1",  # sentence-aware chunking with any token counter (MIT)
   # PDF text, layout and OCR on onnxruntime; pypdfium2 because docling-parse 7.x has no Intel-Mac wheel (ADR 0005)
   "docling-slim[format-pdf-pypdfium2,convert-core,feat-ocr-rapidocr-onnx]==2.142.1",
   "transformers>=4.50,<5",  # Heron image processor; 5.x refuses it without torchvision
@@ -26,7 +28,9 @@ dependencies = [
   "onnxruntime>=1.23; sys_platform != 'darwin' or platform_machine != 'x86_64'",
   "httpx==0.28.1",  # PoliteClient's guarded transport replaces a private attribute (connectors/ssrf.py)
   "httpcore==1.0.9",
+  "pgvector==0.5.1",  # halfvec columns and binds (MIT)
   "defusedxml>=0.7.1",  # untrusted XML (arXiv, PubMed)
+  "lxml==6.1.3",  # arXiv LaTeXML HTML (already locked via docling)
 ]
 
 [dependency-groups]
