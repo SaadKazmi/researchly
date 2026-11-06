@@ -35,11 +35,11 @@ Step 2b turns a paper record into verified, searchable full text. It needs a fet
 - **robots.txt gap:** it is checked for the first PDF host only, not for redirect hops (PoliteClient follows redirects internally).
 - **Ingest holds a transaction:** `ingest_paper` fetches inside the caller's open transaction. The step 3 job wrapper should split read, fetch and write.
 - **Scoped lexical search on pg_textsearch** filters after the index's top 100, so a narrow scope over a large library can starve the lexical list. The dense side uses iterative scan.
-- **Chunk size:** the research measured about 350 Qwen3 tokens per chunk on real papers. `tests/platform/test_chunking_tokens.py` measured a mean of 392 and a max of 420 on synthetic text. Both sit under the embedder's limit.
+- **Chunk size:** the research measured about 350 Qwen3 tokens per chunk on real papers. `tests/platform/test_chunking_tokens.py` measured a mean of 392 and a max of 420 on synthetic text. Both fit the embedder's 512-token window (fastembed truncates there); a full 512-token chunk plus its section-path prefix loses a few tail tokens to that truncation.
 - BM25 is English only.
 
 ## Evidence
-- **R-fulltext:** 15 of 16 arXiv HTML probes returned 200; the Europe PMC and PDF probes set the content-type allowlist and the `%PDF-` sniff; robots.txt and Protego facts.
+- **R-fulltext:** 15 of 16 arXiv HTML probes returned 200 (the 16th was a made-up ID); the Europe PMC and PDF probes set the content-type allowlist and the `%PDF-` sniff; robots.txt and Protego facts.
 - **R-search:** the OR-ed query, `relaxed_order` and `ef_search` behaviour, and the SPECTER2 hosting question.
 - **Tests at bc6962c:** backend 510 passed, 2 skipped; `-m db` 43 passed on tsvector (pgvector pg18) and 43 passed on pg_textsearch (the `infra/postgres` image).
 - CI run: pending
