@@ -54,7 +54,7 @@
   - Backend: `uv run --directory backend pytest -q`, `uv run --directory backend pytest -m db -q`, `uv run --directory backend ruff check`, `uv run --directory backend ruff format --check`, `uv run --directory backend pyright` (0 errors).
   - CLI: `uv run --directory cli pytest -q`, `uv run --directory cli ruff check`, `uv run --directory cli ruff format --check`, `uv run --directory cli pyright`.
   - Repo: `uv run --no-project --python 3.12 scripts/repo_checks.py`.
-- **Formatting:** run `uv run --directory backend ruff format` (or the `cli` equivalent) on touched files before each check step; a few code lines in this plan exceed 120 characters and the formatter wraps them. Keep comments under 120 characters, since ruff cannot wrap them.
+- **Formatting:** run `uv run --directory backend ruff check --fix` and then `uv run --directory backend ruff format` (or the `cli` equivalents) before every lint check step, so import order (I001) and long lines (E501) are fixed before `--check` runs; a few code lines in this plan exceed 120 characters and the formatter wraps them. Keep comments under 120 characters, since ruff cannot wrap them.
 - **Commits:** Conventional Commits, each ending with the trailer `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` (shown in Task 1; every commit carries it).
 
 ## Rulings made while planning
@@ -203,10 +203,17 @@ def test_compose_points_the_app_at_searxng_with_a_healthcheck():
     ]
 ```
 
-In `cli/tests/test_main.py`, the two fakes at lines 142 and 273 take `(secrets, compose)`. Change both lambdas to accept the new keyword:
+In `cli/tests/test_main.py`, the three fakes at lines 142, 208 and 273 take `(secrets, compose)`. Change all three lambdas to accept the new keyword. Lines 142 and 273:
 
 ```python
         docker, "start", lambda secrets, compose, web_search=True: state.State(mode="docker", port=9996, compose=tuple(compose))
+```
+
+Line 208 (`test_start_docker_uses_the_engine_compose_command`) keeps its `seen.append`:
+
+```python
+        lambda secrets, compose, web_search=True: seen.append(compose)
+        or state.State(mode="docker", port=9998, compose=tuple(compose)),
 ```
 
 In `backend/tests/test_app.py`, add:
@@ -929,7 +936,7 @@ Titles and snippets are untrusted page text (spec §19.1): shown and stored, nev
 import html
 import re
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Any, Literal, TypeGuard
 from urllib.parse import urlsplit
 
 from researchly.connectors import ids
@@ -962,7 +969,7 @@ def _plain(raw: Any) -> str | None:
     return " ".join(html.unescape(_TAGS.sub(" ", raw)).split()) or None
 
 
-def _web_url(url: Any) -> bool:
+def _web_url(url: Any) -> TypeGuard[str]:  # narrows `url` for pyright
     try:
         return isinstance(url, str) and urlsplit(url).scheme in ("http", "https")
     except ValueError:
@@ -1304,7 +1311,7 @@ async def record_web_search(database_url: str, client: SidecarClient | None) -> 
 
 - [ ] **Step 4: Add the app lifespan**
 
-In `backend/src/researchly/app.py`, add the imports:
+In `backend/src/researchly/app.py`, merge these imports into the existing import blocks in sorted order (`ruff check --fix` sorts them):
 
 ```python
 import asyncio
@@ -2294,7 +2301,7 @@ In `test_registry.py`, add `"openreview"` to `NAMES`. In `test_live.py`, add:
 ```python
 async def test_openreview_decision_lookup(connectors):
     rec = await connectors["openreview"].by_title("Dataflow Is All You Need")
-    assert rec is None or isinstance(rec.extra["openreview_decision"], str)  # coverage moves; the shape must not
+    assert rec is not None and isinstance(rec.extra["openreview_decision"], str)  # the cassette paper: a miss is breakage
 ```
 
 Pyright sees `connectors["openreview"]` as a `Connector`, which has no `by_title`. Put `# pyright: ignore[reportAttributeAccessIssue]` on that line.
@@ -3179,7 +3186,7 @@ In `connectors/__init__.py`, import `OpenAireConnector` and append `OpenAireConn
 
 - [ ] **Step 4: Record the cassettes and run the tests**
 
-Recording makes three calls, 60 s apart (about 2 minutes):
+Each test gets a fresh `polite` client, so pacing does not carry across tests; if OpenAIRE answers 429 while recording, wait a minute and re-run the failing test only:
 `uv run --directory backend pytest tests/connectors/test_openaire.py --record-mode=once -q`
 Then grep the cassettes as in Task 6. If the merged record's arXiv instance has a different licence string, or the search returns rows without IDs, adjust only those asserts to the recorded values, and keep the "no `10.65215/` IDs" assert. Then run `uv run --directory backend pytest -q tests/connectors`.
 Expected: PASS.
@@ -3289,7 +3296,7 @@ def enrichment_sources(record: PaperRecord, domains: frozenset[str] = frozenset(
     return names
 ```
 
-In `backend/src/researchly/services/identity.py`, replace the `SOURCE_PRIORITY` line with:
+In `backend/src/researchly/services/identity.py`, replace the comment line above `SOURCE_PRIORITY` ("spec §8.1.1: OpenAlex enriches first ...") and the `SOURCE_PRIORITY` line with:
 
 ```python
 # §8.3 order; the Tier-2 tail only fills fields no Tier-1 source has (their own data lives in `extra`)
@@ -3486,6 +3493,8 @@ Step 1e installs and supervises SearXNG (ADR 0004), but nothing used it, and it 
   ``Local sidecars (SearXNG, GROBID) will be the only HTTP outside `PoliteClient`, through a loopback-only client, from step 2b/2c.``
   with
   ``Local sidecars (SearXNG, later GROBID) are the only HTTP outside `PoliteClient`, through the origin-pinned `connectors/sidecar.py`; `test_only_the_http_modules_import_httpx` fails on any other httpx import (ADR 0010).``
+- Amend the binding line ``All outbound HTTP goes through `PoliteClient` (`backend/src/researchly/connectors/http.py`); never call `httpx` directly elsewhere.`` to end ``...never call `httpx` directly elsewhere, except the origin-pinned sidecar client `connectors/sidecar.py` for SearXNG (no redirects, 2 MB cap; ADR 0010).``
+- In `backend/AGENTS.md`, amend ``outbound HTTP only via `PoliteClient` in `connectors/http.py`, from step 2`` to ``outbound HTTP only via `PoliteClient` in `connectors/http.py` (sidecars: the origin-pinned `connectors/sidecar.py`), from step 2``.
 - Add these Gotchas bullets:
   - ``- Web search: SearXNG runs only brave, mojeek, yahoo (general) and github (code), JSON only (ADR 0010). The CLI passes `RESEARCHLY_SEARXNG_URL`; `RESEARCHLY_WEB_SEARCH=off` turns it off. `capability.web_search` is written by a background probe, so it reads `ready` up to a minute after the app starts.``
   - ``- The `paper_code` table holds the PwC archive (CC BY-SA 4.0): show its attribution and never export it. DBLP is SPARQL only and OpenReview is `/notes/search` only: their other endpoints are bot-gated, so never add a workaround.``
@@ -3504,7 +3513,7 @@ Keep `## Latest plan` pointing at this plan.
 
 ```bash
 uv run --no-project --python 3.12 scripts/repo_checks.py
-git add docs AGENTS.md
+git add docs AGENTS.md backend/AGENTS.md
 git commit -m "docs: step 2c ADR 0010, spec updates and progress" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 

@@ -432,3 +432,7 @@ Probe: bioRxiv `10.1101/2020.03.22.002386` (SARS-CoV-2 interactome, published in
 - The OpenReview v2 `venue` strings for Oral/Spotlight/rejected (`Submitted to`) need one recorded example each before parsing is finalised.
 - OpenAIRE's real anonymous limit (60 vs 7199/h) should be checked from a throwaway IP, or watched in production via `x-ratelimit-used`.
 - DBLP SPARQL text search (`ql:contains-word`) syntax was not probed.
+
+## Pre-flight probes (2026-11-06 15:16 UTC)
+- **PwC pins:** `HEAD https://huggingface.co/datasets/pwc-archive/files/resolve/1af3a546770f9b98665523ccba4b22b4f3e18c1f/jul-28-links-between-papers-and-code.json.gz` answered 302 to `us.aws.cdn.hf.co`, with `X-Repo-Commit: 1af3a546770f9b98665523ccba4b22b4f3e18c1f`, `X-Linked-Size: 26261205` and `X-Linked-ETag: "e7c60f2170880af3bd5a5b9469a951341435e4ccfd21d3d18393c52cfec24694"` (the file's sha256).
+- **DBLP SPARQL without an Accept header:** httpx's default `Accept: */*` gets `200 application/sparql-results+json`, so no header pass-through is needed.
