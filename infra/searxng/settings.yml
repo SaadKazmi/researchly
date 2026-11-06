@@ -1,9 +1,19 @@
-# SearXNG for Researchly (spec §4.1): private instance on the compose network; JSON API on, rate limiter off.
+# SearXNG for Researchly (spec F2.1, ADR 0010): a private instance for general web and code search only.
+# Scholarly engines stay off: the connectors own those sources and their quotas. JSON API only; rate limiter off.
 # The secret comes from SEARXNG_SECRET, injected by the CLI.
-use_default_settings: true
+use_default_settings:
+  engines:
+    keep_only: [brave, mojeek, yahoo, github]
 server:
   limiter: false
   public_instance: false
   image_proxy: false
 search:
-  formats: [html, json]
+  formats: [json]
+outgoing:
+  request_timeout: 5.0
+engines:
+  - name: mojeek
+    inactive: false
+  - name: yahoo
+    disabled: false

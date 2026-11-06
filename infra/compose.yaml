@@ -43,6 +43,7 @@ services:
     environment:
       RESEARCHLY_DATABASE_URL: postgresql+psycopg://researchly_app:${RESEARCHLY_DB_APP_PASSWORD:?}@postgres:5432/researchly
       RESEARCHLY_LOCAL_TOKEN: ${RESEARCHLY_LOCAL_TOKEN:?}
+      RESEARCHLY_SEARXNG_URL: ${RESEARCHLY_SEARXNG_URL-http://searxng:8080}
     ports: ["127.0.0.1:${RESEARCHLY_PORT:-8765}:8000"]
     networks: [internal, default]
     depends_on:
@@ -61,6 +62,11 @@ services:
     volumes:
       - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
     networks: [internal, default]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/healthz"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
     restart: unless-stopped
 
   grobid:
