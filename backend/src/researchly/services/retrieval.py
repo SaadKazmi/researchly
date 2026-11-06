@@ -60,11 +60,12 @@ def _lexical(kind: _Kind, engine: str, scoped: bool) -> str:
             f"SELECT id, row_number() OVER (ORDER BY s) AS r FROM ("
             f"SELECT id, {score} AS s FROM {kind.table} WHERE TRUE {scope} ORDER BY {score} LIMIT :n) b WHERE s < 0"
         )
-    # websearch_to_tsquery ANDs every word (0 hits on questions); OR the stemmed lexemes instead (research §3)
-    query = "to_tsquery('english', replace(plainto_tsquery('english', :q)::text, ' & ', ' | '))"
+    # websearch_to_tsquery ANDs every word (0 hits on questions); OR the stemmed lexemes instead (research §3).
+    # The cast keeps the lexemes as stemmed once: to_tsquery would stem them again ('diseas' -> 'disea').
+    query = "(SELECT replace(plainto_tsquery('english', :q)::text, ' & ', ' | ')::tsquery AS query) q"
     return (
         f"SELECT id, row_number() OVER (ORDER BY s DESC) AS r FROM ("
-        f"SELECT id, ts_rank_cd(bm25_tsv, query, 32) AS s FROM {kind.table}, {query} AS query "
+        f"SELECT id, ts_rank_cd(bm25_tsv, query, 32) AS s FROM {kind.table}, {query} "
         f"WHERE bm25_tsv @@ query {scope} ORDER BY s DESC LIMIT :n) b"
     )
 

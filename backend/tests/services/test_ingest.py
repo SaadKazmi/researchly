@@ -106,8 +106,21 @@ async def test_reingest_replaces_rather_than_duplicates(sm):
         pid = await paper(s)
         await ingest_paper(s, pid, fetcher=StubFetcher(FULL), embedder=FakeEmbedder())
         first = await count(s, Chunk)
+        other = await s.get_one(Paper, await paper(s))
         await ingest_paper(s, pid, fetcher=StubFetcher(FULL), embedder=FakeEmbedder())
         assert await count(s, Chunk) == first and await count(s, PaperSection) == 2
+        assert await count(s, ChunkEmbedding) == first
+        assert other.title  # the caller's loaded objects stay usable (no expiry, so no lazy load)
+
+
+async def test_a_failed_refetch_keeps_the_stored_full_text(sm):
+    async with sm() as s:
+        pid = await paper(s)
+        await ingest_paper(s, pid, fetcher=StubFetcher(FULL), embedder=FakeEmbedder())
+        chunks = await count(s, Chunk)
+        assert await ingest_paper(s, pid, fetcher=StubFetcher(None), embedder=FakeEmbedder()) == "none"
+        assert await count(s, Chunk) == chunks and await count(s, ChunkEmbedding) == chunks
+        assert (await s.get_one(Paper, pid)).fulltext_source == FULL.source
 
 
 async def test_no_full_text_is_recorded_as_none(sm):

@@ -87,7 +87,7 @@ class FullTextFetcher:
             try:
                 markdown = await asyncio.to_thread(self._convert, path)
             except Exception:  # an untrusted PDF may crash the converter: no full text, never a failed ingest
-                log.warning("PDF conversion failed for %s", url, exc_info=True)
+                log.warning("PDF conversion failed for %s", host, exc_info=True)  # the URL may carry a signed query
                 return None
         sections = markdown_sections(markdown)
         return FullText("pdf", sections) if sections else None

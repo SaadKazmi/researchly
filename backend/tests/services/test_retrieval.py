@@ -1,3 +1,4 @@
+import os
 import uuid
 
 import numpy as np
@@ -65,7 +66,21 @@ async def seed(s) -> dict[str, uuid.UUID]:
 
 async def test_engine_is_read_from_the_capability(sm):
     async with sm() as s:
-        assert await bm25_engine(s) in {"tsvector", "pg_textsearch"}
+        assert await bm25_engine(s) == os.environ.get("RESEARCHLY_EXPECT_BM25", "tsvector")
+
+
+async def test_words_the_english_stemmer_changes_twice_still_match(sm):
+    async with sm() as s:
+        await seed(s)
+        pid = uuid.uuid4()
+        title = "A database of disease variants"
+        s.add(
+            Paper(id=pid, title=title, title_norm=title.lower(), abstract="Universities agreed to increase diversity.")
+        )
+        await s.commit()
+        for word in ("disease", "database", "universities", "increase", "diversity", "agreed"):
+            hits = {h.id: h for h in await search_papers(s, word, unit(3), model_id="m")}
+            assert pid in hits and hits[pid].lexical_rank == 1, word  # fused order ties with the dense top hit
 
 
 async def test_natural_language_query_fuses_lexical_and_dense(sm):

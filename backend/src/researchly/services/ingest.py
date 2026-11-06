@@ -38,17 +38,17 @@ async def target_for(session: AsyncSession, paper_id: uuid.UUID) -> Target:
 
 async def ingest_paper(session: AsyncSession, paper_id: uuid.UUID, *, fetcher: Fetcher, embedder: TextEmbedder) -> str:
     full = await fetcher.fetch(await target_for(session, paper_id))
-    await session.flush()  # expire_all below must never drop the caller's unflushed changes
-    await session.execute(
-        delete(PaperSection).where(PaperSection.paper_id == paper_id).execution_options(synchronize_session=False)
-    )  # cascades to chunks, vectors in the database
-    session.expire_all()  # so no stale Section/Chunk objects survive the bulk delete
     paper = await session.get_one(Paper, paper_id)
     paper.fulltext_at = datetime.now(UTC)
-    paper.fulltext_source = full.source if full else "none"
-    if full is None:
+    if full is None:  # an outage, block or quota looks the same: keep what an earlier ingest stored
+        paper.fulltext_source = paper.fulltext_source or "none"
         await session.flush()
         return "none"
+    paper.fulltext_source = full.source
+    await session.flush()  # the caller's pending rows reach the database before the bulk delete
+    await session.execute(
+        delete(PaperSection).where(PaperSection.paper_id == paper_id).execution_options(synchronize_session=False)
+    )  # cascades to chunks, vectors in the database; new rows get new ids, so stale objects never collide
     if full.license and paper.license is None:
         paper.license, paper.license_source = full.license, full.source
     sections: list[PaperSection] = []

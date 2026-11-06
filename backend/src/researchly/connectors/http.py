@@ -201,6 +201,8 @@ class PoliteClient:
         """Honour a robots.txt Crawl-delay: never faster than the site asks, never slower than we already are."""
         interval, _ = self._limit_specs.get(host, self._limit_specs["default"])
         if seconds > interval:
+            # ponytail: a request still holding the old limit's permit can overlap one on the new limit,
+            # once per host; update HostLimit in place if a publisher ever objects
             old = self._limits.get(host) or self._limits.get("default")
             self._limit_specs[host] = (seconds, 1)
             new = self._limits[host] = HostLimit(seconds, 1, sleep=self._sleep, clock=self._clock)
