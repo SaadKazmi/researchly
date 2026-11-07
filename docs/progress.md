@@ -111,15 +111,16 @@ Newest entries at the bottom. Each session appends: date, plan + task, what chan
 - No features.json flips.
 - Next: plan 2c (GROBID and local sidecars), then step 3 (run manager).
 
-## 2026-11-06 — Step 2c Tier-2 sources and web search (plan docs/superpowers/plans/2026-11-06-step2c-tier2-and-web-search.md)
+## 2026-11-07 — Step 2c Tier-2 sources and web search (plan docs/superpowers/plans/2026-11-06-step2c-tier2-and-web-search.md)
 - Done (feat/step2c-tier2-and-web-search):
   - **SearXNG:** engines cut to brave, mojeek, yahoo and github, JSON only; the CLI passes `RESEARCHLY_SEARXNG_URL` (native and Docker); `RESEARCHLY_WEB_SEARCH=off` turns it off (17b0870).
   - **Sidecar client:** origin-pinned `connectors/sidecar.py`, plus a test that only the http modules import httpx (c57bff6).
   - **Web search:** `web_search` service and `ids.from_url` (da46ab4); a background probe records `capability.web_search` (1d8f916).
   - **Tier-2 connectors:** PwC archive table with migration 0004 (108a125), bioRxiv/medRxiv (d104f7b), OpenReview decisions (0112fa9), DBLP over SPARQL (9919ec3), OpenAIRE (aca8863); routing as a Deep-run extra and as enrichment (280df8c).
   - ADR 0010; ADRs 0004, 0005 and 0008, the spec and AGENTS.md amended.
-- Tests: backend 645 passed, 2 skipped; `-m db` 50 passed (tsvector); CLI: the searxng settings and URL-plumbing tests, including `test_real_settings_enable_exactly_the_four_engines` against the pinned SearXNG; nightly: live checks for the connectors, the PwC snapshot and web search. CI counts are in the run for this PR.
+- Tests: backend 654 passed, 2 skipped; `-m db` 51 passed (tsvector); CLI: the searxng settings and URL-plumbing tests, including `test_real_settings_enable_exactly_the_four_engines` against the pinned SearXNG; nightly: live checks for the connectors, the PwC snapshot and web search. CI counts are in the run for this PR.
 - Rulings: see the plan (pre-flight rulings), among them that the origin-pinned sidecar client is the one exception to "all HTTP via PoliteClient".
+- Final review (opus) fixes: OpenReview picks the best decision among same-title notes (a spotlight could be recorded as rejected); DBLP keys moved from `ids` to `extra` (a preprint and its published version shared an ID, so identity merged them); a failed SearXNG start or a malformed SearXNG URL now only turns web search off; the capability reads `starting` until the probe answers; `ids.doi` rejects control characters; bioRxiv routing skips the CSH journals' `10.1101/` DOIs.
 - Deferred: see the plan's Deferred list (GROBID and `paper_refs` at step 4, keyed web search at step 9, web result caching and calling enrichment at step 3, CORE and ACL Anthology later).
 - No features.json flips.
 - Next: step 3 (run manager).
