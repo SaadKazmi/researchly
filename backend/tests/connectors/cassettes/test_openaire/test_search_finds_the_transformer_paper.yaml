@@ -1,0 +1,60 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - api.openaire.eu
+    method: GET
+    uri: https://api.openaire.eu/graph/v1/researchProducts?pageSize=3&search=attention+is+all+you+need&type=publication
+  response:
+    body:
+      string: "{\"header\":{\"numFound\":3382,\"maxScore\":14.706404,\"queryTime\":594,\"page\":1,\"pageSize\":3},\"results\":[{\"authors\":[{\"fullName\":\"Ren\xE9
+        Vidal\",\"name\":null,\"surname\":null,\"rank\":1,\"pid\":null}],\"openAccessColor\":null,\"publiclyFunded\":false,\"type\":\"publication\",\"language\":{\"code\":\"und\",\"label\":\"Undetermined\"},\"countries\":null,\"subjects\":[{\"subject\":{\"scheme\":\"FOS\",\"value\":\"0202
+        electrical engineering, electronic engineering, information engineering\"},\"provenance\":null},{\"subject\":{\"scheme\":\"FOS\",\"value\":\"02
+        engineering and technology\"},\"provenance\":null}],\"mainTitle\":\"Attention:
+        Self-Expression Is All You Need\",\"subTitle\":null,\"descriptions\":null,\"publicationDate\":\"2025-12-14\",\"publisher\":\"IEEE\",\"embargoEndDate\":null,\"sources\":[\"Crossref\"],\"formats\":null,\"contributors\":null,\"coverages\":null,\"bestAccessRight\":{\"code\":\"c_14cb\",\"label\":\"CLOSED\",\"scheme\":\"http://vocabularies.coar-repositories.org/documentation/access_rights/\"},\"container\":{\"name\":\"2025
+        IEEE 10th International Workshop on Computational Advances in Multi-Sensor
+        Adaptive Processing (CAMSAP)\",\"issnPrinted\":null,\"issnOnline\":null,\"issnLinking\":null,\"ep\":\"356\",\"iss\":null,\"sp\":\"352\",\"vol\":null,\"edition\":null,\"conferencePlace\":null,\"conferenceDate\":null},\"documentationUrls\":null,\"codeRepositoryUrl\":null,\"programmingLanguage\":null,\"contactPeople\":null,\"contactGroups\":null,\"tools\":null,\"size\":null,\"version\":null,\"geoLocations\":null,\"id\":\"doi_dedup___::8e29baa201cb173a2a80f4bad72aa147\",\"originalIds\":[\"10.1109/camsap66162.2025.11423977\",\"50|doiboost____|8e29baa201cb173a2a80f4bad72aa147\",\"50|dblp________::edbc214a5fb7057fbc76ea58e5342018\"],\"pids\":[{\"scheme\":\"doi\",\"value\":\"10.1109/camsap66162.2025.11423977\"}],\"dateOfCollection\":null,\"lastUpdateTimeStamp\":null,\"indicators\":{\"citationImpact\":{\"citationCount\":0.0,\"influence\":2.1323419E-9,\"popularity\":2.1618718E-9,\"impulse\":0.0,\"citationClass\":\"C5\",\"influenceClass\":\"C5\",\"impulseClass\":\"C5\",\"popularityClass\":\"C5\"}},\"instances\":[{\"pids\":[{\"scheme\":\"doi\",\"value\":\"10.1109/camsap66162.2025.11423977\"}],\"license\":\"https://doi.org/10.15223/policy-029\",\"type\":\"Article\",\"urls\":[\"https://doi.org/10.1109/camsap66162.2025.11423977\"],\"publicationDate\":\"2025-12-14\",\"refereed\":\"peerReviewed\"},{\"alternateIdentifiers\":[{\"scheme\":\"doi\",\"value\":\"10.1109/camsap66162.2025.11423977\"}],\"type\":\"Conference
+        object\",\"urls\":[\"https://dblp.org/rec/conf/camsap/Vidal25.html\",\"https://doi.org/10.1109/CAMSAP66162.2025.11423977\"],\"refereed\":\"nonPeerReviewed\"}],\"isGreen\":false,\"isInDiamondJournal\":false},{\"authors\":[{\"fullName\":\"Junehyung
+        Kim\",\"name\":null,\"surname\":null,\"rank\":1,\"pid\":null},{\"fullName\":\"Sungjae
+        Hwang\",\"name\":null,\"surname\":null,\"rank\":2,\"pid\":null}],\"openAccessColor\":null,\"publiclyFunded\":false,\"type\":\"publication\",\"language\":{\"code\":\"und\",\"label\":\"Undetermined\"},\"countries\":null,\"subjects\":[{\"subject\":{\"scheme\":\"FOS\",\"value\":\"0202
+        electrical engineering, electronic engineering, information engineering\"},\"provenance\":null},{\"subject\":{\"scheme\":\"FOS\",\"value\":\"02
+        engineering and technology\"},\"provenance\":null}],\"mainTitle\":\"All You
+        Need is Attention: Lightweight Attention-based Data Augmentation for Text
+        Classification\",\"subTitle\":null,\"descriptions\":null,\"publicationDate\":\"2024-01-01\",\"publisher\":\"Association
+        for Computational Linguistics (ACL)\",\"embargoEndDate\":null,\"sources\":[\"Crossref\"],\"formats\":null,\"contributors\":null,\"coverages\":null,\"bestAccessRight\":null,\"container\":{\"name\":\"Findings
+        of the Association for Computational Linguistics: EMNLP 2024\",\"issnPrinted\":null,\"issnOnline\":null,\"issnLinking\":null,\"ep\":\"12873\",\"iss\":null,\"sp\":\"12866\",\"vol\":null,\"edition\":null,\"conferencePlace\":null,\"conferenceDate\":null},\"documentationUrls\":null,\"codeRepositoryUrl\":null,\"programmingLanguage\":null,\"contactPeople\":null,\"contactGroups\":null,\"tools\":null,\"size\":null,\"version\":null,\"geoLocations\":null,\"id\":\"doi_dedup___::77a73c5fad83e9f24456ba4904cc0650\",\"originalIds\":[\"10.18653/v1/2024.findings-emnlp.752\",\"50|doiboost____|77a73c5fad83e9f24456ba4904cc0650\",\"50|dblp________::ba2bb31c1091036cd08e386f5eb4a447\"],\"pids\":[{\"scheme\":\"doi\",\"value\":\"10.18653/v1/2024.findings-emnlp.752\"}],\"dateOfCollection\":null,\"lastUpdateTimeStamp\":null,\"indicators\":{\"citationImpact\":{\"citationCount\":1.0,\"influence\":2.2143551E-9,\"popularity\":2.4996727E-9,\"impulse\":1.0,\"citationClass\":\"C5\",\"influenceClass\":\"C5\",\"impulseClass\":\"C5\",\"popularityClass\":\"C5\"}},\"instances\":[{\"pids\":[{\"scheme\":\"doi\",\"value\":\"10.18653/v1/2024.findings-emnlp.752\"}],\"type\":\"Article\",\"urls\":[\"https://doi.org/10.18653/v1/2024.findings-emnlp.752\"],\"publicationDate\":\"2024-01-01\",\"refereed\":\"peerReviewed\"},{\"alternateIdentifiers\":[{\"scheme\":\"doi\",\"value\":\"10.18653/v1/2024.findings-emnlp.752\"}],\"type\":\"Conference
+        object\",\"urls\":[\"https://doi.org/10.18653/v1/2024.findings-emnlp.752\",\"https://dblp.org/rec/conf/emnlp/KimH24.html\"],\"refereed\":\"nonPeerReviewed\"}],\"isGreen\":false,\"isInDiamondJournal\":false},{\"authors\":[{\"fullName\":\"Dipayan
+        Dewan\",\"name\":null,\"surname\":null,\"rank\":1,\"pid\":{\"id\":{\"scheme\":\"orcid\",\"value\":\"0000-0002-3314-353x\"},\"provenance\":null}},{\"fullName\":\"Anupam
+        Borthakur\",\"name\":null,\"surname\":null,\"rank\":2,\"pid\":{\"id\":{\"scheme\":\"orcid_pending\",\"value\":\"0000-0002-7732-5650\"},\"provenance\":null}},{\"fullName\":\"Debdoot
+        Sheet\",\"name\":null,\"surname\":null,\"rank\":3,\"pid\":null}],\"openAccessColor\":null,\"publiclyFunded\":false,\"type\":\"publication\",\"language\":{\"code\":\"und\",\"label\":\"Undetermined\"},\"countries\":null,\"subjects\":[{\"subject\":{\"scheme\":\"FOS\",\"value\":\"0202
+        electrical engineering, electronic engineering, information engineering\"},\"provenance\":null},{\"subject\":{\"scheme\":\"FOS\",\"value\":\"02
+        engineering and technology\"},\"provenance\":null}],\"mainTitle\":\"Attention
+        in a Little Network is All You Need to Go Green\",\"subTitle\":null,\"descriptions\":null,\"publicationDate\":\"2023-04-18\",\"publisher\":\"IEEE\",\"embargoEndDate\":null,\"sources\":[\"Crossref\"],\"formats\":null,\"contributors\":null,\"coverages\":null,\"bestAccessRight\":{\"code\":\"c_14cb\",\"label\":\"CLOSED\",\"scheme\":\"http://vocabularies.coar-repositories.org/documentation/access_rights/\"},\"container\":{\"name\":\"2023
+        IEEE 20th International Symposium on Biomedical Imaging (ISBI)\",\"issnPrinted\":null,\"issnOnline\":null,\"issnLinking\":null,\"ep\":\"4\",\"iss\":null,\"sp\":\"1\",\"vol\":null,\"edition\":null,\"conferencePlace\":null,\"conferenceDate\":null},\"documentationUrls\":null,\"codeRepositoryUrl\":null,\"programmingLanguage\":null,\"contactPeople\":null,\"contactGroups\":null,\"tools\":null,\"size\":null,\"version\":null,\"geoLocations\":null,\"id\":\"doi_dedup___::4a989fe1823baeb000f9a19aa855788c\",\"originalIds\":[\"10.1109/isbi53787.2023.10230379\",\"50|doiboost____|4a989fe1823baeb000f9a19aa855788c\",\"50|dblp________::d6f9d0f86c0078aa36f1ab77b85574f5\"],\"pids\":[{\"scheme\":\"doi\",\"value\":\"10.1109/isbi53787.2023.10230379\"}],\"dateOfCollection\":null,\"lastUpdateTimeStamp\":null,\"indicators\":{\"citationImpact\":{\"citationCount\":1.0,\"influence\":2.183112E-9,\"popularity\":2.2319921E-9,\"impulse\":1.0,\"citationClass\":\"C5\",\"influenceClass\":\"C5\",\"impulseClass\":\"C5\",\"popularityClass\":\"C5\"}},\"instances\":[{\"pids\":[{\"scheme\":\"doi\",\"value\":\"10.1109/isbi53787.2023.10230379\"}],\"license\":\"https://doi.org/10.15223/policy-029\",\"type\":\"Article\",\"urls\":[\"https://doi.org/10.1109/isbi53787.2023.10230379\"],\"publicationDate\":\"2023-04-18\",\"refereed\":\"peerReviewed\"},{\"alternateIdentifiers\":[{\"scheme\":\"doi\",\"value\":\"10.1109/isbi53787.2023.10230379\"}],\"type\":\"Conference
+        object\",\"urls\":[\"https://doi.org/10.1109/ISBI53787.2023.10230379\",\"https://dblp.org/rec/conf/isbi/DewanBS23.html\"],\"refereed\":\"nonPeerReviewed\"}],\"isGreen\":false,\"isInDiamondJournal\":false}]}"
+    headers:
+      content-type:
+      - application/json
+      date:
+      - Sat, 07 Nov 2026 15:19:42 GMT
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      - Access-Control-Request-Method
+      - Access-Control-Request-Headers
+      x-ratelimit-limit:
+      - '7199'
+      x-ratelimit-used:
+      - '2'
+    status:
+      code: 200
+      message: OK
+version: 1

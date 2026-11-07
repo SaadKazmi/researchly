@@ -9,6 +9,7 @@ from researchly.connectors.dblp import DblpConnector
 from researchly.connectors.europepmc import EuropePmcConnector
 from researchly.connectors.hf import HfConnector
 from researchly.connectors.http import PoliteClient
+from researchly.connectors.openaire import OpenAireConnector
 from researchly.connectors.openalex import OpenAlexConnector
 from researchly.connectors.opencitations import OpenCitationsConnector
 from researchly.connectors.openreview import OpenReviewConnector
@@ -28,5 +29,6 @@ def build_connectors(client: PoliteClient) -> dict[str, Connector]:
         BiorxivConnector(client),
         OpenReviewConnector(client),
         DblpConnector(client),
+        OpenAireConnector(client),
     ]
     return {c.name: c for c in connectors}

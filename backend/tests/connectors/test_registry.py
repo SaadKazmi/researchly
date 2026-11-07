@@ -13,8 +13,9 @@ NAMES = {
     "biorxiv",
     "openreview",
     "dblp",
+    "openaire",
 }
-SEARCH = {"openalex", "arxiv", "crossref", "europepmc", "pubmed", "hf"}
+SEARCH = {"openalex", "arxiv", "crossref", "europepmc", "pubmed", "hf", "openaire"}
 CITES_IN = {"openalex", "opencitations", "europepmc", "pubmed"}
 CITES_OUT = {"openalex", "crossref", "opencitations", "europepmc", "pubmed"}
 

@@ -18,6 +18,7 @@ GET_PROBES = {
     "hf": ExternalId("arxiv", "1706.03762"),
     "biorxiv": ExternalId("doi", "10.1101/2020.03.22.002386"),
     "dblp": ExternalId("arxiv", "1706.03762"),
+    "openaire": ExternalId("doi", "10.48550/arxiv.1706.03762"),
 }
 
 
