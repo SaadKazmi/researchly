@@ -1,7 +1,18 @@
 from researchly.connectors import build_connectors
 from researchly.connectors.http import PoliteClient
 
-NAMES = {"openalex", "arxiv", "crossref", "opencitations", "datacite", "europepmc", "pubmed", "hf", "biorxiv"}
+NAMES = {
+    "openalex",
+    "arxiv",
+    "crossref",
+    "opencitations",
+    "datacite",
+    "europepmc",
+    "pubmed",
+    "hf",
+    "biorxiv",
+    "openreview",
+}
 SEARCH = {"openalex", "arxiv", "crossref", "europepmc", "pubmed", "hf"}
 CITES_IN = {"openalex", "opencitations", "europepmc", "pubmed"}
 CITES_OUT = {"openalex", "crossref", "opencitations", "europepmc", "pubmed"}

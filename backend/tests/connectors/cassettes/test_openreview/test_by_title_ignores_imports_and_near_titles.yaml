@@ -1,0 +1,193 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - api2.openreview.net
+    method: GET
+    uri: https://api2.openreview.net/notes/search?content=title&limit=5&source=forum&term=Attention+Is+All+You+Need
+  response:
+    body:
+      string: '{"notes":[{"content":{"venue":{"value":"NeurIPS 2025 spotlight"},"keywords":{"value":["Attention
+        mechanisms","Transformer"]},"primary_area":{"value":"deep_learning"},"abstract":{"value":"Scaling
+        language models to handle longer input sequences typically necessitates large
+        key-value (KV) caches, resulting in substantial memory overhead during inference.
+        In this paper, we propose Tensor Product Attention (TPA), a novel attention
+        mechanism that uses tensor decompositions to represent queries, keys, and
+        values compactly, substantially shrinking the KV cache size at inference time.
+        By factorizing these representations into contextual low-rank components and
+        seamlessly integrating with Rotary Position Embedding (RoPE), TPA achieves
+        improved model quality alongside memory efficiency. Based on TPA, we introduce
+        the Tensor ProducT ATTenTion Transformer (T6), a new model architecture for
+        sequence modeling. Through extensive empirical evaluation on language modeling
+        tasks, we demonstrate that T6 surpasses or matches the performance of standard
+        Transformer baselines including Multi-Head Attention (MHA), Multi-Query Attention
+        (MQA), Grouped-Query Attention (GQA), and Multi-Head Latent Attention (MLA)
+        across various metrics, including perplexity and a range of established evaluation
+        benchmarks. Notably, TPA''s memory efficiency and computational efficiency
+        at decoding stage enables processing longer sequences under fixed resource
+        constraints, addressing a critical scalability challenge in modern language
+        models. Project Page: https://github.com/tensorgi/TPA."},"_bibtex":{"value":"@inproceedings{\nzhang2025tensor,\ntitle={Tensor
+        Product Attention Is All You Need},\nauthor={Yifan Zhang and Yifeng Liu and
+        Huizhuo Yuan and Zhen Qin and Yang Yuan and Quanquan Gu and Andrew C Yao},\nbooktitle={The
+        Thirty-ninth Annual Conference on Neural Information Processing Systems},\nyear={2025},\nurl={https://openreview.net/forum?id=ECTxVRFhUa}\n}"},"title":{"value":"Tensor
+        Product Attention Is All You Need"},"pdf":{"value":"/pdf/b1bc3409d0cb3a3bb5220c7615cd88a9c13f7a4e.pdf"},"venueid":{"value":"NeurIPS.cc/2025/Conference"},"paperhash":{"value":"zhang|tensor_product_attention_is_all_you_need"},"authorids":{"value":["~Yifan_Zhang16","~Yifeng_Liu3","~Huizhuo_Yuan1","~Zhen_Qin6","~Yang_Yuan4","~Quanquan_Gu1","~Andrew_C_Yao1"]},"authors":{"value":["Yifan
+        Zhang","Yifeng Liu","Huizhuo Yuan","Zhen Qin","Yang Yuan","Quanquan Gu","Andrew
+        C Yao"]}},"tmdate":1783627401484,"pdate":1758216830915,"tcdate":1746707770172,"writers":["NeurIPS.cc/2025/Conference","NeurIPS.cc/2025/Conference/Submission10518/Authors"],"signatures":["NeurIPS.cc/2025/Conference/Submission10518/Authors"],"forum":"ECTxVRFhUa","license":"CC
+        BY-SA 4.0","number":10518,"cdate":1746707770172,"readers":["everyone"],"invitations":["NeurIPS.cc/2025/Conference/-/Submission","NeurIPS.cc/2025/Conference/-/Post_Submission","NeurIPS.cc/2025/Conference/Submission10518/-/Full_Submission","NeurIPS.cc/2025/Conference/-/Edit","NeurIPS.cc/2025/Conference/Submission10518/-/Camera_Ready_Revision"],"mdate":1783627401484,"odate":1761704847850,"domain":"NeurIPS.cc/2025/Conference","id":"ECTxVRFhUa","version":2},{"content":{"venue":{"value":"CoRR
+        2025"},"pdf":{"value":"http://arxiv.org/pdf/2501.06425v3"},"venueid":{"value":"dblp.org/journals/CORR/2025"},"paperhash":{"value":"zhang|tensor_product_attention_is_all_you_need"},"authorids":{"value":["~Yifan_Zhang6","~Yifeng_Liu3","https://dblp.org/search/pid/api?q=author:Huizhuo_Yuan:","https://dblp.org/search/pid/api?q=author:Zhen_Qin:","~Yang_Yuan2","https://dblp.org/search/pid/api?q=author:Quanquan_Gu:","~Andrew_Chi-Chih_Yao1"]},"html":{"value":"https://doi.org/10.48550/arXiv.2501.06425"},"_bibtex":{"value":"@article{DBLP:journals/corr/abs-2501-06425,\n  publtype={informal},\n  author={Yifan
+        Zhang and Yifeng Liu and Huizhuo Yuan and Zhen Qin and Yang Yuan and Quanquan
+        Gu and Andrew Chi-Chih Yao},\n  title={Tensor Product Attention Is All You
+        Need},\n  year={2025},\n  month={January},\n  cdate={1735689600000},\n  journal={CoRR},\n  volume={abs/2501.06425},\n  url={https://doi.org/10.48550/arXiv.2501.06425}\n}\n"},"abstract":{"value":"Scaling
+        language models to handle longer input sequences typically necessitates large
+        key-value (KV) caches, resulting in substantial memory overhead during inference.
+        In this paper, we propose Tensor Product Attention (TPA), a novel attention
+        mechanism that uses tensor decompositions to represent queries, keys, and
+        values compactly, significantly shrinking KV cache size at inference time.
+        By factorizing these representations into contextual low-rank components (contextual
+        factorization) and seamlessly integrating with RoPE, TPA achieves improved
+        model quality alongside memory efficiency. Based on TPA, we introduce the
+        Tensor ProducT ATTenTion Transformer (T6), a new model architecture for sequence
+        modeling. Through extensive empirical evaluation of language modeling tasks,
+        we demonstrate that T6 exceeds the performance of standard Transformer baselines
+        including MHA, MQA, GQA, and MLA across various metrics, including perplexity
+        and a range of renowned evaluation benchmarks. Notably, TPA''s memory efficiency
+        enables the processing of significantly longer sequences under fixed resource
+        constraints, addressing a critical scalability challenge in modern language
+        models. The code is available at https://github.com/tensorgi/T6."},"title":{"value":"Tensor
+        Product Attention Is All You Need"},"authors":{"value":["Yifan Zhang","Yifeng
+        Liu","Huizhuo Yuan","Zhen Qin","Yang Yuan","Quanquan Gu","Andrew Chi-Chih
+        Yao"]}},"tmdate":1767928105748,"pdate":1735689600000,"tcdate":1747094519597,"writers":["~"],"signatures":["~Yifeng_Liu3"],"forum":"o2pnEi65bX","license":"CC
+        BY-SA 4.0","number":428977,"cdate":1735689600000,"readers":["everyone"],"invitations":["DBLP.org/-/Record","DBLP.org/-/Edit","DBLP.org/-/Author_Coreference"],"mdate":1767928105748,"domain":"DBLP.org","id":"o2pnEi65bX","version":2},{"content":{"venue":{"value":"ES-FoMo
+        III"},"pdf":{"value":"/pdf/d18b1f8b93becf53de6310d80af7b0f19302c2d2.pdf"},"keywords":{"value":["attention
+        mechanisms"]},"venueid":{"value":"ICML.cc/2025/Workshop/ES-FoMo-III"},"paperhash":{"value":"zhang|tensor_product_attention_is_all_you_need"},"authorids":{"value":["~Yifan_Zhang16","~Yifeng_Liu3","~Huizhuo_Yuan1","~Zhen_Qin6","~Yang_Yuan4","~Quanquan_Gu1","~Andrew_C_Yao1"]},"abstract":{"value":"Scaling
+        language models to handle longer input sequences typically necessitates large
+        key-value (KV) caches, resulting in substantial memory overhead during inference.
+        In this paper, we propose Tensor Product Attention (TPA), a novel attention
+        mechanism that uses tensor decompositions to represent queries, keys, and
+        values compactly, substantially shrinking the KV cache size at inference time.
+        By factorizing these representations into contextual low-rank components and
+        seamlessly integrating with Rotary Position Embedding (RoPE), TPA achieves
+        improved model quality alongside memory efficiency. Based on TPA, we introduce
+        the Tensor ProducT ATTenTion Transformer (T6), a new model architecture for
+        sequence modeling. Through extensive empirical evaluation on language modeling
+        tasks, we demonstrate that T6 surpasses or matches the performance of standard
+        Transformer baselines, including Multi-Head Attention (MHA), Multi-Query Attention
+        (MQA), Grouped-Query Attention (GQA), and Multi-Head Latent Attention (MLA)
+        across various metrics, including perplexity and a range of established evaluation
+        benchmarks. Notably, TPA''s memory efficiency and computational efficiency
+        at the decoding stage enable processing longer sequences under fixed resource
+        constraints, addressing a critical scalability challenge in modern language
+        models. The code is available at https://github.com/tensorgi/TPA."},"_bibtex":{"value":"@inproceedings{\nzhang2025tensor,\ntitle={Tensor
+        Product Attention Is All You Need},\nauthor={Yifan Zhang and Yifeng Liu and
+        Huizhuo Yuan and Zhen Qin and Yang Yuan and Quanquan Gu and Andrew C Yao},\nbooktitle={ES-FoMo
+        III: 3rd Workshop on Efficient Systems for Foundation Models},\nyear={2025},\nurl={https://openreview.net/forum?id=MEUCoUuA5S}\n}"},"title":{"value":"Tensor
+        Product Attention Is All You Need"},"authors":{"value":["Yifan Zhang","Yifeng
+        Liu","Huizhuo Yuan","Zhen Qin","Yang Yuan","Quanquan Gu","Andrew C Yao"]}},"tmdate":1752186345476,"pdate":1749663438982,"tcdate":1747556671245,"writers":["ICML.cc/2025/Workshop/ES-FoMo-III","ICML.cc/2025/Workshop/ES-FoMo-III/Submission17/Authors"],"signatures":["ICML.cc/2025/Workshop/ES-FoMo-III/Submission17/Authors"],"forum":"MEUCoUuA5S","license":"CC
+        BY 4.0","number":17,"cdate":1747556671245,"readers":["everyone"],"invitations":["ICML.cc/2025/Workshop/ES-FoMo-III/-/Submission","ICML.cc/2025/Workshop/ES-FoMo-III/-/Post_Submission","ICML.cc/2025/Workshop/ES-FoMo-III/-/Edit","ICML.cc/2025/Workshop/ES-FoMo-III/Submission17/-/Camera_Ready"],"mdate":1752186345476,"odate":1752186088393,"domain":"ICML.cc/2025/Workshop/ES-FoMo-III","id":"MEUCoUuA5S","version":2},{"content":{"venue":{"value":"Submitted
+        to ICML 2025"},"keywords":{"value":["attention mechanisms"]},"primary_area":{"value":"theory->deep_learning"},"abstract":{"value":"Scaling
+        language models to handle longer input sequences typically necessitates large
+        key-value (KV) caches, resulting in substantial memory overhead during inference.
+        In this paper, we propose **T**ensor **P**roduct **A**ttention (TPA), a novel
+        attention mechanism that uses tensor decompositions to represent queries,
+        keys, and values compactly, significantly shrinking KV cache size at inference
+        time. By factorizing these representations into contextual low-rank components
+        (contextual factorization) and seamlessly integrating with RoPE, TPA achieves
+        improved model quality alongside memory efficiency. Based on TPA, we introduce
+        the **T**ensor Produc**T** A**TT**en**T**ion **T**ransformer (T6), a new model
+        architecture for sequence modeling. Through extensive empirical evaluation
+        of language modeling tasks, we demonstrate that T6 exceeds the performance
+        of standard Transformer baselines including MHA, MQA, GQA, and MLA across
+        various metrics, including perplexity and a range of renowned evaluation benchmarks.
+        Notably, TPAs memory efficiency enables the processing of significantly longer
+        sequences under fixed resource constraints, addressing a critical scalability
+        challenge in modern language models."},"_bibtex":{"value":"@misc{\nanonymous2025tensor,\ntitle={Tensor
+        Product Attention Is All You Need},\nauthor={Anonymous},\nyear={2025},\nurl={https://openreview.net/forum?id=IEDkPrCLtE}\n}"},"title":{"value":"Tensor
+        Product Attention Is All You Need"},"pdf":{"value":"/pdf/984d98256b887159e0f64abf7481bf14336910fc.pdf"},"venueid":{"value":"ICML.cc/2025/Conference/Rejected_Submission"},"paperhash":{"value":"zhang|tensor_product_attention_is_all_you_need"},"authorids":{"value":["~Yifan_Zhang16","~Yifeng_Liu3","~Huizhuo_Yuan1","~Zhen_Qin6","~Yang_Yuan4","~Quanquan_Gu1","~Andrew_C_Yao1"]},"application-driven_machine_learning":{"value":"This
+        submission is on Application-Driven Machine Learning."},"authors":{"value":["Yifan
+        Zhang","Yifeng Liu","Huizhuo Yuan","Zhen Qin","Yang Yuan","Quanquan Gu","Andrew
+        C Yao"]}},"tmdate":1750234792998,"tcdate":1737153306438,"writers":["ICML.cc/2025/Conference","ICML.cc/2025/Conference/Submission2679/Authors"],"signatures":["ICML.cc/2025/Conference/Submission2679/Authors"],"forum":"IEDkPrCLtE","license":"CC
+        BY 4.0","number":2679,"cdate":1737153306438,"readers":["everyone"],"invitations":["ICML.cc/2025/Conference/-/Submission","ICML.cc/2025/Conference/-/Post_Submission","ICML.cc/2025/Conference/Submission2679/-/Full_Submission","ICML.cc/2025/Conference/-/Edit"],"mdate":1750234792998,"domain":"ICML.cc/2025/Conference","id":"IEDkPrCLtE","version":2},{"content":{"venue":{"value":"ICLR
+        2026"},"pdf":{"value":"https://proceedings.iclr.cc/paper_files/paper/2026/file/2163fff81515bd2d3dfca8577304456f-Paper-Conference.pdf"},"venueid":{"value":"OpenReview.net/Public_Article"},"paperhash":{"value":"zade|attention_smoothing_is_all_you_need_for_unlearning"},"html":{"value":"https://proceedings.iclr.cc/paper_files/paper/2026/hash/2163fff81515bd2d3dfca8577304456f-Abstract-Conference.html"},"_bibtex":{"value":"@inproceedings{DBLP:conf/iclr/ZadeZLZ26,\n  author={Saleh
+        Zare Zade and Xiangyu Zhou and Sijia Liu and Dongxiao Zhu},\n  title={Attention
+        Smoothing Is All You Need For Unlearning},\n  year={2026},\n  cdate={1767225600000},\n  url={https://proceedings.iclr.cc/paper_files/paper/2026/hash/2163fff81515bd2d3dfca8577304456f-Abstract-Conference.html},\n  booktitle={ICLR},\n  crossref={conf/iclr/2026}\n}\n"},"title":{"value":"Attention
+        Smoothing Is All You Need For Unlearning"},"authors":{"value":[{"fullname":"Saleh
+        Zare Zade","username":""},{"fullname":"Xiangyu Zhou","username":""},{"fullname":"Sijia
+        Liu","username":""},{"fullname":"Dongxiao Zhu","username":"~Dongxiao_Zhu1"}]}},"tmdate":1791857567406,"pdate":1798675200000,"externalIds":["dblp:conf/iclr/ZadeZLZ26"],"tcdate":1791857564852,"writers":["~","OpenReview.net/Public_Article/DBLP.org","OpenReview.net/Support"],"signatures":["~Dongxiao_Zhu1"],"forum":"0rPieLfVIc","license":"CC
+        BY-SA 4.0","number":174640,"cdate":1767225600000,"readers":["everyone"],"invitations":["OpenReview.net/Public_Article/DBLP.org/-/Record","OpenReview.net/Public_Article/-/Edit"],"mdate":1791857567406,"domain":"OpenReview.net/Public_Article","id":"0rPieLfVIc","version":2}],"count":10000}'
+    headers:
+      alt-svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      cache-control:
+      - no-store, no-cache, must-revalidate, proxy-revalidate
+      content-length:
+      - '13514'
+      content-security-policy:
+      - 'default-src ''self''; worker-src ''self'' blob:; style-src ''self'' ''unsafe-inline''
+        https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        script-src ''self'' ''unsafe-inline'' ''unsafe-eval'' https://unpkg.com https://challenges.cloudflare.com/turnstile/v0/api.js
+        https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.googletagmanager.com
+        https://*.google-analytics.com https://www.paypalobjects.com/ https://www.paypal.com/
+        https://js.stripe.com/v3/buy-button.js; font-src ''self'' https://cdn.jsdelivr.net
+        https://fonts.gstatic.com; connect-src ''self'' https://*.google-analytics.com
+        https://api.openreview.net https://api2.openreview.net wss://api2.openreview.net
+        https://arxiv.org https://export.arxiv.org https://dblp.org https://dblp.uni-trier.de
+        https://pub.orcid.org; img-src ''self'' https://api2.openreview.net https://t.paypal.com/
+        data: https://*.google-analytics.com; frame-src ''self'' https://api2.openreview.net
+        https://challenges.cloudflare.com/ https://api.draftable.com https://js.stripe.com/;
+        frame-ancestors ''self'' https://openreview.net; base-uri ''self''; form-action
+        ''self'' http://127.0.0.1:* https://ecopyright.ieee.org/ECTT/IntroPage.jsp'
+      content-type:
+      - application/json; charset=utf-8
+      date:
+      - Sat, 07 Nov 2026 15:08:46 GMT
+      etag:
+      - W/"34ca-bVDcB53SES5YP7Rxtc4eWvnBI6w"
+      expires:
+      - '0'
+      pragma:
+      - no-cache
+      ratelimit-limit:
+      - '20'
+      ratelimit-policy:
+      - 20;w=60
+      ratelimit-remaining:
+      - '18'
+      ratelimit-reset:
+      - '60'
+      server:
+      - nginx
+      strict-transport-security:
+      - max-age=31536000; includeSubdomains; preload
+      surrogate-control:
+      - no-store
+      transfer-encoding:
+      - chunked
+      via:
+      - 1.1 google, 1.1 google
+      x-content-type-options:
+      - nosniff
+      x-dns-prefetch-control:
+      - 'off'
+      x-download-options:
+      - noopen
+      x-frame-options:
+      - SAMEORIGIN
+      x-ratelimit-limit:
+      - '20'
+      x-ratelimit-remaining:
+      - '18'
+      x-ratelimit-reset:
+      - '1794064186'
+      x-xss-protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+version: 1
