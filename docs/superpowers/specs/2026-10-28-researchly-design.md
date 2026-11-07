@@ -80,7 +80,7 @@ Each feature has an ID. `docs/features.json` mirrors these IDs, and each carries
 - **F1.8** Answers carry inline `[n]` citation chips. Hovering shows the quote; clicking opens the reader at the passage.
 
 ### F2 Discovery
-- **F2.1** Multi-source search across the keyless §8 connectors plus web search through **SearXNG** (local, free, the default in every mode where it can run). Optional extras: Tavily, Exa or Brave with the user's own key. `ddgs` is an explicit opt-in only, because it scrapes and carries ToS risk.
+- **F2.1** Multi-source search across the keyless §8 connectors plus web search through **SearXNG** (local, free, the default in every mode where it can run; general web from Brave, Mojeek and Yahoo, code from GitHub; scholarly engines off, ADR 0010). Those engines scrape result pages, as `ddgs` does; SearXNG stays the default because it runs locally with no vendored scraper, suspends an engine on a CAPTCHA, and turns off with `RESEARCHLY_WEB_SEARCH=off`. Optional extras: Tavily, Exa or Brave with the user's own key. `ddgs` is an explicit opt-in only.
 - **F2.2** Identity resolution and dedupe across sources (DOI, arXiv ID, OpenAlex ID, S2 ID, then a fuzzy title+year+first-author match).
 - **F2.3** Explainable ranking (§10): a per-paper score breakdown; presets **Balanced**, **Seminal** and **Recent**.
 - **F2.4** Coverage indicator: an estimate of search completeness from the discovery-rate curve, with a "search more" action.
@@ -88,7 +88,7 @@ Each feature has an ID. `docs/features.json` mirrors these IDs, and each carries
 
 ### F3 Library
 - **F3.1** Collections, tags, notes and highlights per project.
-- **F3.2** Full-text acquisition is legal open access only (OpenAlex `best_oa_location`, arXiv, Europe PMC, CORE). The license is stored per paper.
+- **F3.2** Full-text acquisition is legal open access only (OpenAlex `best_oa_location`, arXiv, Europe PMC; CORE with the optional key). The license is stored per paper.
 - **F3.3** Parsing pipeline (§9.1) into structured sections, figures, tables, equations and references.
 - **F3.4** PDF reader (pdf.js) with passage highlighting that jumps from any citation.
 - **F3.5** Import BibTeX, RIS and CSL-JSON; Zotero read through its local API, write through its web API. Export BibTeX and CSL-JSON.
@@ -213,15 +213,15 @@ When Docker Desktop is the engine, a one-time informational note mentions its co
 | Postgres | `ghcr.io/saadkazmi/researchly-postgres` (from `pgvector/pgvector:pg18` + pg_trgm + pg_textsearch) | **`pg0-embedded`** wheel: PG 18 + pgvector 0.8.5, MIT, wheels for win-x64, macOS arm64 (14+) / x64 (15+), Linux x64/arm64 (glibc ≥2.35). Fallback: conda-forge `postgresql` 18 + `pgvector` via pixi (old macOS/Linux, or if pg0 lacks `pg_trgm`). Decided by the step-1 spike |
 | Keyword search | pg_textsearch BM25 | Built-in `tsvector` + `ts_rank_cd` |
 | App + workers | Container | uv-managed Python 3.12 (python-build-standalone) |
-| Web search | **SearXNG** container (always on) | **SearXNG** native process, installed by `researchly start` from a pinned upstream commit (sha256-verified, hash-locked deps) into an app-private venv and served by granian on loopback; Windows adds a `pwd` shim (ADR 0004). If the install or start fails, web search is off and `doctor` says why |
-| PDF parsing | Docling + **GROBID** container (references, header) | Docling (`docling-slim`: pypdfium2, Heron layout and RapidOCR on onnxruntime; no torch/CUDA; tables as flattened text, ADR 0005). **GROBID** native via `jdk4py` (JDK 21+ wheel) on Linux/macOS. Windows native: LLM reference-string parsing + Crossref/OpenAlex matching |
+| Web search | **SearXNG** container (started without blocking the app; off with `RESEARCHLY_WEB_SEARCH=off`) | **SearXNG** native process, installed by `researchly start` from a pinned upstream commit (sha256-verified, hash-locked deps) into an app-private venv and served by granian on loopback; Windows adds a `pwd` shim (ADR 0004). If the install or start fails, web search is off and `doctor` says why |
+| PDF parsing | Docling + **GROBID** container (opt-in profile from step 4: `grobid/grobid:0.9.1-crf`, internal network with no egress, `consolidate*=0`; header and references) | Docling (`docling-slim`: pypdfium2, Heron layout and RapidOCR on onnxruntime; no torch/CUDA; tables as flattened text, ADR 0005). No native GROBID (no Windows build, about 1 GB disk and 4 GB RAM): references come IDs-first from OpenAlex, Crossref and OpenCitations, then LLM reference-string parsing + Crossref/OpenAlex matching |
 | Code cells | Pyodide in Deno for light cells; full kernel in a locked-down container (§19.4) | Pyodide in Deno (default); full CPython kernel opt-in inside the OS sandbox (§19.4) |
 | Exports | In the container | `pypandoc_binary`, `typst` wheel, `nodejs-wheel` + `mystmd` (app-private npm prefix) |
 | Headless browser | In the container | `playwright install chromium` (user cache). On Linux with missing system libs, `doctor` prints the one command to fix it, and fetching degrades to httpx + trafilatura |
 | Models | Shared model cache mounted into containers | Embeddings, reranker, grounding checker and Kokoro TTS downloaded via `huggingface_hub` on first use (resumable, no account, Apache/MIT models only) |
 | Frontend | Static build served by the app | Same |
 
-**Capability detection:** at startup the app records a `capabilities` row (`bm25_engine`, `sandbox_level`, `web_search`, `grobid`, `browser`, `gpu`, `ollama`). Services read it. The UI surfaces any degraded capabilities in Settings → System, and `researchly doctor` prints them along with fixes.
+**Capability detection:** the app records `capability` rows (at startup, or from a background probe for sidecars that start after it: `web_search` polls SearXNG's `/healthz` for up to 60 s) (`bm25_engine`, `sandbox_level`, `web_search`, `grobid`, `browser`, `gpu`, `ollama`). Services read it. The UI surfaces any degraded capabilities in Settings → System, and `researchly doctor` prints them along with fixes.
 
 **Known platform gaps** (documented; `doctor` explains them):
 - Windows on ARM has no pg0/jdk4py wheels, so it runs x64 emulation or the conda-forge fallback.
@@ -232,7 +232,7 @@ When Docker Desktop is the engine, a one-time informational note mentions its co
 - Scheduled and background jobs (alerts, ingestion batches, embedding backfills, exports) run on **procrastinate** (Postgres-backed).
 - On startup, any run in state `running` is resumed from its LangGraph checkpoint (`thread_id`).
 - Live progress fan-out uses Postgres `LISTEN/NOTIFY`.
-- **Native supervision:** the `researchly` CLI is the supervisor. It spawns Postgres, SearXNG, the optional GROBID and the app as child processes: inside a Job Object with KILL_ON_JOB_CLOSE on Windows, and a process group with SIGTERM then SIGKILL on POSIX.
+- **Native supervision:** the `researchly` CLI is the supervisor. It spawns Postgres, SearXNG and the app as child processes: inside a Job Object with KILL_ON_JOB_CLOSE on Windows, and a process group with SIGTERM then SIGKILL on POSIX.
   - Ports are free `127.0.0.1` ports recorded in `state.json`.
   - Health checks use `/health` and `pg_isready`, with restart-with-backoff.
   - Logs are rotated in the platform data directory (`platformdirs`).
@@ -417,13 +417,12 @@ Every default connector works with **no key, no account and no email**. Limits b
 | 1 | **Europe PMC** | Biomedical search, citations/references, OA full-text XML | No limit headers; capped at 5 rps | Per-article licenses |
 | 1 | **PubMed E-utilities** | Biomedical search | 3 rps (`X-Ratelimit-Limit: 3`) | Public |
 | 1 | **Hugging Face Papers** | ML search, upvotes, linked repos/models/datasets | API 500 / 5 min; search 50 / 5 min | Public |
-| 1 | **PwC archive** (HF `pwc-archive`, frozen July 2025) | Local paper→code table, downloaded at runtime (not bundled) | One download | Verify license (likely CC-BY-SA); do not redistribute |
-| 2 | OpenReview API v2 | ML venue decisions and reviews (venue prior) | 20 / min | Public |
-| 2 | bioRxiv/medRxiv | Preprints ↔ published DOIs | Polite 1 req/s | Per-paper licenses |
-| 2 | CORE v3 | Repository OA full-text fallback | ~10 / min | Per-item |
-| 2 | OpenAIRE Graph v1 | Secondary search, EU repositories, OA links | Budget **60 / hour** (docs; live header disagreed) | CC-BY: attribution shown |
-| 2 | DBLP | CS venues and bibliography | Polite; honor `Retry-After` (live check pending) | CC0 |
-| 2 | ACL Anthology | NLP metadata (local package data) | None (local) | Open |
+| 1 | **PwC archive** (HF `pwc-archive/files`, frozen July 2025) | Local paper→code table (`paper_code`), downloaded at runtime (not bundled): `jul-28-links-between-papers-and-code.json.gz` at commit `1af3a54`, sha256-checked | One 26 MB download | CC BY-SA 4.0 (verified): attribution shown; never exported or redistributed |
+| 2 | OpenReview API v2 | ML venue decisions only (oral/spotlight/poster/accepted/not accepted), by exact title through `/notes/search`, for API-v2 venues. Reviews and `/notes` lookups answer a 403 challenge | 20 / min (search) | Per-note CC BY / CC BY-SA |
+| 2 | bioRxiv/medRxiv | Get-only by `10.1101` DOI: preprint metadata and the published DOI (no search API; errors arrive as HTTP 200) | Polite 1 req/s | Per-paper licenses |
+| 2 | OpenAIRE Graph v1 | Secondary search in Deep runs, EU repositories, OA links. Merged (dedup) records take every bibliographic field from the instance holding the paper's ID | Budget **60 / hour** (docs; the header claims 7,199) | CC-BY: attribution shown |
+| 2 | DBLP (SPARQL) | CS venue and year for a known DOI through `sparql.dblp.org` (QLever); not a search source | No published limit; 1 per 2 s | CC0 |
+| 2 | ACL Anthology | Deferred: daily `anthology+abstracts.bib.gz` (47 MB) into a local table, not the Python package | One daily download | Papers CC BY 4.0 (2016+) / CC BY-NC-SA 3.0 (earlier); metadata licence unstated |
 | Opt | arXiv OAI-PMH local harvest | Optional offline index of chosen arXiv categories (SQLite/Postgres, a few GB) | Polite incremental harvest | CC0 metadata |
 | Opt | OpenCitations Meta dump (8.4 GB) | Optional offline DOI→metadata store | One download | CC0 |
 
@@ -434,8 +433,8 @@ Every default connector works with **no key, no account and no email**. Limits b
 | OpenAlex | 10× budget ($1/day) |
 | Semantic Scholar | Unlocks a TLDR / influential-citations / recommendations connector at 1 rps. Keyless S2 returned 429 on 7 of 8 calls in live checks, so it is **never** a keyless default |
 | NCBI | 10 rps |
-| OpenAIRE | 7,200 / hour |
-| CORE | Higher limits |
+| OpenAIRE | 7,200 / hour (a personal access token that expires hourly and is renewed with a refresh token) |
+| CORE | Full-text fallback (keyless CORE gives no full text and 100 tokens a day): 1,000–5,000 tokens a day |
 
 OpenAlex offers automatic key provisioning by email. It is used **only** if the user explicitly consents and enters their own email.
 
@@ -448,6 +447,9 @@ OpenAlex offers automatic key provisioning by email. It is used **only** if the 
 - Lens.org and BASE: key or IP registration required.
 - SSRN, Altmetric, Scite, NASA ADS: key-gated.
 - Kaggle arXiv dump: needs an account.
+- DBLP search API: behind an Anubis bot challenge (SPARQL is used instead).
+- OpenReview `/notes` (reviews, forums): 403 challenge for anonymous callers.
+- bioRxiv/medRxiv web pages and JATS (www.biorxiv.org): Cloudflare challenge.
 
 ### 8.1.1 Routing (keyless)
 - **Search fan-out**, then local dedupe and rerank:
@@ -456,12 +458,12 @@ OpenAlex offers automatic key provisioning by email. It is used **only** if the 
   - OpenAlex `search.title_and_abstract` (plain `search` now matches full text and is noisier at the same cost), capped at **≤50/day per install**, with the rest of the budget kept for filters;
   - Europe PMC / PubMed when the query classifier says biomedical;
   - HF Papers when it says ML;
-  - OpenAIRE and DBLP as low-rate extras in Deep runs.
+  - OpenAIRE as a low-rate extra in Deep runs.
 - **Identity:** arXiv ID → DataCite DOI, derived locally (`10.48550/arxiv.<id>` without the version; no DataCite call). Batch DOI resolution goes through one OpenAlex `doi:` filter call (1 credit per 100 DOIs), or through singletons ($0) when the budget is low.
-- **Enrichment:** OpenAlex singleton ($0) first, then Crossref singleton (license, funders, retraction relations).
+- **Enrichment:** OpenAlex singleton ($0) first, then Crossref singleton (license, funders, retraction relations); then bioRxiv for `10.1101` DOIs, DBLP for ML/CS papers without a known venue, OpenReview decisions by title for ML papers, and the local PwC table for code links.
 - **References (backward):** the union of OpenAlex `referenced_works` ($0), Crossref references and OpenCitations `/references`.
 - **Citations (forward):** OpenCitations `/citations` first, after a `citation-count` check (lists over 5,000 rows raise `TooManyResults`, and the caller falls back to OpenAlex). OpenAlex `cites:` (1 credit per 200 citers) only for top-k seed papers, capped at 1,000 citers each. Europe PMC for biomedical papers.
-- **Full text:** OpenAlex `best_oa_location.pdf_url`, then arXiv HTML/LaTeX/PDF, then Europe PMC OA XML, then CORE. Always fetched directly from the host, never redistributed.
+- **Full text:** OpenAlex `best_oa_location.pdf_url`, then arXiv HTML/LaTeX/PDF, then Europe PMC OA XML. OpenAIRE OA instance URLs and CORE (optional key) are later tiers. Always fetched directly from the host, never redistributed.
 - **Budget guard:** read `X-RateLimit-Remaining-USD` on every OpenAlex response. At ≤20% remaining, stop paid operations (search, list) and fall back to free singletons and the other sources. The UI shows "OpenAlex daily budget low", and the budget resets at midnight UTC.
 - **Shared IP caveat:** the keyless OpenAlex budget is per IP, so university or corporate NAT users may run out early. Researchly degrades gracefully and suggests the optional free key.
 
@@ -485,14 +487,15 @@ class Connector(Protocol):
     | OpenCitations | 2 rps | 1 |
     | arXiv | 1 per 3 s | 1 |
     | arxiv.org (HTML/PDF) | 1 per 15 s (robots Crawl-delay) | 1 |
-    | OpenReview | 1 per 3 s | — |
-    | OpenAIRE | 1 per min | — |
+    | OpenReview | 1 per 3.5 s | 1 |
+    | OpenAIRE | 1 per min | 1 |
     | PubMed | 2 rps | 1 |
     | Europe PMC | 5 rps | 2 |
     | DataCite | 1 rps | 1 |
     | HF API | 1 rps | 1 |
     | HF search | 8 per min | 1 |
-    | CORE | 8 per min | — |
+    | bioRxiv | 1 rps | 1 |
+    | DBLP SPARQL | 1 per 2 s | 1 |
 
   - honors `Retry-After` and 429/500/502/503/504 (GET only, at most 4 attempts, full jitter); a `Retry-After` over 120 s raises `QuotaExhausted` without waiting;
   - exponential backoff with jitter, plus a **circuit breaker per source**;
@@ -506,7 +509,7 @@ class Connector(Protocol):
 ### 8.3 Identity resolution
 1. Exact match on a normalized ID via the `paper_ids` table: DOI (lowercased, including the arXiv DataCite DOI `10.48550/arxiv.<id>`), arXiv ID (without version), OpenAlex ID (a paper may hold several), PMID, PMCID, or S2 ID (when the optional key is used).
 2. Otherwise a fuzzy match on normalized title (trigram ≥ 0.92) + year ± 1 + first-author surname. Titles are accent-folded and casefolded with letters of every script kept; a title with fewer than two letter-bearing words never fuzzy-matches.
-3. Merging keeps provenance per field (`field_sources` JSONB). A field is overwritten only by a source of equal or higher priority (OpenAlex, Crossref, PubMed, Europe PMC, DataCite, arXiv, HF, OpenCitations); null never overwrites.
+3. Merging keeps provenance per field (`field_sources` JSONB). A field is overwritten only by a source of equal or higher priority (OpenAlex, Crossref, PubMed, Europe PMC, DataCite, arXiv, HF, OpenCitations, then DBLP, OpenReview, bioRxiv, OpenAIRE); null never overwrites.
 
 ### 8.4 Licensing
 - Each paper stores `license` and `license_source`.
@@ -514,6 +517,7 @@ class Connector(Protocol):
 - Exports (F6.5) respect licenses.
 - The UI always links back to the source landing page.
 - A data-attribution line appears in the footer of results and graph views ("Data: OpenAlex (CC0), OpenCitations (CC0), Crossref, arXiv, Europe PMC, OpenAIRE (CC-BY) …"), listing only the sources used. S2 attribution is added when the optional S2 key is used.
+- Code links from the PwC archive show "Papers with Code archive (CC BY-SA 4.0)"; the table is never exported, bundled or shared.
 
 ---
 
@@ -521,8 +525,8 @@ class Connector(Protocol):
 
 ### 9.1 Full-text pipeline
 1. **Tiers, in order:** **arXiv HTML** (`arxiv.org/html/<id>`); then **Europe PMC JATS** for open-access papers with a PMCID; then the PDF (step 2). LaTeX source is dropped (`Disallow: /e-print` in arxiv.org's robots.txt; ADR 0009).
-2. **PDF**: **Docling** in-process, torch-free (pypdfium2 text, Heron ONNX layout, RapidOCR ONNX for image-only pages) for body text and reading order. Docling's table and formula models are torch-only, so tables are flattened text unless GROBID's TEI tables are available (ADR 0005; TableFormer-in-ONNX is re-evaluated at step 2/4). **GROBID** adds the header and references whenever it can run (Docker mode, or native Linux/macOS). **MinerU / PaddleOCR-VL** is an optional GPU mode.
-3. **References**: preferred from OpenAlex `referenced_works`, Crossref and OpenCitations. Parsed references (GROBID, or the LLM parsing reference strings followed by Crossref/OpenAlex matching) are a fallback.
+2. **PDF**: **Docling** in-process, torch-free (pypdfium2 text, Heron ONNX layout, RapidOCR ONNX for image-only pages) for body text and reading order. Docling's table and formula models are torch-only, so tables are flattened text (ADR 0005; GROBID's TEI tables are not relied on; TableFormer-in-ONNX is re-evaluated at step 4). **GROBID** adds the header and references in Docker mode when its opt-in profile runs (step 4). **MinerU / PaddleOCR-VL** is an optional GPU mode.
+3. **References**: preferred from OpenAlex `referenced_works`, Crossref and OpenCitations. Parsed references (GROBID in Docker mode, or the LLM parsing reference strings followed by Crossref/OpenAlex matching) are a fallback.
 4. **Output**: `paper_sections`, `paper_figures` (image + caption + referencing paragraphs), `paper_tables`, `paper_equations` and `paper_refs`.
 
 ### 9.2 Chunking & embeddings
@@ -813,6 +817,7 @@ Threat references: OWASP Top 10 for LLM Applications 2025 and OWASP Top 10 for A
 - Re-check every redirect (max 5), cap the response size (50 MB PDF, 5 MB HTML), and allowlist content types per tier (HTML `text/html`; JATS `application/xml` or `text/xml`; PDF `application/pdf` or `application/octet-stream`). A PDF must also start with `%PDF-`.
 - In Docker mode the fetcher runs in the app container on a network with no route to `db` except through the app, and the DB listens only on the internal network.
 - Unit tests cover known bypasses (DNS rebinding, decimal and octal IPs, IPv6 forms, redirect to internal).
+- Local sidecars (SearXNG, GROBID) are reached only through the origin-pinned `SidecarClient`: relative paths, no redirects, no env proxy, size cap and timeouts (ADR 0010).
 
 ### 19.4 Code execution (ASI05)
 - **Light cells (every mode): Pyodide inside Deno.** Deno's permission flags are the real boundary: no network, read and write only in the cell's temp dir, no subprocesses or FFI. Pure Python, numpy, pandas and matplotlib work, and behaviour is identical on every OS. Import blocking is never treated as a security boundary (DEF CON 34 showed Pyodide ctypes escapes when restrictions were Python-level only). A workdir holding a link (symlink, junction or hard link) is refused, because Deno checks a link's own path, not its target (ADR 0006).
@@ -955,7 +960,7 @@ See §15.3: writes come only from user turns, memories carry provenance, behavio
   - **Air-gapped:** `researchly bundle export|import` makes a tarball of the uv cache, models and browsers.
   - **`researchly update`:** `uv tool upgrade researchly` plus pulling the matching images (Docker mode), then migrations. It checks GitHub Releases at most daily (opt-out).
   - **`researchly uninstall [--purge-data]`:** removes the tool, caches, autostart entries and PATH lines, and data only with `--purge-data`.
-  - **Footprint (estimate, measured in step 9):** core ~0.6 GB, models ~1.5–2.5 GB, optional JDK + GROBID ~0.6 GB. First run downloads only the core; everything else is fetched on first use.
+  - **Footprint (estimate, measured in step 9):** core ~0.6 GB, models ~1.5–2.5 GB, optional GROBID image ~0.5 GB download / ~1.1 GB on disk and 3–4 GB RAM, Docker mode only. First run downloads only the core; everything else is fetched on first use.
 
 ---
 

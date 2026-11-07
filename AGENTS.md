@@ -44,7 +44,7 @@ The default `python` on dev machines may be old; always go through `uv`.
 ## Binding conventions
 - LLM calls go **only** through `backend/src/researchly/llm/` (`llm/registry.py` is the only module importing `litellm`).
 - `deepagents` is imported **only** in `backend/src/researchly/agents/factory.py`.
-- All outbound HTTP goes through `PoliteClient` (`backend/src/researchly/connectors/http.py`); never call `httpx` directly elsewhere.
+- All outbound HTTP goes through `PoliteClient` (`backend/src/researchly/connectors/http.py`); never call `httpx` directly elsewhere, except the origin-pinned sidecar client `connectors/sidecar.py` for SearXNG (no redirects, 2 MB cap; ADR 0010).
 - Untrusted text (web, PDFs) never reaches planner/writer prompts directly — use the quarantined extractor (spec §19.1).
 - No API keys in state, checkpoints, logs, traces or fixtures. Keys come from the keychain at call time.
 - Keyless by default: no feature may require a paid service or a data-source key (spec D14).
@@ -74,11 +74,13 @@ The default `python` on dev machines may be old; always go through `uv`.
   - Per-host limits live in `connectors/limits.yaml`.
   - Record cassettes live, keyless and with no email, using `pytest tests/connectors/test_<name>.py --record-mode=once`. Before committing, grep them for `mailto`, `cookie`, `authorization` and email addresses, and never commit a 429 or 5xx.
   - The live checks run nightly (`-m nightly`, `.github/workflows/nightly.yml`), not in CI.
-  - Local sidecars (SearXNG, GROBID) will be the only HTTP outside `PoliteClient`, through a loopback-only client, from step 2b/2c.
+  - Local sidecars (SearXNG, later GROBID) are the only HTTP outside `PoliteClient`, through the origin-pinned `connectors/sidecar.py`; `test_only_the_http_modules_import_httpx` fails on any other httpx import (ADR 0010).
 - A backend dependency change needs `uv lock --directory cli` too: the CLI locks the editable backend, and CI fails on a stale `cli/uv.lock`.
 - Native mode: `pg0.Pg0.drop()` deletes the data dir; only test teardown may call it. In a Windows venv, `sys.executable` is a launcher whose child is the real interpreter (the supervisor's PID is the launcher's; kill-on-close jobs chain).
 - BM25 objects are engine-specific (pg_textsearch index or a tsvector column plus GIN), have `bm25` in their names, live only in migrations and are skipped by `test_models_match_migrations`. The `backend-bm25` CI job runs the DB tests with pg_textsearch (ADR 0009).
 - Full-text fetches pass the host as the breaker `source` (`arxiv.org`, the PDF host), so one blocked publisher cannot open a shared breaker.
+- Web search: SearXNG runs only brave, mojeek, yahoo (general) and github (code), JSON only (ADR 0010). The CLI passes `RESEARCHLY_SEARXNG_URL`; `RESEARCHLY_WEB_SEARCH=off` turns it off. `capability.web_search` is written by a background probe, so it reads `ready` up to a minute after the app starts.
+- The `paper_code` table holds the PwC archive (CC BY-SA 4.0): show its attribution and never export it. DBLP is SPARQL only and OpenReview is `/notes/search` only: their other endpoints are bot-gated, so never add a workaround.
 
 ## Compact instructions
 When compacting, keep: current plan path and task number, failing test names and errors, files changed this session, decisions made and why. Drop: full file dumps, passing test output, exploration dead ends.
