@@ -1,5 +1,13 @@
 from researchly.connectors.base import Author, ExternalId, PaperRecord
-from researchly.services.identity import dedupe, merge, normalize_title, same_paper, trigram_similarity
+from researchly.services.identity import (
+    SOURCE_PRIORITY,
+    dedupe,
+    merge,
+    normalize_title,
+    same_paper,
+    source_rank,
+    trigram_similarity,
+)
 
 
 def rec(source, title, *, ids=(), year=2017, author="Ashish Vaswani", **kw):
@@ -81,3 +89,8 @@ def test_surname_comma_form_takes_last_family_token():
 def test_merge_keeps_falsy_values():
     merged = merge([rec("openalex", "T", cited_by=0, is_oa=False), rec("crossref", "T", cited_by=5, is_oa=True)])
     assert merged.cited_by == 0 and merged.is_oa is False
+
+
+def test_tier2_sources_rank_after_tier1():
+    assert SOURCE_PRIORITY[-4:] == ("dblp", "openreview", "biorxiv", "openaire")
+    assert source_rank("opencitations") < source_rank("dblp") < source_rank("openaire") < source_rank("unknown")

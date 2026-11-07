@@ -11,7 +11,7 @@ from researchly.connectors.base import (
     SearchQuery,
     SourceUnavailable,
 )
-from researchly.services.search import default_sources, federated_search
+from researchly.services.search import default_sources, enrichment_sources, federated_search
 
 pytestmark = pytest.mark.anyio
 
@@ -78,3 +78,35 @@ def test_default_sources_follow_the_routing_rules():
     assert pick([]) == ["arxiv", "crossref", "openalex"]
     assert pick(["biomedical"]) == ["arxiv", "crossref", "openalex", "europepmc", "pubmed"]
     assert pick(["ml"]) == ["arxiv", "crossref", "openalex", "hf"]
+
+
+def test_deep_runs_add_the_low_rate_extras():
+    names: dict[str, Any] = {n: object() for n in ("arxiv", "crossref", "openalex", "openaire")}
+    tier1 = [names["arxiv"], names["crossref"], names["openalex"]]
+    assert default_sources(names) == tier1
+    assert default_sources(names, deep=True) == [*tier1, names["openaire"]]
+
+
+@pytest.mark.parametrize(
+    ("record", "domains", "expected"),
+    [
+        (
+            PaperRecord("crossref", [ExternalId("doi", "10.1101/2020.03.22.002386")], "T"),
+            frozenset(),
+            ["openalex", "crossref", "biorxiv"],
+        ),
+        (
+            PaperRecord("arxiv", [ExternalId("arxiv", "1706.03762")], "T", venue_type="repository"),
+            frozenset({"ml"}),
+            ["openalex", "crossref", "dblp", "openreview"],
+        ),
+        (
+            PaperRecord("openalex", [ExternalId("doi", "10.1109/cvpr.2016.90")], "T", venue_type="conference"),
+            frozenset({"cs"}),
+            ["openalex", "crossref"],  # the venue is already known
+        ),
+        (PaperRecord("openalex", [ExternalId("pmid", "1")], "T"), frozenset({"cs"}), ["openalex", "crossref"]),
+    ],
+)
+def test_enrichment_sources(record, domains, expected):
+    assert enrichment_sources(record, domains) == expected
