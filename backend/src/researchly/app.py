@@ -1,6 +1,10 @@
 """FastAPI application factory."""
 
+import asyncio
+import contextlib
 import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from importlib.metadata import version
 
 from fastapi import FastAPI
@@ -8,9 +12,11 @@ from fastapi.responses import PlainTextResponse
 
 from researchly.api import system
 from researchly.config import Settings
+from researchly.connectors.sidecar import SidecarClient
 from researchly.security.keychain import ensure_local_token
 from researchly.security.localhost_guard import LocalhostGuard
 from researchly.security.redact import RedactingArgsFilter, RedactingFilter, register_secret
+from researchly.services.capabilities import record_web_search
 from researchly.spa import BUILD_HINT, WEB_DIR, SPAStaticFiles
 
 logger = logging.getLogger(__name__)
@@ -22,6 +28,26 @@ def _redact_server_logs() -> None:
         target = logging.getLogger(name)
         if not any(isinstance(f, kind) for f in target.filters):
             target.addFilter(kind())
+
+
+@asynccontextmanager
+async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
+    settings: Settings = app.state.settings
+    searxng = SidecarClient(settings.searxng_url, source="web") if settings.searxng_url else None
+    app.state.searxng = searxng
+    probe = None
+    if settings.env != "test":  # unit-test apps have no database
+        probe = asyncio.create_task(record_web_search(settings.database_url, searxng))
+    app.state.capability_probe = probe
+    try:
+        yield
+    finally:
+        if probe is not None:
+            probe.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await probe
+        if searxng is not None:
+            await searxng.aclose()
 
 
 def create_app(settings: Settings | None = None, *, token: str | None = None) -> FastAPI:
@@ -36,6 +62,7 @@ def create_app(settings: Settings | None = None, *, token: str | None = None) ->
         openapi_url="/api/openapi.json",
         docs_url=None,  # Swagger UI loads CDN script into the cookie-authenticated origin (ADR 0003)
         redoc_url=None,
+        lifespan=_lifespan,
     )
     app.state.settings = settings
     app.add_middleware(LocalhostGuard, token=token)

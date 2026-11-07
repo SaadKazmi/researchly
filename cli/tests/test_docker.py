@@ -103,6 +103,8 @@ def test_docker_stack_serves_health_with_bm25(monkeypatch):
             psql("SELECT string_agg(extname, ',') FROM pg_extension").split(",")
         )
         assert psql("SELECT value #>> '{}' FROM capability WHERE key = 'bm25_engine'") == "pg_textsearch"
+        ready = "SELECT value->>'state' FROM capability WHERE key = 'web_search'"
+        assert state.wait_until(lambda: psql(ready) == "ready", 90, 2)  # SearXNG starts after the app
     finally:
         docker.stop(run, secrets)
     assert not state.healthy(run.port)

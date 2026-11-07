@@ -116,6 +116,13 @@ def test_native_start_serves_the_app_on_pg0_and_stops_cleanly(secrets):
         with engine.connect() as conn:
             exts = set(conn.scalars(text("SELECT extname FROM pg_extension")))
             bm25 = conn.scalar(text("SELECT value FROM capability WHERE key = 'bm25_engine'"))
+
+        def web_search():
+            with engine.connect() as conn:
+                return conn.scalar(text("SELECT value FROM capability WHERE key = 'web_search'"))
+
+        # native.start without a SearXNG home: the app records web search as off
+        assert state.wait_until(lambda: web_search() == {"state": "off", "reason": "not configured"}, 30, 0.5)
         engine.dispose()
         assert {"vector", "pg_trgm"} <= exts
         assert bm25 == "tsvector"
