@@ -68,7 +68,7 @@ def results(*rows):
     return httpx.Response(200, json={"header": {"numFound": len(rows)}, "results": list(rows)})
 
 
-def test_a_merged_record_takes_everything_bibliographic_from_the_matching_instance():
+def test_a_merged_record_takes_ids_year_licence_and_access_from_the_matching_instance():
     rec = oa.parse_result(MERGED, {ARXIV_DOI})
     assert rec is not None
     assert rec.ids == [ExternalId("arxiv", "1706.03762"), ARXIV_DOI]  # sorted; no spam DOI

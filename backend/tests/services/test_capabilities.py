@@ -109,3 +109,28 @@ async def test_the_app_records_web_search_in_the_background(db_url):
         assert app.state.capability_probe is not None
         await app.state.capability_probe
     assert read_capability(db_url, "web_search") == {"state": "off", "reason": "not configured"}
+
+
+@pytest.mark.db
+async def test_a_stale_ready_row_is_replaced_before_probing(db_url):
+    migrate.upgrade(db_url)
+    write_capability(db_url, "web_search", {"state": "ready"})
+    seen = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(read_capability(db_url, "web_search"))
+        return httpx.Response(200, text="OK")
+
+    client = sidecar(handler)
+    await record_web_search(db_url, client)
+    await client.aclose()
+    assert seen == [{"state": "off", "reason": "starting"}]
+    assert read_capability(db_url, "web_search") == {"state": "ready"}
+
+
+async def test_a_malformed_searxng_url_leaves_web_search_off_and_is_not_logged(caplog):
+    url = "http://user:secret-pw@127.0.0.1:99999/path?x=1"
+    app = create_app(Settings(env="test", searxng_url=url), token=TOKEN)
+    async with app.router.lifespan_context(app):
+        assert app.state.searxng is None
+    assert "searxng" in caplog.text.lower() and "secret-pw" not in caplog.text and "99999" not in caplog.text

@@ -33,7 +33,14 @@ def _redact_server_logs() -> None:
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings: Settings = app.state.settings
-    searxng = SidecarClient(settings.searxng_url, source="web") if settings.searxng_url else None
+    searxng = None
+    if settings.searxng_url:
+        try:
+            searxng = SidecarClient(settings.searxng_url, source="web")
+        except ValueError as exc:  # optional feature: stay up; the type only, the value may hold credentials
+            logger.warning(
+                "RESEARCHLY_SEARXNG_URL is not a valid sidecar origin, web search is off: %s", type(exc).__name__
+            )
     app.state.searxng = searxng
     probe = None
     if settings.env != "test":  # unit-test apps have no database

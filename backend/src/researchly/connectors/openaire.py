@@ -1,7 +1,8 @@
 """OpenAIRE Graph v1 connector (R-conn §4): secondary search and PID lookup for EU repositories. Keyless.
 
 60 calls an hour anonymously (docs; the header claims 7,199). Deduplicated records merge unrelated reposts, so
-every bibliographic field comes from the one instance that holds the paper's ID (ruling 13).
+IDs, year, licence and open access come from the one instance that holds the paper's ID; title, abstract, authors
+and the citation count stay at the top level, and a merged record's count can include reposts (ruling 13).
 """
 
 import hashlib

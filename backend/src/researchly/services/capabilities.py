@@ -56,10 +56,14 @@ def write_capability(database_url: str, key: str, value: Any) -> None:
         engine.dispose()
 
 
-async def record_web_search(database_url: str, client: SidecarClient | None) -> None:
-    value = await probe_web_search(client)
+async def _record(database_url: str, value: dict[str, str]) -> None:
     try:
         await asyncio.to_thread(write_capability, database_url, "web_search", value)
     except Exception as exc:  # never take the app down over a status row
         # the type only: a driver message could carry connection details
         logger.warning("could not record the web search capability: %s", type(exc).__name__)
+
+
+async def record_web_search(database_url: str, client: SidecarClient | None) -> None:
+    await _record(database_url, {"state": "off", "reason": "starting"})  # a previous run's "ready" is stale
+    await _record(database_url, await probe_web_search(client))

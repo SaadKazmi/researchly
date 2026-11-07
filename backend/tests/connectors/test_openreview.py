@@ -145,3 +145,10 @@ async def test_by_title_finds_a_v2_venue_decision(polite):
 @pytest.mark.vcr
 async def test_by_title_ignores_imports_and_near_titles(polite):
     assert await OpenReviewConnector(polite).by_title("Attention Is All You Need", 2017) is None
+
+
+@pytest.mark.vcr
+async def test_by_title_with_a_colon_is_a_clean_miss_not_an_error(polite):
+    # the colon is sent verbatim and answered 200; the loose term search just does not rank this title in its top 5
+    title = "ALBERT: A Lite BERT for Self-supervised Learning of Language Representations"
+    assert await OpenReviewConnector(polite).by_title(title) is None
