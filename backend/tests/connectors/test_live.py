@@ -16,6 +16,7 @@ GET_PROBES = {
     "europepmc": ExternalId("pmid", "26017442"),
     "pubmed": ExternalId("pmid", "26017442"),
     "hf": ExternalId("arxiv", "1706.03762"),
+    "biorxiv": ExternalId("doi", "10.1101/2020.03.22.002386"),
 }
 
 

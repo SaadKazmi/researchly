@@ -10,4 +10,5 @@ www.ebi.ac.uk: [0.2, 2]             # Europe PMC, no published limit
 eutils.ncbi.nlm.nih.gov: [0.5, 1]   # 3 rps keyless
 huggingface.co: [1.0, 1]            # api pool, 500 per 5 min
 huggingface.co/search: [7.5, 1]     # search pool, 50 per 5 min
+api.biorxiv.org: [1.0, 1]           # no published limit; spec polite 1 rps
 default: [1.0, 1]

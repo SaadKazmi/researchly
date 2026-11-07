@@ -1,7 +1,8 @@
-"""Connector registry (spec §8.1): every keyless Tier-1 source."""
+"""Connector registry (spec §8.1): the keyless Tier-1 and Tier-2 sources."""
 
 from researchly.connectors.arxiv import ArxivConnector
 from researchly.connectors.base import Connector
+from researchly.connectors.biorxiv import BiorxivConnector
 from researchly.connectors.crossref import CrossrefConnector
 from researchly.connectors.datacite import DataCiteConnector
 from researchly.connectors.europepmc import EuropePmcConnector
@@ -22,5 +23,6 @@ def build_connectors(client: PoliteClient) -> dict[str, Connector]:
         EuropePmcConnector(client),
         PubMedConnector(client),
         HfConnector(client),
+        BiorxivConnector(client),
     ]
     return {c.name: c for c in connectors}
