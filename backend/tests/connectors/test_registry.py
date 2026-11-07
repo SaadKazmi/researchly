@@ -12,6 +12,7 @@ NAMES = {
     "hf",
     "biorxiv",
     "openreview",
+    "dblp",
 }
 SEARCH = {"openalex", "arxiv", "crossref", "europepmc", "pubmed", "hf"}
 CITES_IN = {"openalex", "opencitations", "europepmc", "pubmed"}

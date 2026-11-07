@@ -5,6 +5,7 @@ from researchly.connectors.base import Connector
 from researchly.connectors.biorxiv import BiorxivConnector
 from researchly.connectors.crossref import CrossrefConnector
 from researchly.connectors.datacite import DataCiteConnector
+from researchly.connectors.dblp import DblpConnector
 from researchly.connectors.europepmc import EuropePmcConnector
 from researchly.connectors.hf import HfConnector
 from researchly.connectors.http import PoliteClient
@@ -26,5 +27,6 @@ def build_connectors(client: PoliteClient) -> dict[str, Connector]:
         HfConnector(client),
         BiorxivConnector(client),
         OpenReviewConnector(client),
+        DblpConnector(client),
     ]
     return {c.name: c for c in connectors}

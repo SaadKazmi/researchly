@@ -1,0 +1,48 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - sparql.dblp.org
+    method: GET
+    uri: https://sparql.dblp.org/sparql?query=PREFIX+dblp%3A+%3Chttps%3A%2F%2Fdblp.org%2Frdf%2Fschema%23%3E%0ASELECT+DISTINCT+%3Fp+%3Ft+%3Fvenue+%3Fyear+%3Ftype+%3Fdoi+WHERE+%7B%0A++VALUES+%3Fd+%7B+%3Chttps%3A%2F%2Fdoi.org%2F10.48550%2FARXIV.1706.03762%3E+%3Chttps%3A%2F%2Fdoi.org%2F10.48550%2Farxiv.1706.03762%3E+%7D%0A++%3Fcorr+dblp%3Adoi+%3Fd+%3B+dblp%3Atitle+%3Fct+%3B+dblp%3AauthoredBy+%3Fa+.%0A++%3Fp+dblp%3AauthoredBy+%3Fa+%3B+dblp%3Atitle+%3Ft+%3B+dblp%3ApublishedIn+%3Fvenue+%3B+dblp%3AyearOfPublication+%3Fyear+%3B+a+%3Ftype+.%0A++OPTIONAL+%7B+%3Fp+dblp%3Adoi+%3Fdoi+%7D%0A++FILTER%28LCASE%28STR%28%3Ft%29%29+%3D+LCASE%28STR%28%3Fct%29%29%29%0A%7D%0AORDER+BY+%3Fp%0ALIMIT+50
+  response:
+    body:
+      string: '{"head":{"vars":["p","t","venue","year","type","doi"]},"results":{"bindings":[{"p":{"type":"uri","value":"https://dblp.org/rec/conf/nips/VaswaniSPUJGKP17"},"t":{"type":"literal","value":"Attention
+        is All you Need."},"venue":{"type":"literal","value":"NIPS"},"year":{"datatype":"http://www.w3.org/2001/XMLSchema#gYear","type":"literal","value":"2017"},"type":{"type":"uri","value":"https://dblp.org/rdf/schema#Inproceedings"}},{"p":{"type":"uri","value":"https://dblp.org/rec/conf/nips/VaswaniSPUJGKP17"},"t":{"type":"literal","value":"Attention
+        is All you Need."},"venue":{"type":"literal","value":"NIPS"},"year":{"datatype":"http://www.w3.org/2001/XMLSchema#gYear","type":"literal","value":"2017"},"type":{"type":"uri","value":"https://dblp.org/rdf/schema#Publication"}},{"p":{"type":"uri","value":"https://dblp.org/rec/journals/corr/VaswaniSPUJGKP17"},"t":{"type":"literal","value":"Attention
+        Is All You Need."},"venue":{"type":"literal","value":"CoRR"},"year":{"datatype":"http://www.w3.org/2001/XMLSchema#gYear","type":"literal","value":"2017"},"type":{"type":"uri","value":"https://dblp.org/rdf/schema#Informal"},"doi":{"type":"uri","value":"https://doi.org/10.48550/ARXIV.1706.03762"}},{"p":{"type":"uri","value":"https://dblp.org/rec/journals/corr/VaswaniSPUJGKP17"},"t":{"type":"literal","value":"Attention
+        Is All You Need."},"venue":{"type":"literal","value":"CoRR"},"year":{"datatype":"http://www.w3.org/2001/XMLSchema#gYear","type":"literal","value":"2017"},"type":{"type":"uri","value":"https://dblp.org/rdf/schema#Publication"},"doi":{"type":"uri","value":"https://doi.org/10.48550/ARXIV.1706.03762"}}]},"meta":{"query-time-ms":84,"result-size-total":4}}'
+    headers:
+      access-control-allow-headers:
+      - '*'
+      access-control-allow-methods:
+      - GET, POST, OPTIONS
+      access-control-allow-origin:
+      - '*'
+      connection:
+      - Keep-Alive
+      content-length:
+      - '1667'
+      content-security-policy:
+      - frame-ancestors 'self' https://dblps.uni-trier.de
+      content-type:
+      - application/sparql-results+json
+      date:
+      - Sat, 07 Nov 2026 15:15:09 GMT
+      keep-alive:
+      - timeout=5, max=100
+      server:
+      - Apache/2.4.52 (Ubuntu)
+      transfer-encoding:
+      - chunked
+    status:
+      code: 200
+      message: OK
+version: 1
