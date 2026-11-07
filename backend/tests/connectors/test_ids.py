@@ -11,6 +11,8 @@ from researchly.connectors.base import ExternalId
         ("https://doi.org/10.48550/arXiv.1706.03762", "10.48550/arxiv.1706.03762"),
         ("doi:10.1000/ABC", "10.1000/abc"),
         ("not a doi", None),
+        ("10.1000/abc", None),
+        ("10.1000/abc", None),
         ("\u200b 10.1000/abc\ufeff", "10.1000/abc"),
         ("10.1000/abc.,;", "10.1000/abc"),
         ("10.1000/abc)", "10.1000/abc"),

@@ -48,9 +48,14 @@ def test_parse_bindings_prefers_the_venue_record():
     rec = dblp.parse_bindings(BINDINGS, ARXIV_DOI)
     assert rec is not None
     assert rec.source == "dblp"
-    assert rec.ids == [ExternalId("doi", ARXIV_DOI), ExternalId("dblp", "conf/nips/VaswaniSPUJGKP17")]
+    assert rec.ids == [ExternalId("doi", ARXIV_DOI)]  # a venue key would merge a preprint with its published version
     assert (rec.title, rec.year, rec.venue, rec.venue_type) == ("Attention is All you Need", 2017, "NIPS", "conference")
-    assert rec.extra == {"dblp_venue": "NIPS", "dblp_type": "Inproceedings", "dblp_doi": None}
+    assert rec.extra == {
+        "dblp_venue": "NIPS",
+        "dblp_type": "Inproceedings",
+        "dblp_doi": None,
+        "dblp_key": "conf/nips/VaswaniSPUJGKP17",
+    }
 
 
 def test_parse_bindings_falls_back_to_the_preprint_record():
@@ -71,7 +76,7 @@ async def test_get_asks_for_both_doi_cases_and_maps_arxiv_ids():
 
     async with client_for(handler) as client:
         [rec] = await DblpConnector(client).get([ExternalId("arxiv", "1706.03762v7")])
-    assert rec.id("dblp") == "conf/nips/VaswaniSPUJGKP17"
+    assert rec.extra["dblp_key"] == "conf/nips/VaswaniSPUJGKP17"
     assert "<https://doi.org/10.48550/ARXIV.1706.03762>" in queries[0]
     assert "<https://doi.org/10.48550/arxiv.1706.03762>" in queries[0]
 
@@ -111,7 +116,7 @@ async def test_bad_answers():
 @pytest.mark.vcr
 async def test_get_an_arxiv_paper_finds_its_conference(polite):
     [rec] = await DblpConnector(polite).get([ExternalId("arxiv", "1706.03762")])
-    assert rec.id("dblp") == "conf/nips/VaswaniSPUJGKP17"
+    assert rec.extra["dblp_key"] == "conf/nips/VaswaniSPUJGKP17"
     assert (rec.venue, rec.year, rec.venue_type) == ("NIPS", 2017, "conference")
 
 

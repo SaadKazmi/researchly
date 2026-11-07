@@ -5,7 +5,7 @@ from urllib.parse import unquote, urlsplit
 
 from researchly.connectors.base import ExternalId
 
-_DOI = re.compile(r"^10\.\d{4,9}/\S+$")
+_DOI = re.compile(r"^10\.\d{4,9}/[^\s\x00-\x1f\x7f]+$")
 _ARXIV_NEW = re.compile(r"^(\d{4}\.\d{4,5})(v\d+)?$", re.I)
 _ARXIV_OLD = re.compile(r"^([a-z-]+)(?:\.[a-z]{2})?/(\d{7})(v\d+)?$", re.I)
 _ARXIV_PREFIX = re.compile(r"^(?:arxiv:|https?://(?:www\.|export\.)?arxiv\.org/(?:abs|pdf)/)", re.I)

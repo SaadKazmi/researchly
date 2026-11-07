@@ -110,3 +110,10 @@ def test_deep_runs_add_the_low_rate_extras():
 )
 def test_enrichment_sources(record, domains, expected):
     assert enrichment_sources(record, domains) == expected
+
+
+def test_cold_spring_harbor_journal_dois_skip_biorxiv():
+    rec = PaperRecord("openalex", [ExternalId("doi", "10.1101/gad.123456.120")], "T")
+    assert "biorxiv" not in enrichment_sources(rec)
+    rec = PaperRecord("openalex", [ExternalId("doi", "10.1101/2020.03.22.002386")], "T")
+    assert "biorxiv" in enrichment_sources(rec)

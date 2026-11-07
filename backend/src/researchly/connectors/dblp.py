@@ -51,7 +51,7 @@ def parse_bindings(bindings: list[Any], doi: str) -> PaperRecord | None:
     year = row.get("year", "")[:4]
     return PaperRecord(
         source="dblp",
-        ids=[ExternalId("doi", doi), ExternalId("dblp", row["p"].removeprefix(_REC))],
+        ids=[ExternalId("doi", doi)],  # a venue key here would merge a preprint with its published version
         title=" ".join(row["t"].split()).removesuffix("."),
         year=int(year) if year.isdigit() else None,
         venue=row.get("venue"),
@@ -60,6 +60,7 @@ def parse_bindings(bindings: list[Any], doi: str) -> PaperRecord | None:
             "dblp_venue": row.get("venue"),
             "dblp_type": kind,
             "dblp_doi": ids.doi(row.get("doi", "")),  # this record's own DOI: another work's, maybe
+            "dblp_key": row["p"].removeprefix(_REC),
         },
     )
 

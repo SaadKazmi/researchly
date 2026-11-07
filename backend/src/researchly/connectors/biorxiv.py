@@ -4,6 +4,7 @@ The API answers HTTP 200 even for errors ({"messages": [{"status": "no posts fou
 www.biorxiv.org is behind a Cloudflare challenge: `jatsxml` is kept as data, never fetched.
 """
 
+import re
 from typing import Any, Literal
 from urllib.parse import quote
 
@@ -22,6 +23,7 @@ BASE = "https://api.biorxiv.org"
 KEY = "biorxiv:v1"
 SERVERS = ("biorxiv", "medrxiv")  # both use the 10.1101 prefix, so the server is found by asking
 PREFIX = "10.1101/"
+_BIORXIV_DOI = re.compile(r"^10\.1101/\d")  # CSH journals use letters (10.1101/gad.…)
 _VENUES = {"biorxiv": "bioRxiv", "medrxiv": "medRxiv"}
 
 
@@ -74,6 +76,10 @@ def parse_details(rows: list[Any], server: str) -> PaperRecord | None:
     )
 
 
+def is_biorxiv_doi(doi: str) -> bool:
+    return _BIORXIV_DOI.match(doi) is not None
+
+
 class BiorxivConnector:
     name = "biorxiv"
 
@@ -111,7 +117,7 @@ class BiorxivConnector:
         return rows
 
     async def get(self, ids_: list[ExternalId]) -> list[PaperRecord]:
-        dois = [n.value for e in ids_ if (n := ids.normalize(e)) and n.scheme == "doi" and n.value.startswith(PREFIX)]
+        dois = [n.value for e in ids_ if (n := ids.normalize(e)) and n.scheme == "doi" and is_biorxiv_doi(n.value)]
         recs: list[PaperRecord] = []
         for doi in dict.fromkeys(dois):
             for server in SERVERS:

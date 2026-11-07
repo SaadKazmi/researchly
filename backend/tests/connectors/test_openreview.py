@@ -95,6 +95,21 @@ async def test_by_title_matches_exactly_and_checks_the_year():
         assert await conn.by_title("Dataflow is all you need", 2020) is None  # 2026 is too far from 2020
 
 
+async def test_by_title_prefers_the_best_decision_over_api_order():
+    notes = [
+        note(venue="Submitted to ICML 2025", domain="ICML.cc/2025/Conference/Submission"),
+        note(venue="ICML 2025 Workshop"),
+        note(venue="NeurIPS 2025 spotlight"),
+        note(venue="NeurIPS 2025 poster"),
+    ]
+    async with client_for(lambda r: httpx.Response(200, json={"notes": notes})) as client:
+        rec = await OpenReviewConnector(client).by_title("Dataflow is all you need", 2025)
+    assert rec is not None and rec.extra["openreview_decision"] == "spotlight"
+    async with client_for(lambda r: httpx.Response(200, json={"notes": notes[:2]})) as client:
+        rec = await OpenReviewConnector(client).by_title("Dataflow is all you need", 2025)
+    assert rec is not None and rec.extra["openreview_decision"] == "accepted"
+
+
 async def test_weak_titles_make_no_request_and_the_fan_out_gets_nothing():
     seen = []
     async with client_for(lambda r: seen.append(r) or httpx.Response(500)) as client:

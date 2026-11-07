@@ -5,6 +5,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 
 from researchly.connectors.base import Connector, ConnectorError, PaperRecord, SearchQuery
+from researchly.connectors.biorxiv import is_biorxiv_doi
 from researchly.services.identity import dedupe
 
 ALWAYS = ("arxiv", "crossref", "openalex")
@@ -33,7 +34,7 @@ def enrichment_sources(record: PaperRecord, domains: frozenset[str] = frozenset(
     """Sources to ask about a found paper, in order (§8.1.1). OpenReview is asked through `by_title`."""
     names = ["openalex", "crossref"]
     doi = record.id("doi")
-    if doi and doi.startswith("10.1101/"):
+    if doi and is_biorxiv_doi(doi):
         names.append("biorxiv")
     if domains & VENUE_DOMAINS and (doi or record.id("arxiv")) and record.venue_type in (None, "repository"):
         names.append("dblp")  # a preprint's conference or journal record

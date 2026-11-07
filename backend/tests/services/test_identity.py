@@ -94,3 +94,9 @@ def test_merge_keeps_falsy_values():
 def test_tier2_sources_rank_after_tier1():
     assert SOURCE_PRIORITY[-4:] == ("dblp", "openreview", "biorxiv", "openaire")
     assert source_rank("opencitations") < source_rank("dblp") < source_rank("openaire") < source_rank("unknown")
+
+
+def test_a_shared_dblp_key_in_extra_does_not_merge_a_preprint_with_its_published_version():
+    a = rec("dblp", "Deep Residual Learning", year=2015, author="Kaiming He", extra={"dblp_key": "conf/cvpr/HeZRS16"})
+    b = rec("dblp", "Other title entirely", year=2016, author="Someone Else", extra={"dblp_key": "conf/cvpr/HeZRS16"})
+    assert not same_paper(a, b)

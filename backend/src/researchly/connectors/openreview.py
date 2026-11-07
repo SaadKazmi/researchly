@@ -24,6 +24,7 @@ from researchly.connectors.http import TTL_COUNTS, PoliteClient
 BASE = "https://api2.openreview.net"
 KEY = "openreview:v1"
 Decision = Literal["oral", "spotlight", "poster", "accepted", "not_accepted"]
+_BEST: tuple[Decision, ...] = ("oral", "spotlight", "poster", "accepted", "not_accepted")
 _TIER: dict[str, Decision] = {"oral": "oral", "spotlight": "spotlight", "poster": "poster"}
 _TIER_WORD = re.compile(r"\b(oral|spotlight|poster)\b", re.I)
 _YEAR = re.compile(r"\b(?:19|20)\d{2}\b")
@@ -133,11 +134,15 @@ class OpenReviewConnector:
             raise SourceUnavailable(self.name, "unreadable response") from exc
         if not isinstance(notes, list):
             raise SourceUnavailable(self.name, "unreadable response")
+        best: PaperRecord | None = None
         for raw in notes:
             rec = parse_note(raw)
             if rec is None or normalize_title(rec.title) != norm:
                 continue
             if year is not None and rec.year is not None and not year - 1 <= rec.year <= year + 2:
                 continue  # a venue trails its preprint by up to two years
-            return rec
-        return None
+            if best is None or _BEST.index(rec.extra["openreview_decision"]) < _BEST.index(
+                best.extra["openreview_decision"]
+            ):
+                best = rec  # the same title is often a spotlight, a workshop paper and a rejected submission
+        return best

@@ -122,3 +122,11 @@ async def test_get_a_published_preprint(polite):
 @pytest.mark.vcr
 async def test_not_found_on_either_server(polite):
     assert await BiorxivConnector(polite).get([ExternalId("doi", "10.1101/0000.00.00.000000")]) == []
+
+
+async def test_only_biorxiv_shaped_suffixes_are_asked():
+    seen = []
+    async with client_for(lambda r: seen.append(r) or httpx.Response(404)) as client:
+        assert await BiorxivConnector(client).get([ExternalId("doi", "10.1101/gad.123456.120")]) == []
+    assert seen == []
+    assert bx.is_biorxiv_doi("10.1101/433706") and bx.is_biorxiv_doi(DOI) and not bx.is_biorxiv_doi("10.1101/gr.1")
