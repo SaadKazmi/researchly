@@ -18,7 +18,7 @@ It must also stay replayable in tests. Research is in `docs/research/2026-11-03-
 - **SSRF:** httpx has no public hook to connect to a pre-checked IP while keeping URL, Host and SNI.
 
 ## Decision
-- **Client:** `httpx==0.28.1` and `httpcore==1.0.9` (runtime dependencies, pinned exactly), wrapped by `PoliteClient` in `connectors/http.py`. Only `connectors/http.py` and its SSRF guard `connectors/ssrf.py` import httpx or httpcore.
+- **Client:** `httpx==0.28.1` and `httpcore==1.0.9` (runtime dependencies, pinned exactly), wrapped by `PoliteClient` in `connectors/http.py`. Only `connectors/http.py`, its SSRF guard `connectors/ssrf.py` and the sidecar client `connectors/sidecar.py` (ADR 0010) import httpx or httpcore; `test_only_the_http_modules_import_httpx` enforces it.
 - **Limits:** a custom `HostLimit` (next-at time plus a semaphore) per host or bucket, read from `connectors/limits.yaml`. The same state absorbs a short `Retry-After`. A long one (over 120 s) blocks the host and raises `QuotaExhausted` without waiting.
 - **Retry:** a hand-rolled loop, GET only. It retries on transport errors and on 429, 500, 502, 503 and 504, with at most 4 attempts. Backoff is full jitter, `uniform(0, min(60, 2**attempt))`. Every attempt re-enters the limiter. The breaker admits the call once; only a half-open probe holds it.
 - **Breaker:** a custom breaker per source. It opens after 5 consecutive failures, cools down for 60 s doubling to 900 s, and allows one half-open probe. 400 and 404 count as answers, not failures. An SSRF refusal is neither retried nor counted as a failure.
@@ -44,7 +44,7 @@ It must also stay replayable in tests. Research is in `docs/research/2026-11-03-
 - **In-process limits:** they are correct only while one process does outbound HTTP. A separate worker process would double the effective rates, so revisit this before adding one.
 - **vcrpy churn:** pin exactly and re-record once on each upgrade. `--block-network` waits for pytest-recording 0.14.1, which clears the release-age gate after 2026-11-09.
 - **UNLOGGED cache:** an unclean shutdown truncates the cache by design. The OpenAlex budget guard (≤50 searches per UTC day, stop at ≤20% of the daily USD budget) still applies.
-- **Exceptions to "all HTTP via `PoliteClient`":** local sidecars (SearXNG, GROBID) use a loopback-only client from step 2b/2c.
+- **Exception to "all HTTP via `PoliteClient`":** local sidecars (SearXNG now, GROBID at step 4) go through the origin-pinned `SidecarClient` (ADR 0010).
 - **Corporate proxies:** `trust_env=False` ignores `HTTPS_PROXY`. The TLS context still honours `SSL_CERT_FILE` and `SSL_CERT_DIR` for corporate CAs. An explicit proxy setting is deferred.
 
 ## Evidence

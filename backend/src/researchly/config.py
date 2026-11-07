@@ -19,3 +19,4 @@ class Settings(BaseSettings):
     llm_fixtures_suite: str = "default"
     data_dir: Path = Path.home() / ".researchly"  # spec §16.1
     local_token: SecretStr | None = None  # injected by the CLI (spec §16.1); else read from the keychain
+    searxng_url: str | None = None  # set by the CLI (ADR 0010); unset or empty: web search is off

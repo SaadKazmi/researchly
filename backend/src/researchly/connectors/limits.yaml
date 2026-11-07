@@ -10,4 +10,8 @@ www.ebi.ac.uk: [0.2, 2]             # Europe PMC, no published limit
 eutils.ncbi.nlm.nih.gov: [0.5, 1]   # 3 rps keyless
 huggingface.co: [1.0, 1]            # api pool, 500 per 5 min
 huggingface.co/search: [7.5, 1]     # search pool, 50 per 5 min
+api.biorxiv.org: [1.0, 1]           # no published limit; spec polite 1 rps
+api2.openreview.net: [3.5, 1]       # /notes/search 20 per 60 s (ratelimit-policy: 20;w=60)
+sparql.dblp.org: [2.0, 1]           # no published limit; QLever, keep it gentle
+api.openaire.eu: [60.0, 1]          # anonymous 60 per hour (docs); header claims 7199
 default: [1.0, 1]

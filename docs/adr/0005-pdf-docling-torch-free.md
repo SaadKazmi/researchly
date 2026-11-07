@@ -14,7 +14,7 @@ Spec §11 wants Docling with ONNX models and no torch for body text, tables and 
 ## Decision
 - **Package:** `docling-slim[format-pdf-pypdfium2,convert-core,feat-ocr-rapidocr-onnx]==2.142.1`, pinned exactly because we patch private behaviour. We never use the `[models-onnxruntime]` extra (it pulls onnxruntime-gpu), nor `[models-local]` or `[standard]` (they pull torch).
 - **Backend:** pypdfium2 on every OS (Apache-2.0/BSD; wheels for all five targets). It is the faster backend with less memory: 2.18 against 1.27 pages/s, and 2.6 against 6.2 GB, on an M3 Max in the Docling report (arXiv 2408.09869, Table 1). On the dev box it ran 1.9 s against 2.4–4.4 s for 3 pages, with a peak RSS of 708 against 797 MB. `docling-parse` 7.x also has no macOS x86_64 wheel.
-- **Tables:** `do_table_structure=False`. Table regions come out as flattened text. GROBID's TEI tables are used where GROBID runs (Docker mode). TableFormer-in-ONNX is re-evaluated at step 2/4.
+- **Tables:** `do_table_structure=False`. Table regions come out as flattened text. GROBID's TEI tables are not relied on: GROBID's own docs call its table extraction weak, and GROBID is an opt-in Docker-only service from step 4 (step 2c research §B8). TableFormer-in-ONNX is re-evaluated at step 4.
 - **OCR:** RapidOCR on onnxruntime, off by default. With `ocr=True`, Docling's default mode OCRs only the layout regions that have no PDF text, so mixed documents keep their text layer and scanned pages are read.
 - **Torch leaks:** `researchly.ingest.pdf` works around the three leaks:
   - stub modules while the table factory is built;
@@ -26,7 +26,7 @@ Spec §11 wants Docling with ONNX models and no torch for body text, tables and 
 
 ## Consequences
 - Every install stays torch-free and keyless. The layout model (164 MB) and the OCR models (~31 MB) download on first use.
-- Native mode gets no structured tables; tables are text only. Docker mode with GROBID gets TEI tables for scholarly PDFs.
+- Native mode gets no structured tables; tables are text only. Rich tables wait for the step 4 re-evaluation in both modes.
 - Docling upgrades are deliberate: the workarounds touch private APIs, so every bump re-runs the platform PDF tests on all five OS. Remove the workarounds once docling#3997 ships.
 - OCR is slow on CPU (5–26 s per image-only page on CI), so ingestion runs OCR in the background queue and reports progress.
 

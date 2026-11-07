@@ -6,19 +6,22 @@ import subprocess
 from collections.abc import Sequence
 from pathlib import Path
 
+import typer
+
 from researchly_cli import state
 
 # ponytail: works from a source checkout only; ship the compose file with the release images (step 10)
 COMPOSE_FILE = Path(__file__).resolve().parents[3] / "infra" / "compose.yaml"
 APP_PORT = 8765
 DOWN = ["--profile", "*", "down"]  # every profile, so an opt-in service (grobid) stops too
+SEARXNG_URL = "http://searxng:8080"  # the compose service, on the internal network
 
 
 class DockerStartError(RuntimeError):
     pass
 
 
-def compose_env(secrets: state.Secrets, port: int) -> dict[str, str]:
+def compose_env(secrets: state.Secrets, port: int, web_search: bool = True) -> dict[str, str]:
     """Secrets reach compose only through the environment of the compose process (spec §16.1)."""
     return {
         **os.environ,
@@ -29,6 +32,7 @@ def compose_env(secrets: state.Secrets, port: int) -> dict[str, str]:
         "RESEARCHLY_DB_RO_PASSWORD": secrets.db_ro,
         "RESEARCHLY_LOCAL_TOKEN": secrets.local_token,
         "RESEARCHLY_SEARXNG_SECRET": secrets.searxng,
+        "RESEARCHLY_SEARXNG_URL": SEARXNG_URL if web_search else "",  # empty: the app records web search off
     }
 
 
@@ -48,16 +52,21 @@ def build(secrets: state.Secrets, compose: Sequence[str]) -> None:
     _compose(compose, ["build"], compose_env(secrets, APP_PORT))
 
 
-def start(secrets: state.Secrets, compose: Sequence[str]) -> state.State:
+def start(secrets: state.Secrets, compose: Sequence[str], web_search: bool = True) -> state.State:
     port = state.free_port(APP_PORT)
-    env = compose_env(secrets, port)
+    env = compose_env(secrets, port, web_search)
     # Created as the user: rootful Docker would create it root-owned, and native mode needs to write in pg/18/
     (state.data_dir() / "pg" / "18" / "docker").mkdir(parents=True, exist_ok=True)
     _compose(compose, ["build"], env)
     try:
         _compose(compose, ["up", "-d", "--wait", "postgres"], env)
         _compose(compose, ["run", "--rm", "migrate"], env)  # spec §16.1: a failed migration aborts the start
-        _compose(compose, ["up", "-d", "--wait", "app", "searxng"], env)
+        if web_search:  # optional: the app probes it, so never wait on it, and never fail the start over it
+            try:
+                _compose(compose, ["up", "-d", "searxng"], env)
+            except DockerStartError as exc:
+                typer.secho(f"warning: web search is off: {exc}", err=True)
+        _compose(compose, ["up", "-d", "--wait", "app"], env)
     except BaseException:  # a failed or interrupted start leaves nothing running
         with contextlib.suppress(Exception):
             _compose(compose, DOWN, env)

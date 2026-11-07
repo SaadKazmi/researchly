@@ -18,7 +18,7 @@ Web search is keyless through SearXNG. Docker mode runs the `searxng/searxng` im
 - **Install:** an app-private venv at `<data_dir>/searxng/<sha12>/venv`, made by `uv`, with dependencies from the committed hash-locked `cli/src/researchly_cli/searxng-requirements.txt` (`--require-hashes`). `searx/version_frozen.py` is written from the commit's date and SHA.
 - **Windows:** a `pwd.py` shim that we author goes into the venv's site-packages. The AGPL files stay unmodified.
 - **Running:** `granian --interface wsgi --host 127.0.0.1 --workers 1 --blocking-threads 4 searx.webapp:app` runs under the existing supervisor, as a second tree beside the app. It uses port 8766, or any free port when 8766 is taken. The secret reaches it only as `SEARXNG_SECRET` in the env.
-- **Settings:** `settings_text()` holds the native settings, the same as `infra/searxng/settings.yml`; a test keeps the two equal.
+- **Settings:** `settings_text()` holds the native settings, the same as `infra/searxng/settings.yml` (general web and code engines only, JSON only; ADR 0010); a test keeps the two equal.
 - **Failure:** web search is off, `start` warns with the reason, and `doctor` prints `web search: off: <reason>`. The app still starts.
 
 ## Consequences
@@ -30,11 +30,12 @@ Web search is keyless through SearXNG. Docker mode runs the `searxng/searxng` im
   4. Re-grep `searx/**/*.py` for POSIX-only imports: `pwd`, `grp`, `fcntl`, `resource`, `termios`, `uvloop`, `os.fork`, `os.getuid`.
   5. Re-check that `searx/version.py` still reads the five frozen names.
   6. Re-check that `infra/searxng/settings.yml` and `settings_text()` still load.
-- **Licence:** SearXNG is AGPL-3.0. We download it from upstream at install time, never vendor it, never `import searx`, and talk to it over HTTP on loopback only. Under the FSF FAQ these are separate programs, and since we do not modify it, the AGPL §13 source offer is not triggered. Not legal advice.
+  7. Run the `searxng` CLI tests: `test_real_settings_enable_exactly_the_four_engines` fails if an engine name in `keep_only` changed. Keep the image tag in `.github/workflows/nightly.yml` equal to the compose tag.
+- **Licence:** SearXNG is AGPL-3.0. We download it from upstream at install time, never vendor it, never `import searx`, and talk to it over HTTP only (loopback in native mode, the internal compose network in Docker mode). Under the FSF FAQ these are separate programs, and since we do not modify it, the AGPL §13 source offer is not triggered. Not legal advice.
 - **Windows support is ours:** upstream does not support Windows, so the shim and the run are re-verified on every pin bump.
 - **Inherited environment:** granian gets the CLI's environment, as the app does. The CLI adds no keys to it.
 - **Deferred to step 9:** two concurrent first starts can race on the shared tarball path. The worst case is a failed install with a warning, never a false `ready`.
-- The backend wires the native SearXNG URL into search at step 2/3.
+- The app finds SearXNG through `RESEARCHLY_SEARXNG_URL`, set by the CLI (ADR 0010).
 
 ## Evidence
 - **Windows 10 dev box, isolated data dir:**

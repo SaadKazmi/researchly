@@ -45,3 +45,10 @@ def test_data_dir_defaults_to_home_and_reads_env(monkeypatch, tmp_path):
     assert Settings().data_dir == Path.home() / ".researchly"
     monkeypatch.setenv("RESEARCHLY_DATA_DIR", str(tmp_path))
     assert Settings().data_dir == tmp_path
+
+
+def test_settings_read_the_searxng_url(monkeypatch):
+    monkeypatch.setenv("RESEARCHLY_SEARXNG_URL", "http://127.0.0.1:8766")
+    assert Settings().searxng_url == "http://127.0.0.1:8766"
+    monkeypatch.delenv("RESEARCHLY_SEARXNG_URL")
+    assert Settings().searxng_url is None

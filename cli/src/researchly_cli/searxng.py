@@ -26,13 +26,22 @@ REQUIREMENTS = Path(__file__).with_name("searxng-requirements.txt")  # hash-lock
 
 # A test keeps this equal to infra/searxng/settings.yml (the Docker mode's copy). The secret comes from the env.
 _SETTINGS = """\
-use_default_settings: true
+use_default_settings:
+  engines:
+    keep_only: [brave, mojeek, yahoo, github]
 server:
   limiter: false
   public_instance: false
   image_proxy: false
 search:
-  formats: [html, json]
+  formats: [json]
+outgoing:
+  request_timeout: 5.0
+engines:
+  - name: mojeek
+    inactive: false
+  - name: yahoo
+    disabled: false
 """
 
 # SearXNG imports `pwd` at load time, only to log a failed Valkey connection, and Valkey is never configured here.

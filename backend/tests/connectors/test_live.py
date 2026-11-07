@@ -16,6 +16,9 @@ GET_PROBES = {
     "europepmc": ExternalId("pmid", "26017442"),
     "pubmed": ExternalId("pmid", "26017442"),
     "hf": ExternalId("arxiv", "1706.03762"),
+    "biorxiv": ExternalId("doi", "10.1101/2020.03.22.002386"),
+    "dblp": ExternalId("arxiv", "1706.03762"),
+    "openaire": ExternalId("doi", "10.48550/arxiv.1706.03762"),
 }
 
 
@@ -45,3 +48,10 @@ async def test_get(connectors, name):
 async def test_opencitations_citations(connectors):
     ids = await connectors["opencitations"].citations(ExternalId("doi", "10.1038/nature14539"), "out")
     assert len(ids) >= 10
+
+
+async def test_openreview_decision_lookup(connectors):
+    rec = await connectors["openreview"].by_title("Dataflow Is All You Need")  # pyright: ignore[reportAttributeAccessIssue]
+    assert rec is not None and isinstance(
+        rec.extra["openreview_decision"], str
+    )  # the cassette paper: a miss is breakage

@@ -136,6 +136,11 @@ def _ensure_web_ui() -> None:
         typer.secho(f"warning: the web UI is not built; {BUILD_HINT}", err=True)
 
 
+def _web_search_on() -> bool:
+    """`RESEARCHLY_WEB_SEARCH=off` turns web search off: its engines scrape result pages (ADR 0010)."""
+    return os.environ.get("RESEARCHLY_WEB_SEARCH", "on").strip().lower() != "off"
+
+
 def _ensure_web_search() -> Path | None:
     """Install the pinned SearXNG on the first native start; None (web search off) when that fails."""
     home = searxng.home()
@@ -195,13 +200,16 @@ def start() -> None:
     selection = _select()
     _announce(selection)
     _warn_on_runtime_switch(selection.mode)
+    web_search = _web_search_on()
+    if not web_search:
+        typer.echo("Web search is off (RESEARCHLY_WEB_SEARCH=off).")
     search_home = None
     if selection.mode == "native":
         _ensure_web_ui()  # the Docker image builds its own copy
-        search_home = _ensure_web_search()  # so does the compose stack's searxng service
+        search_home = _ensure_web_search() if web_search else None  # so does the compose stack's searxng service
     try:
         if selection.mode == "docker" and selection.engine is not None:
-            run = docker.start(secrets, selection.engine.compose)
+            run = docker.start(secrets, selection.engine.compose, web_search=web_search)
         else:
             run = native.start(secrets, searxng_home=search_home)
     except (docker.DockerStartError, native.NativeStartError) as exc:

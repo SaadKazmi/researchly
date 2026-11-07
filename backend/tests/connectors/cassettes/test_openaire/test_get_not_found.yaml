@@ -1,0 +1,36 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - api.openaire.eu
+    method: GET
+    uri: https://api.openaire.eu/graph/v1/researchProducts?pageSize=5&pid=10.1234%2Fdoes-not-exist-xyz
+  response:
+    body:
+      string: '{"header":{"numFound":0,"maxScore":0.0,"queryTime":6,"page":1,"pageSize":5},"results":[]}'
+    headers:
+      content-type:
+      - application/json
+      date:
+      - Sat, 07 Nov 2026 15:19:53 GMT
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      - Access-Control-Request-Method
+      - Access-Control-Request-Headers
+      x-ratelimit-limit:
+      - '7199'
+      x-ratelimit-used:
+      - '3'
+    status:
+      code: 200
+      message: OK
+version: 1

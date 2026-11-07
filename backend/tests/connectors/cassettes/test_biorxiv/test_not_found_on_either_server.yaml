@@ -1,0 +1,72 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - api.biorxiv.org
+    method: GET
+    uri: https://api.biorxiv.org/details/biorxiv/10.1101/0000.00.00.000000
+  response:
+    body:
+      string: "{\"messages\":[{\"status\":\"no posts found\"}], \"collection\":[]}\r\n\r\n\r\n\r\n"
+    headers:
+      access-control-allow-origin:
+      - '*'
+      content-type:
+      - application/json
+      date:
+      - Sat, 07 Nov 2026 15:03:52 GMT
+      server:
+      - Apache/2.4.62 (Red Hat Enterprise Linux) OpenSSL/3.5.8 mod_fcgid/2.3.9 mod_wsgi/4.7.1
+        Python/3.9
+      transfer-encoding:
+      - chunked
+      vary:
+      - Content-Type
+      x-powered-by:
+      - PHP/8.2.11
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - api.biorxiv.org
+    method: GET
+    uri: https://api.biorxiv.org/details/medrxiv/10.1101/0000.00.00.000000
+  response:
+    body:
+      string: "{\"messages\":[{\"status\":\"no posts found\"}], \"collection\":[]}\r\n\r\n\r\n\r\n"
+    headers:
+      access-control-allow-origin:
+      - '*'
+      content-type:
+      - application/json
+      date:
+      - Sat, 07 Nov 2026 15:03:53 GMT
+      server:
+      - Apache/2.4.62 (Red Hat Enterprise Linux) OpenSSL/3.5.8 mod_fcgid/2.3.9 mod_wsgi/4.7.1
+        Python/3.9
+      transfer-encoding:
+      - chunked
+      vary:
+      - Content-Type
+      x-powered-by:
+      - PHP/8.2.26
+    status:
+      code: 200
+      message: OK
+version: 1

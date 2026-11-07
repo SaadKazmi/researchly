@@ -11,6 +11,8 @@ from researchly.connectors.base import ExternalId
         ("https://doi.org/10.48550/arXiv.1706.03762", "10.48550/arxiv.1706.03762"),
         ("doi:10.1000/ABC", "10.1000/abc"),
         ("not a doi", None),
+        ("10.1000/abc", None),
+        ("10.1000/abc", None),
         ("\u200b 10.1000/abc\ufeff", "10.1000/abc"),
         ("10.1000/abc.,;", "10.1000/abc"),
         ("10.1000/abc)", "10.1000/abc"),
@@ -81,3 +83,35 @@ def test_record_exposes_ids_by_scheme():
     rec = PaperRecord(source="arxiv", ids=[ExternalId("arxiv", "1706.03762")], title="Attention")
     assert rec.id("arxiv") == "1706.03762"
     assert rec.id("doi") is None
+
+
+@pytest.mark.parametrize(
+    ("url", "expected"),
+    [
+        ("https://doi.org/10.1038/nature14539", ExternalId("doi", "10.1038/nature14539")),
+        ("http://dx.doi.org/10.1016/S0140-6736(97)11096-0", ExternalId("doi", "10.1016/s0140-6736(97)11096-0")),
+        ("https://oadoi.org/10.48550/arXiv.1706.03762", ExternalId("doi", "10.48550/arxiv.1706.03762")),
+        ("https://doi.org/10.1000%2Fabc", ExternalId("doi", "10.1000/abc")),
+        ("https://arxiv.org/abs/1706.03762v7", ExternalId("arxiv", "1706.03762")),
+        ("https://arxiv.org/pdf/1706.03762v7.pdf", ExternalId("arxiv", "1706.03762")),
+        ("https://arxiv.org/html/2310.06825v1/#S2", ExternalId("arxiv", "2310.06825")),
+        ("http://export.arxiv.org/abs/hep-th/9901001", ExternalId("arxiv", "hep-th/9901001")),
+        ("https://pubmed.ncbi.nlm.nih.gov/26017442/", ExternalId("pmid", "26017442")),
+        ("https://www.ncbi.nlm.nih.gov/pubmed/26017442", ExternalId("pmid", "26017442")),
+        ("https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4481139/", ExternalId("pmcid", "PMC4481139")),
+        ("https://pmc.ncbi.nlm.nih.gov/articles/PMC4481139", ExternalId("pmcid", "PMC4481139")),
+        ("https://europepmc.org/article/MED/26017442", ExternalId("pmid", "26017442")),
+        ("https://europepmc.org/abstract/MED/26017442", ExternalId("pmid", "26017442")),
+        ("https://europepmc.org/article/PMC/PMC4481139", ExternalId("pmcid", "PMC4481139")),
+        ("https://europepmc.org/article/PPR/PPR123456", None),  # preprint IDs have no scheme
+        ("https://dl.acm.org/citation.cfm?id=3295222", None),  # no DOI in the URL: stays a plain web result
+        ("https://arxiv.org/list/cs.CL/recent", None),
+        ("https://doi.org/", None),
+        ("ftp://doi.org/10.1038/nature14539", None),
+        ("https://evil.example/doi.org/10.1038/nature14539", None),
+        ("http://[::1", None),  # urlsplit raises: never escapes
+        ("not a url", None),
+    ],
+)
+def test_from_url(url, expected):
+    assert ids.from_url(url) == expected

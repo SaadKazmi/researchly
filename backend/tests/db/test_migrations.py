@@ -9,6 +9,7 @@ from researchly.db.base import Base
 
 pytestmark = pytest.mark.db
 TABLES = {
+    "paper_code",
     "setting",
     "capability",
     "provider_config",

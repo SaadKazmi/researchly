@@ -1,0 +1,190 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - api2.openreview.net
+    method: GET
+    uri: https://api2.openreview.net/notes/search?content=title&limit=5&source=forum&term=Dataflow+Is+All+You+Need
+  response:
+    body:
+      string: '{"notes":[{"content":{"venue":{"value":"MLSys 2026"},"pdf":{"value":"/pdf/95f27612b48b7c58ef2cac81c1a81e2132d13ded.pdf"},"topics":{"value":["Hardware:
+        Hardware-algorithm co-design","Hardware: Specialized hardware for ML","Programming
+        Languages and Compilers: Compiler optimizations"]},"venueid":{"value":"MLSys.org/2026/Conference"},"paperhash":{"value":"gandhi|dataflow_is_all_you_need"},"authorids":{"value":["redacted@example.org","redacted@example.org","redacted@example.org","redacted@example.org","~Romy_Tsoupidi1","redacted@example.org","redacted@example.org","redacted@example.org","redacted@example.org","redacted@example.org","redacted@example.org","redacted@example.org","redacted@example.org","~Han_Wang80","redacted@example.org","redacted@example.org","redacted@example.org","redacted@example.org","redacted@example.org","redacted@example.org","redacted@example.org"]},"abstract":{"value":"The
+        autoregressive decode phase of token generation is often a major performance
+        bottleneck in modern AI workflows due to its memory-bandwidth-bound characteristics,
+        which are amplified by powerful open-source models with large context windows
+        and techniques such as chain-of-thought reasoning. Popular GPU architectures
+        extract as little as 21\\% of the available memory bandwidth from loading
+        weights and KV caches, as the scope of asynchronous execution is limited by
+        CPU scheduling overheads, kernel synchronization overheads, and inadequate
+        compute-communication overlap. While prior work attempts to address these
+        overheads with kernel fusion and asynchronous execution on GPUs, they mostly
+        focus on a single GPU and do not generalize across different model architectures.
+        We argue that to truly mitigate these overheads, $\\textit{Dataflow Is All
+        You Need}$. In this paper, we chronicle a co-design approach to achieve peak
+        decoding performance on a dataflow architecture -- the SambaNova SN40 Reconfigurable
+        Dataflow Unit (RDU), substantiated by three key dataflow enabled optimizations
+        -- $\\textit{KernelLooping}$, $\\textit{BatchStreaming}$, and $\\textit{ScheduleOffloading}$
+        -- that generalize to models that are small, large, dense, MoEs, or hybrids,
+        and that use different attention mechanisms. Collectively, these optimizations
+        deliver more than $\\textbf{75}$\\% of the theoretical peak roofline performance
+        for a wide range of popular open-source models and demonstrate a speedup of
+        more than $\\textbf{6$\\times$}$ when using popular speculative decoding techniques.
+        Finally, we show that speculative decoding is $\\textbf{1.7$\\times$}$ faster
+        on 16 SN40 ~chips than on a DGX H100 despite both systems having comparable
+        HBM bandwidth. The techniques described in this paper and the models used
+        in the evaluation are deployed in a production AI inference cloud at $\\href{}{cloud.sambanova.ai}$."},"_bibtex":{"value":"@inproceedings{\ngandhi2026dataflow,\ntitle={Dataflow
+        Is All You Need},\nauthor={Darshan Gandhi and Pushkar Nandkar and David Koeplinger
+        and Nasim Farahini and Romy Tsoupidi and Samuel Rydh and Matheen Musaddiq
+        and Tuowen Zhao and Reid Goodbar and Nathan Sheeley and Leon Zhang and Matthew
+        Shaffer and John Long and Han Wang and Angela Wang and Arjun Sabnis and Joshua
+        Brot and Yun Du and Hakan Zeffer and Mingran Wang and Raghu Prabhakar},\nbooktitle={Ninth
+        Conference on Machine Learning and Systems},\nyear={2026},\nurl={https://openreview.net/forum?id=7wOOhxkuN8}\n}"},"title":{"value":"Dataflow
+        Is All You Need"},"authors":{"value":["Darshan Gandhi","Pushkar Nandkar","David
+        Koeplinger","Nasim Farahini","Romy Tsoupidi","Samuel Rydh","Matheen Musaddiq","Tuowen
+        Zhao","Reid Goodbar","Nathan Sheeley","Leon Zhang","Matthew Shaffer","John
+        Long","Han Wang","Angela Wang","Arjun Sabnis","Joshua Brot","Yun Du","Hakan
+        Zeffer","Mingran Wang","Raghu Prabhakar"]}},"tmdate":1779237677142,"pdate":1773943429572,"tcdate":1773911104958,"writers":["MLSys.org/2026/Conference","MLSys.org/2026/Conference/Submission28/Authors"],"signatures":["MLSys.org/2026/Conference/Submission28/Authors"],"forum":"7wOOhxkuN8","license":"CC
+        BY 4.0","number":28,"cdate":1773911104958,"readers":["everyone"],"invitations":["MLSys.org/2026/Conference/-/Submission","MLSys.org/2026/Conference/-/Post_Submission","MLSys.org/2026/Conference/-/Edit","MLSys.org/2026/Conference/Submission28/-/Camera_Ready_Revision"],"mdate":1779237677142,"odate":1779237072381,"domain":"MLSys.org/2026/Conference","id":"7wOOhxkuN8","version":2},{"content":{"venue":{"value":"CoRR
+        2023"},"pdf":{"value":"https://arxiv.org/pdf/2305.10449v3"},"venueid":{"value":"OpenReview.net/Public_Article"},"paperhash":{"value":"adeel|cooperation_is_all_you_need"},"html":{"value":"https://doi.org/10.48550/arXiv.2305.10449"},"_bibtex":{"value":"@article{DBLP:journals/corr/abs-2305-10449,\n  publtype={informal},\n  author={Ahsan
+        Adeel and Junaid Muzaffar and Khubaib Ahmed and Mohsin Raza},\n  title={Cooperation
+        Is All You Need},\n  year={2023},\n  cdate={1672531200000},\n  journal={CoRR},\n  volume={abs/2305.10449},\n  url={https://doi.org/10.48550/arXiv.2305.10449}\n}\n"},"abstract":{"value":"Going
+        beyond ''dendritic democracy'', we introduce a ''democracy of local processors'',
+        termed Cooperator. Here we compare their capabilities when used in permutation
+        invariant neural networks for reinforcement learning (RL), with machine learning
+        algorithms based on Transformers, such as ChatGPT. Transformers are based
+        on the long standing conception of integrate-and-fire ''point'' neurons, whereas
+        Cooperator is inspired by recent neurobiological breakthroughs suggesting
+        that the cellular foundations of mental life depend on context-sensitive pyramidal
+        neurons in the neocortex which have two functionally distinct points. Weshow
+        that when used for RL, an algorithm based on Cooperator learns far quicker
+        than that based on Transformer, even while having the same number of parameters."},"title":{"value":"Cooperation
+        Is All You Need"},"authors":{"value":[{"fullname":"Ahsan Adeel","username":""},{"fullname":"Junaid
+        Muzaffar","username":""},{"fullname":"Khubaib Ahmed","username":"~Khubaib_Ahmed2"},{"fullname":"Mohsin
+        Raza","username":""}]}},"tmdate":1793835933133,"pdate":1703980800000,"externalIds":["dblp:journals/corr/abs-2305-10449"],"tcdate":1793835922583,"writers":["~","OpenReview.net/Public_Article/DBLP.org","OpenReview.net/Support"],"signatures":["~Khubaib_Ahmed2"],"forum":"AZ7TLiUP0n","license":"CC
+        BY-SA 4.0","number":223438,"cdate":1672531200000,"readers":["everyone"],"invitations":["OpenReview.net/Public_Article/DBLP.org/-/Record","OpenReview.net/Public_Article/-/Edit"],"mdate":1793835933133,"domain":"OpenReview.net/Public_Article","id":"AZ7TLiUP0n","version":2},{"content":{"venue":{"value":"CoRR
+        2026"},"pdf":{"value":"https://arxiv.org/pdf/2608.00823v2"},"venueid":{"value":"OpenReview.net/Public_Article"},"paperhash":{"value":"bichuch|freemium_is_all_you_need"},"html":{"value":"https://doi.org/10.48550/arXiv.2608.00823"},"_bibtex":{"value":"@article{DBLP:journals/corr/abs-2608-00823,\n  publtype={informal},\n  author={Maxim
+        Bichuch and Aviv Yaish},\n  title={Freemium Is All You Need},\n  year={2026},\n  month={August},\n  cdate={1785542400000},\n  journal={CoRR},\n  volume={abs/2608.00823},\n  url={https://doi.org/10.48550/arXiv.2608.00823}\n}\n"},"abstract":{"value":"Free
+        access to a generative AI (GenAI) service requires costly compute, yet can
+        also produce data that improve future service quality. We study a service
+        provider whose users differ in request value and privacy preference, under
+        the constraint that paid requests are kept private, while free requests can
+        be used to improve model quality which otherwise reverts toward a baseline.
+        In particular, we characterize service demand and prove that quality converges
+        to a unique steady state for every stationary service strategy. Next, we analyze
+        optimal pricing and quality policies and show that these can be expressed
+        using two endogenous user value thresholds. For uniform values, we provide
+        a closed-form optimal service strategy and characterize the sufficient conditions
+        for offering free services as dependent on inference cost."},"title":{"value":"Freemium
+        Is All You Need"},"authors":{"value":[{"fullname":"Maxim Bichuch","username":""},{"fullname":"Aviv
+        Yaish","username":"~Aviv_Yaish1"}]}},"tmdate":1790720947120,"pdate":1798675200000,"externalIds":["dblp:journals/corr/abs-2608-00823"],"tcdate":1790720936238,"writers":["~","OpenReview.net/Public_Article/DBLP.org","OpenReview.net/Support"],"signatures":["~Aviv_Yaish1"],"forum":"5uaHgZdarP","license":"CC
+        BY-SA 4.0","number":159497,"cdate":1785542400000,"readers":["everyone"],"invitations":["OpenReview.net/Public_Article/DBLP.org/-/Record","OpenReview.net/Public_Article/-/Edit"],"mdate":1790720947120,"domain":"OpenReview.net/Public_Article","id":"5uaHgZdarP","version":2},{"content":{"venue":{"value":"Crossref"},"venueid":{"value":"OpenReview.net/Public_Article"},"paperhash":{"value":"bichuch|freemium_is_all_you_need"},"html":{"value":"https://doi.org/10.2139/ssrn.7217279"},"title":{"value":"Freemium
+        is all you need"},"authors":{"value":[{"fullname":"Maxim Bichuch","username":"https://orcid.org/orcid-search/search?searchQuery=Maxim%20Bichuch"},{"fullname":"Aviv
+        Yaish","username":"~Aviv_Yaish1"}]}},"tmdate":1790720944631,"pdate":1767225600000,"externalIds":["doi:10.2139/ssrn.7217279"],"tcdate":1790720944495,"writers":["~","OpenReview.net/Public_Article/ORCID.org","OpenReview.net/Support"],"signatures":["~Aviv_Yaish1"],"forum":"zFRVfaXymW","license":"CC
+        BY-SA 4.0","number":113245,"cdate":1785761871078,"readers":["everyone"],"invitations":["OpenReview.net/Public_Article/ORCID.org/-/Record","OpenReview.net/Public_Article/-/Edit"],"mdate":1790720944631,"domain":"OpenReview.net/Public_Article","id":"zFRVfaXymW","version":2},{"content":{"venue":{"value":"CoRR
+        2024"},"pdf":{"value":"https://arxiv.org/pdf/2406.02021v2"},"venueid":{"value":"OpenReview.net/Public_Article"},"paperhash":{"value":"yun|metamixer_is_all_you_need"},"html":{"value":"https://doi.org/10.48550/arXiv.2406.02021"},"_bibtex":{"value":"@article{DBLP:journals/corr/abs-2406-02021,\n  publtype={informal},\n  author={Seokju
+        Yun and Dongheon Lee and Youngmin Ro},\n  title={MetaMixer Is All You Need},\n  year={2024},\n  cdate={1704067200000},\n  journal={CoRR},\n  volume={abs/2406.02021},\n  url={https://doi.org/10.48550/arXiv.2406.02021}\n}\n"},"abstract":{"value":"Transformer,
+        composed of self-attention and Feed-Forward Network, has revolutionized the
+        landscape of network design across various vision tasks. While self-attention
+        is extensively explored as a key factor in performance, FFN has received little
+        attention. FFN is a versatile operator seamlessly integrated into nearly all
+        AI models to effectively harness rich representations. Recent works also show
+        that FFN functions like key-value memories. Thus, akin to the query-key-value
+        mechanism within self-attention, FFN can be viewed as a memory network, where
+        the input serves as query and the two projection weights operate as keys and
+        values, respectively. Based on these observations, we hypothesize that the
+        importance lies in query-key-value framework itself for competitive performance.
+        To verify this, we propose converting self-attention into a more FFN-like
+        efficient token mixer with only convolutions while retaining query-key-value
+        framework, namely FFNification. Specifically, FFNification replaces query-key-value
+        interactions with large kernel convolutions and adopts GELU activation function
+        instead of softmax. The derived token mixer, FFNified attention, serves as
+        key-value memories for detecting locally distributed spatial patterns, and
+        operates in the opposite dimension to the ConvNeXt block within each corresponding
+        sub-operation of the query-key-value framework. Building upon the above two
+        modules, we present a family of Fast-Forward Networks (FFNet). Despite being
+        composed of only simple operators, FFNet outperforms sophisticated and highly
+        specialized methods in each domain, with notable efficiency gains. These results
+        validate our hypothesis, leading us to propose MetaMixer, a general mixer
+        architecture that does not specify sub-operations within the query-key-value
+        framework."},"title":{"value":"MetaMixer Is All You Need"},"authors":{"value":[{"fullname":"Seokju
+        Yun","username":""},{"fullname":"Dongheon Lee","username":"~Dongheon_Lee1"},{"fullname":"Youngmin
+        Ro","username":""}]}},"tmdate":1779686388719,"pdate":1735603200000,"externalIds":["dblp:journals/corr/abs-2406-02021"],"tcdate":1779686382340,"writers":["~","OpenReview.net/Public_Article/DBLP.org","OpenReview.net/Support"],"signatures":["~Dongheon_Lee3"],"forum":"RLLjTMlFIY","license":"CC
+        BY-SA 4.0","number":20980,"cdate":1704067200000,"readers":["everyone"],"invitations":["OpenReview.net/Public_Article/DBLP.org/-/Record","OpenReview.net/Public_Article/-/Edit"],"mdate":1779686388719,"domain":"OpenReview.net/Public_Article","id":"RLLjTMlFIY","version":2}],"count":10000}'
+    headers:
+      alt-svc:
+      - h3=":443"; ma=2592000
+      cache-control:
+      - no-store, no-cache, must-revalidate, proxy-revalidate
+      content-length:
+      - '13225'
+      content-security-policy:
+      - 'default-src ''self''; worker-src ''self'' blob:; style-src ''self'' ''unsafe-inline''
+        https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        script-src ''self'' ''unsafe-inline'' ''unsafe-eval'' https://unpkg.com https://challenges.cloudflare.com/turnstile/v0/api.js
+        https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.googletagmanager.com
+        https://*.google-analytics.com https://www.paypalobjects.com/ https://www.paypal.com/
+        https://js.stripe.com/v3/buy-button.js; font-src ''self'' https://cdn.jsdelivr.net
+        https://fonts.gstatic.com; connect-src ''self'' https://*.google-analytics.com
+        https://api.openreview.net https://api2.openreview.net wss://api2.openreview.net
+        https://arxiv.org https://export.arxiv.org https://dblp.org https://dblp.uni-trier.de
+        https://pub.orcid.org; img-src ''self'' https://api2.openreview.net https://t.paypal.com/
+        data: https://*.google-analytics.com; frame-src ''self'' https://api2.openreview.net
+        https://challenges.cloudflare.com/ https://api.draftable.com https://js.stripe.com/;
+        frame-ancestors ''self'' https://openreview.net; base-uri ''self''; form-action
+        ''self'' http://127.0.0.1:* https://ecopyright.ieee.org/ECTT/IntroPage.jsp'
+      content-type:
+      - application/json; charset=utf-8
+      date:
+      - Sat, 07 Nov 2026 15:08:45 GMT
+      etag:
+      - W/"33a9-W8Ldw+AyprSMFuMSMGKn17S2F4E"
+      expires:
+      - '0'
+      pragma:
+      - no-cache
+      ratelimit-limit:
+      - '20'
+      ratelimit-policy:
+      - 20;w=60
+      ratelimit-remaining:
+      - '19'
+      ratelimit-reset:
+      - '60'
+      server:
+      - nginx
+      strict-transport-security:
+      - max-age=31536000; includeSubdomains; preload
+      surrogate-control:
+      - no-store
+      transfer-encoding:
+      - chunked
+      via:
+      - 1.1 google, 1.1 google
+      x-content-type-options:
+      - nosniff
+      x-dns-prefetch-control:
+      - 'off'
+      x-download-options:
+      - noopen
+      x-frame-options:
+      - SAMEORIGIN
+      x-ratelimit-limit:
+      - '20'
+      x-ratelimit-remaining:
+      - '19'
+      x-ratelimit-reset:
+      - '1794064186'
+      x-xss-protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+version: 1

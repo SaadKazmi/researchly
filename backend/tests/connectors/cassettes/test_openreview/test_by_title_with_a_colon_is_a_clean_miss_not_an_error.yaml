@@ -1,0 +1,222 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - api2.openreview.net
+    method: GET
+    uri: https://api2.openreview.net/notes/search?content=title&limit=5&source=forum&term=ALBERT%3A+A+Lite+BERT+for+Self-supervised+Learning+of+Language+Representations
+  response:
+    body:
+      string: "{\"notes\":[{\"content\":{\"venue\":{\"value\":\"IEEE Journal of Selected
+        Topics in Signal Processing\"},\"pdf\":{\"value\":\"https://ieeexplore.ieee.org/iel7/4200690/9923627/09866521.pdf\"},\"venueid\":{\"value\":\"OpenReview.net/Public_Article\"},\"paperhash\":{\"value\":\"liu|efficient_selfsupervised_learning_representations_for_spoken_language_identification\"},\"html\":{\"value\":\"https://doi.org/10.1109/JSTSP.2022.3201445\"},\"abstract\":{\"value\":\"Self-supervised
+        learning has been widely exploited to learn powerful speech representations.
+        The premise of this paper is that these learned self-supervised representations
+        contain irrelevant information for a particular downstream task. Hence, we
+        investigate efficient methods to compute reliable representations and discard
+        redundant information for language identification (LID) using a pre-trained
+        multilingual wav2vec 2.0 model. To determine an optimal basic system, we compare
+        the performance of wav2vec features extracted from different inner layers
+        of the context network. For this approach, the x-vector self-attention LID
+        (XSA-LID) model forms the backbone used to discriminate between distinct languages.
+        We then propose to employ two mechanisms to reduce irrelevant information
+        of the representations in LID. The first is the attentive squeeze-and-excitation
+        (SE) block for dimension-wise scaling and the second is the linear bottleneck
+        (LBN) block that reduces irrelevant information by nonlinear dimension reduction.
+        We incorporate these two methods in the XSA-LID model and conduct experiments
+        on AP19-OLR data and the MLS14 data in NIST LRE 2017. By replacing the previous
+        input features with wav2vec 2.0 features, the XSA-LID model achieves 63.79%
+        relative improvement in terms of the average cost on AP19-OLR data, and 40.42%,
+        41.54% and 18.97% relative improvement on 3 s, 10 s and 30 s test speech in
+        the MLS14 data in NIST LRE 2017, respectively. In addition, the proposed LBN-XSA
+        model achieves 9.85% relative improvement on AP19-OLR data and over 10% overall
+        improvement on the MLS14 data with a modest number of additional parameters
+        compared to the XSA-LID model. Finally, in terms of average cost and accuracy,
+        the proposed LBN-XSA model outperforms the XSA-LID model which adopts the
+        fine-tuned features on the AP19-OLR data.\"},\"title\":{\"value\":\"Efficient
+        Self-Supervised Learning Representations for Spoken Language Identification\"},\"authors\":{\"value\":[{\"fullname\":\"Hexin
+        Liu\",\"username\":\"~Hexin_Liu1\"},{\"fullname\":\"Leibny Paola Garcia Perera\"},{\"fullname\":\"Andy
+        W. H. Khong\"},{\"fullname\":\"Eng Siong Chng\"},{\"fullname\":\"Suzy J. Styles\"},{\"fullname\":\"Sanjeev
+        Khudanpur\"}]}},\"tmdate\":1789092780340,\"pdate\":1664582400000,\"externalIds\":[\"doi:10.1109/jstsp.2022.3201445\"],\"tcdate\":1769150901762,\"writers\":[\"~\",\"OpenReview.net/Public_Article/ORCID.org\",\"OpenReview.net/Support\"],\"signatures\":[\"~Hexin_Liu1\"],\"forum\":\"92K8UAu4Q9\",\"license\":\"CC
+        BY-SA 4.0\",\"number\":36491,\"cdate\":1671852976272,\"readers\":[\"everyone\"],\"invitations\":[\"OpenReview.net/Public_Article/ORCID.org/-/Record\",\"OpenReview.net/Public_Article/-/Edit\",\"OpenReview.net/-/Edit\"],\"mdate\":1789092780340,\"domain\":\"OpenReview.net/Public_Article\",\"id\":\"92K8UAu4Q9\",\"version\":2},{\"content\":{\"venue\":{\"value\":\"Greeks
+        in AI 2025 Poster\"},\"pdf\":{\"value\":\"/pdf/c39826185b8eb240546f5d64671952c1e099ecc7.pdf\"},\"keywords\":{\"value\":[\"Self-supervised
+        learning\",\"representation learning\",\"ensemble learning\",\"Gaussian processes\"]},\"venueid\":{\"value\":\"greeksin.ai/Greeks_in_AI/2025/Symposium\"},\"paperhash\":{\"value\":\"polyzos|ensembles_of_informative_representations_for_selfsupervised_learning\"},\"authorids\":{\"value\":[\"~Konstantinos_D._Polyzos1\",\"~Panagiotis_Traganitis1\",\"~Manish_K._Singh1\",\"~Georgios_B._Giannakis1\"]},\"abstract\":{\"value\":\"The
+        requirement of large-size labeled training datasets often prohibits the deployment
+        of supervised learning models in\\nseveral applications with high acquisition
+        costs and privacy\\nconcerns. To alleviate the burden of obtaining labels,
+        selfsupervised learning aims to identify informative data representations
+        using auxiliary tasks that do not require external labels. The representations
+        serve as refined inputs for the main\\nlearning task aimed at improving sample
+        efficiency. Nonetheless, selecting individual auxiliary tasks and combining
+        the\\ncorresponding extracted representations constitutes a nontrivial design
+        problem. Agnostic of the approach for extracting\\nindividual representations
+        per auxiliary task, this paper develops a weighted ensemble approach for obtaining
+        a unified\\nrepresentation. The weights signify the relative dominance\\nof
+        individual representations in informing predictions for the\\nmain task. The
+        representation ensemble is further augmented\\nwith the input data to improve
+        accuracy and avoid information loss concerns. Numerical tests on real datasets
+        showcase\\nthe merits of the advocated approach.\"},\"_bibtex\":{\"value\":\"@inproceedings{\\npolyzos2025ensembles,\\ntitle={{ENSEMBLES}
+        {OF} {INFORMATIVE} {REPRESENTATIONS} {FOR} {SELF}-{SUPERVISED} {LEARNING}},\\nauthor={Konstantinos
+        D. Polyzos and Panagiotis Traganitis and Manish K. Singh and Georgios B. Giannakis},\\nbooktitle={Greeks
+        in AI Symposium 2025},\\nyear={2025},\\nurl={https://openreview.net/forum?id=rr7BagOWPZ}\\n}\"},\"title\":{\"value\":\"ENSEMBLES
+        OF INFORMATIVE REPRESENTATIONS FOR SELF-SUPERVISED LEARNING\"},\"authors\":{\"value\":[\"Konstantinos
+        D. Polyzos\",\"Panagiotis Traganitis\",\"Manish K. Singh\",\"Georgios B. Giannakis\"]}},\"tmdate\":1750690435094,\"pdate\":1750690435070,\"tcdate\":1748731484747,\"writers\":[\"greeksin.ai/Greeks_in_AI/2025/Symposium\",\"greeksin.ai/Greeks_in_AI/2025/Symposium/Submission128/Authors\"],\"signatures\":[\"greeksin.ai/Greeks_in_AI/2025/Symposium/Submission128/Authors\"],\"forum\":\"rr7BagOWPZ\",\"license\":\"CC
+        BY 4.0\",\"number\":128,\"cdate\":1748731484747,\"readers\":[\"everyone\"],\"invitations\":[\"greeksin.ai/Greeks_in_AI/2025/Symposium/-/Submission\",\"greeksin.ai/Greeks_in_AI/2025/Symposium/-/Post_Submission\",\"greeksin.ai/Greeks_in_AI/2025/Symposium/-/Edit\"],\"mdate\":1750690435094,\"odate\":1750690435070,\"domain\":\"greeksin.ai/Greeks_in_AI/2025/Symposium\",\"id\":\"rr7BagOWPZ\",\"version\":2},{\"content\":{\"venue\":{\"value\":\"MLSP
+        2024\"},\"pdf\":{\"value\":\"https://ieeexplore.ieee.org/iel8/10734669/10734712/10734769.pdf\"},\"venueid\":{\"value\":\"dblp.org/conf/MLSP/2024\"},\"paperhash\":{\"value\":\"polyzos|ensembles_of_informative_representations_for_selfsupervised_learning\"},\"authorids\":{\"value\":[\"~Konstantinos_D._Polyzos1\",\"~Panagiotis_A._Traganitis1\",\"https://dblp.org/search/pid/api?q=author:Manish_Kumar_Singh_0005:\",\"https://dblp.org/search/pid/api?q=author:Georgios_B._Giannakis:\"]},\"html\":{\"value\":\"https://doi.org/10.1109/MLSP58920.2024.10734769\"},\"_bibtex\":{\"value\":\"@inproceedings{DBLP:conf/mlsp/PolyzosTSG24,\\n
+        \ author={Konstantinos D. Polyzos and Panagiotis A. Traganitis and Manish
+        Kumar Singh and Georgios B. Giannakis},\\n  title={Ensembles of Informative
+        Representations for Self-Supervised Learning},\\n  year={2024},\\n  cdate={1704067200000},\\n
+        \ pages={1-6},\\n  url={https://doi.org/10.1109/MLSP58920.2024.10734769},\\n
+        \ booktitle={MLSP},\\n  crossref={conf/mlsp/2024}\\n}\\n\"},\"abstract\":{\"value\":\"The
+        requirement of large-size labeled training datasets often prohibits the deployment
+        of supervised learning models in several applications with high acquisition
+        costs and privacy concerns. To alleviate the burden of obtaining labels, self-supervised
+        learning aims to identify informative data representations using auxiliary
+        tasks that do not require external labels. The representations serve as refined
+        inputs for the main learning task aimed at improving sample efficiency. Nonetheless,
+        selecting individual auxiliary tasks and combining the corresponding extracted
+        representations constitutes a nontrivial design problem. Agnostic of the approach
+        for extracting individual representations per auxiliary task, this paper develops
+        a weighted ensemble approach for obtaining a unified representation. The weights
+        signify the relative dominance of individual representations in informing
+        predictions for the main task. The representation ensemble is further augmented
+        with the input data to improve accuracy and avoid information loss concerns.
+        Numerical tests on real datasets showcase the merits of the advocated approach.\"},\"title\":{\"value\":\"Ensembles
+        of Informative Representations for Self-Supervised Learning\"},\"authors\":{\"value\":[\"Konstantinos
+        D. Polyzos\",\"Panagiotis A. Traganitis\",\"Manish Kumar Singh\",\"Georgios
+        B. Giannakis\"]}},\"tmdate\":1747434706152,\"pdate\":1704067200000,\"tcdate\":1747326631869,\"writers\":[\"~\"],\"signatures\":[\"~Konstantinos_D._Polyzos1\"],\"forum\":\"F83CKzBbCc\",\"license\":\"CC
+        BY-SA 4.0\",\"number\":493780,\"cdate\":1704067200000,\"readers\":[\"everyone\"],\"invitations\":[\"DBLP.org/-/Record\",\"DBLP.org/-/Edit\",\"DBLP.org/-/Author_Coreference\"],\"mdate\":1747434706152,\"domain\":\"DBLP.org\",\"id\":\"F83CKzBbCc\",\"version\":2},{\"content\":{\"TLDR\":{\"value\":\"A
+        new Self-Supervised Learning method based on flow matching with theoretical
+        analysis\"},\"venue\":{\"value\":\"ICLR 2027 Conference Submission\"},\"keywords\":{\"value\":[\"Self-Supervised
+        Learning\",\"Representation Learning\",\"FLow Matching\"]},\"primary_area\":{\"value\":\"unsupervised,
+        self-supervised, semi-supervised, and supervised representation learning\"},\"abstract\":{\"value\":\"Explicit
+        geometric references offer a direct way to structure self-supervised representations.
+        Existing adversarial distribution-matching formulations, however, require
+        costly encoder\u2013critic optimization. We introduce Flow-Based Distribution
+        Matching (FBDM), a non-adversarial framework that shapes the encoder toward
+        an explicit geometric reference via spherical conditional velocity regression
+        during pretraining, then discards the learned velocity field for downstream
+        evaluation. An ETF-inspired reference allows its number of components K\u2032
+        to exceed the auxiliary flow dimension \\\\(d^\\\\star\\\\) while retaining
+        structured geometric separation. We assign both augmented views of each image
+        to the same target, while limiting how many images each reference center can
+        receive. An explicit alignment loss further pulls the two views\u2019 representations
+        closer together. Experiments across benchmarks ranging from CIFAR to ImageNet
+        show that FBDM achieves performance nearly on par with DM and remains competitive
+        with existing SSL methods. Matched training-cost comparisons show a 1.48\u20131.83\xD7
+        speedup over DM with a negligible increase in GPU memory usage. We also provide
+        a theoretical explanation for the usefulness of the learned representations:
+        under stated conditions, we bound the downstream misclassification rate in
+        terms of the FBDM pretraining loss.\"},\"_bibtex\":{\"value\":\"@inproceedings{\\nanonymous2026learning,\\ntitle={Learning
+        a Flow to Self-Supervised Representations},\\nauthor={Anonymous},\\nbooktitle={Submitted
+        to The Fifteenth International Conference on Learning Representations},\\nyear={2026},\\nurl={https://openreview.net/forum?id=Rxs9uhNnxb},\\nnote={under
+        review}\\n}\"},\"title\":{\"value\":\"Learning a Flow to Self-Supervised Representations\"},\"pdf\":{\"value\":\"/pdf/f34ed39aaa77ec04a42c9a0f62bb031fc8775cb1.pdf\"},\"venueid\":{\"value\":\"ICLR.cc/2027/Conference/Submission\"}},\"tmdate\":1791225394995,\"tcdate\":1788954705528,\"writers\":[\"ICLR.cc/2027/Conference\",\"ICLR.cc/2027/Conference/Submission12316/Authors\"],\"signatures\":[\"ICLR.cc/2027/Conference/Submission12316/Authors\"],\"forum\":\"Rxs9uhNnxb\",\"license\":\"CC
+        BY 4.0\",\"number\":12316,\"cdate\":1788954705528,\"readers\":[\"everyone\"],\"invitations\":[\"ICLR.cc/2027/Conference/-/Submission\",\"ICLR.cc/2027/Conference/-/Submission_Change_Before_Bidding\",\"ICLR.cc/2027/Conference/Submission12316/-/Full_Submission\",\"ICLR.cc/2027/Conference/-/Submission_Change_Before_Reviewing\",\"ICLR.cc/2027/Conference/-/Edit\"],\"mdate\":1791225394995,\"odate\":1791031328286,\"domain\":\"ICLR.cc/2027/Conference\",\"id\":\"Rxs9uhNnxb\",\"version\":2},{\"content\":{\"TLDR\":{\"value\":\"We
+        present a self-supervised framework for learning gigapixel-scale whole slide
+        representations.\"},\"venue\":{\"value\":\"AIM-FM Workshop @ NeurIPS'24 Poster\"},\"pdf\":{\"value\":\"/pdf/73f959d5e3dbb6b6b451a12537d979b70eda3c4d.pdf\"},\"keywords\":{\"value\":[\"computational
+        pathology\",\"CPATH\",\"histopathology\",\"medical foundation models\",\"self-supervised
+        learning\",\"representation learning\",\"multiple instance learning\",\"biomedical
+        imaging\"]},\"venueid\":{\"value\":\"NeurIPS.cc/2024/Workshop/AIM-FM\"},\"paperhash\":{\"value\":\"hou|a_selfsupervised_framework_for_learning_whole_slide_representations\"},\"authorids\":{\"value\":[\"~Xinhai_Hou1\",\"~Cheng_Jiang2\",\"~Akhil_Kondepudi1\",\"~Yiwei_Lyu1\",\"~Asadur_Zaman_Chowdury1\",\"~Honglak_Lee2\",\"~Todd_C_Hollon1\"]},\"abstract\":{\"value\":\"Whole
+        slide imaging is fundamental to biomedical microscopy and computational pathology.
+        Previously, learning representations for gigapixel-sized whole slide images
+        (WSIs) has relied on multiple instance learning with weak labels, which do
+        not capture the diverse morphologic features and spatial heterogeneity of
+        WSIs. A high-quality self-supervised learning method for WSIs would provide
+        transferable visual representations for downstream computational pathology
+        tasks, without the need for dense annotations. We present Slide Pre-trained
+        Transformers (SPT), a self-supervised learning framework for gigapixel-scale
+        self-supervision of WSIs. Treating WSI patches as tokens, SPT combines data
+        transformation strategies from language and vision modeling into a general
+        and unified framework to generate views of WSIs for self-supervised pretraining.
+        SPT leverages the inherent regional heterogeneity, histologic feature variability,
+        and information redundancy within WSIs to learn high-quality whole slide representations.
+        We benchmark SPT visual representations on five diagnostic tasks across three
+        biomedical microscopy datasets. SPT significantly outperforms baselines for
+        histopathologic diagnosis, cancer subtyping, and genetic mutation prediction.
+        Finally, we demonstrate that SPT consistently improves whole slide representations
+        when using off-the-shelf, in-domain, and foundational patch encoders for whole
+        slide multiple instance learning.\"},\"_bibtex\":{\"value\":\"@inproceedings{\\nhou2024a,\\ntitle={A
+        self-supervised framework for learning whole slide representations},\\nauthor={Xinhai
+        Hou and Cheng Jiang and Akhil Kondepudi and Yiwei Lyu and Asadur Zaman Chowdury
+        and Honglak Lee and Todd C Hollon},\\nbooktitle={Advancements In Medical Foundation
+        Models: Explainability, Robustness, Security, and Beyond},\\nyear={2024},\\nurl={https://openreview.net/forum?id=JHZfCc0kt5}\\n}\"},\"title\":{\"value\":\"A
+        self-supervised framework for learning whole slide representations\"},\"authors\":{\"value\":[\"Xinhai
+        Hou\",\"Cheng Jiang\",\"Akhil Kondepudi\",\"Yiwei Lyu\",\"Asadur Zaman Chowdury\",\"Honglak
+        Lee\",\"Todd C Hollon\"]}},\"tmdate\":1734247578633,\"pdate\":1728697405536,\"tcdate\":1727377213351,\"writers\":[\"NeurIPS.cc/2024/Workshop/AIM-FM\",\"NeurIPS.cc/2024/Workshop/AIM-FM/Submission88/Authors\"],\"signatures\":[\"NeurIPS.cc/2024/Workshop/AIM-FM/Submission88/Authors\"],\"forum\":\"JHZfCc0kt5\",\"license\":\"CC
+        BY 4.0\",\"number\":88,\"cdate\":1727377213351,\"readers\":[\"everyone\"],\"invitations\":[\"NeurIPS.cc/2024/Workshop/AIM-FM/-/Submission\",\"NeurIPS.cc/2024/Workshop/AIM-FM/-/Post_Submission\",\"NeurIPS.cc/2024/Workshop/AIM-FM/-/Edit\",\"NeurIPS.cc/2024/Workshop/AIM-FM/Submission88/-/Revision\"],\"mdate\":1734247578633,\"odate\":1733709635106,\"domain\":\"NeurIPS.cc/2024/Workshop/AIM-FM\",\"id\":\"JHZfCc0kt5\",\"version\":2}],\"count\":10000}"
+    headers:
+      alt-svc:
+      - h3=":443"; ma=2592000
+      cache-control:
+      - no-store, no-cache, must-revalidate, proxy-revalidate
+      content-length:
+      - '15408'
+      content-security-policy:
+      - 'default-src ''self''; worker-src ''self'' blob:; style-src ''self'' ''unsafe-inline''
+        https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com;
+        script-src ''self'' ''unsafe-inline'' ''unsafe-eval'' https://unpkg.com https://challenges.cloudflare.com/turnstile/v0/api.js
+        https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.googletagmanager.com
+        https://*.google-analytics.com https://www.paypalobjects.com/ https://www.paypal.com/
+        https://js.stripe.com/v3/buy-button.js; font-src ''self'' https://cdn.jsdelivr.net
+        https://fonts.gstatic.com; connect-src ''self'' https://*.google-analytics.com
+        https://api.openreview.net https://api2.openreview.net wss://api2.openreview.net
+        https://arxiv.org https://export.arxiv.org https://dblp.org https://dblp.uni-trier.de
+        https://pub.orcid.org; img-src ''self'' https://api2.openreview.net https://t.paypal.com/
+        data: https://*.google-analytics.com; frame-src ''self'' https://api2.openreview.net
+        https://challenges.cloudflare.com/ https://api.draftable.com https://js.stripe.com/;
+        frame-ancestors ''self'' https://openreview.net; base-uri ''self''; form-action
+        ''self'' http://127.0.0.1:* https://ecopyright.ieee.org/ECTT/IntroPage.jsp'
+      content-type:
+      - application/json; charset=utf-8
+      date:
+      - Sat, 07 Nov 2026 15:53:30 GMT
+      etag:
+      - W/"3c30-3RIbgxDXrxfsGwi/CJ+7gbztYiw"
+      expires:
+      - '0'
+      pragma:
+      - no-cache
+      ratelimit-limit:
+      - '20'
+      ratelimit-policy:
+      - 20;w=60
+      ratelimit-remaining:
+      - '18'
+      ratelimit-reset:
+      - '44'
+      server:
+      - nginx
+      strict-transport-security:
+      - max-age=31536000; includeSubdomains; preload
+      surrogate-control:
+      - no-store
+      transfer-encoding:
+      - chunked
+      via:
+      - 1.1 google, 1.1 google
+      x-content-type-options:
+      - nosniff
+      x-dns-prefetch-control:
+      - 'off'
+      x-download-options:
+      - noopen
+      x-frame-options:
+      - SAMEORIGIN
+      x-ratelimit-limit:
+      - '20'
+      x-ratelimit-remaining:
+      - '18'
+      x-ratelimit-reset:
+      - '1794066854'
+      x-xss-protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+version: 1

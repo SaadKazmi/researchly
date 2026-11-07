@@ -8,8 +8,21 @@ from researchly.connectors import ids as idn
 from researchly.connectors.base import ExternalId, PaperRecord
 
 TITLE_SIMILARITY = 0.92
-# spec §8.1.1: OpenAlex enriches first, then Crossref; arXiv and HF have the thinnest metadata
-SOURCE_PRIORITY = ("openalex", "crossref", "pubmed", "europepmc", "datacite", "arxiv", "hf", "opencitations")
+# §8.3 order; the Tier-2 tail only fills fields no Tier-1 source has (their own data lives in `extra`)
+SOURCE_PRIORITY = (
+    "openalex",
+    "crossref",
+    "pubmed",
+    "europepmc",
+    "datacite",
+    "arxiv",
+    "hf",
+    "opencitations",
+    "dblp",
+    "openreview",
+    "biorxiv",
+    "openaire",
+)
 MERGED_FIELDS = (
     "title",
     "abstract",

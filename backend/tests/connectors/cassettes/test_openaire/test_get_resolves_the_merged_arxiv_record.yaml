@@ -1,0 +1,96 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      host:
+      - api.openaire.eu
+    method: GET
+    uri: https://api.openaire.eu/graph/v1/researchProducts?pageSize=5&pid=10.48550%2Farxiv.1706.03762
+  response:
+    body:
+      string: "{\"header\":{\"numFound\":1,\"maxScore\":1.0,\"queryTime\":26,\"page\":1,\"pageSize\":5},\"results\":[{\"authors\":[{\"fullName\":\"Ashish
+        Vaswani\",\"name\":null,\"surname\":null,\"rank\":1,\"pid\":null},{\"fullName\":\"Noam
+        Shazeer\",\"name\":null,\"surname\":null,\"rank\":2,\"pid\":null},{\"fullName\":\"Niki
+        Parmar\",\"name\":null,\"surname\":null,\"rank\":3,\"pid\":null},{\"fullName\":\"Jakob
+        Uszkoreit\",\"name\":null,\"surname\":null,\"rank\":4,\"pid\":null},{\"fullName\":\"Llion
+        Jones\",\"name\":null,\"surname\":null,\"rank\":5,\"pid\":null},{\"fullName\":\"Aidan
+        N. Gomez\",\"name\":\"Aidan N.\",\"surname\":\"Gomez\",\"rank\":6,\"pid\":null},{\"fullName\":\"Lukasz
+        Kaiser\",\"name\":null,\"surname\":null,\"rank\":7,\"pid\":{\"id\":{\"scheme\":\"orcid_pending\",\"value\":\"0000-0003-1092-6010\"},\"provenance\":null}},{\"fullName\":\"Illia
+        Polosukhin\",\"name\":null,\"surname\":null,\"rank\":8,\"pid\":null}],\"openAccessColor\":null,\"publiclyFunded\":false,\"type\":\"publication\",\"language\":{\"code\":\"und\",\"label\":\"Undetermined\"},\"countries\":null,\"subjects\":[{\"subject\":{\"scheme\":\"keyword\",\"value\":\"FOS:
+        Computer and information sciences\"},\"provenance\":null},{\"subject\":{\"scheme\":\"keyword\",\"value\":\"Gottesurteil;
+        Ordal; Ordalien; iudicium Dei; Trial by ordeal; Ordalia; Sp\xE4tantike; Fr\xFChmittelalter;
+        Late Antiquity; Early Middle Ages; Rechtsgeschichte; Rechtskultur; Rechtsverfahren;
+        Prozessrecht; Beweisrecht; Beweisf\xFChrung; Beweisordnung; Evidenz; Evidenzproduktion;
+        Wahrheitsproduktion; Wahrheit; proof; evidence; Verfahren; Prozedur; Performanz;
+        Ritual; Ritualtheorie; Ritualisierung; liturgische Skripte; Liturgie; Ordines;
+        Ordines iudiciorum Dei; rituelle Praxis; Sakralit\xE4t; sakraler Raum; Raumtheorie;
+        Rechtsraum; Kirchenraum; Kirchenrecht; Kanonistik; canon law; Leges; Kapitularien;
+        Kapitularienrecht; normatives Wissen; Normativit\xE4t; Herrschaft; Governance;
+        Herrschaftssicherung; Legitimation; Legitimit\xE4t; narrative Legitimation;
+        Narrativierung; Hagiographie; Heiligenvita; Mirakelbericht; Konfliktregelung;
+        Konfliktl\xF6sung; soziale Ordnung; \xD6ffentlichkeit; Konsens; Autorit\xE4t;
+        Bischof; Episkopat; bisch\xF6fliche Autorit\xE4t; episcopal authority; Klerus;
+        Gerichtsbarkeit; Gericht; Forum; Sakralgericht; Gottesbeweis; Theodizee; Polemik;
+        Kritik am Gottesurteil; Agobard von Lyon; Karolingerzeit; Karolingische Reform;
+        Kirchenreform; Rechtspluralismus; Rechtsanthropologie; Legal anthropology;
+        historische Anthropologie; Kulturgeschichte des Rechts; Rechtsritual; Rechtskommunikation;
+        Zeugenschaft; Eid; Schwur; compurgation; Reinigungseid; ordalisches Beweissystem;
+        Fehde; Frieden; pax; iustitia; Gerichtsbarkeit des Bischofs; Sakramentales;
+        Reliquien; Heiligkeit; Gewalt und Recht; K\xF6rper; K\xF6rperzeichen; Pr\xFCfungsritual;
+        Wasserordal; Feuerordal; Kesselfang; Zweikampf; Duell; Kampfordal; Gottesurteilspraxis;
+        mittelalterliche Beweisformen; sakrale Evidenz; Text und Praxis; Quellenanalyse;
+        Close Reading; interdisziplin\xE4re Medi\xE4vistik\"},\"provenance\":null},{\"subject\":{\"scheme\":\"keyword\",\"value\":\"NT
+        3010\"},\"provenance\":null},{\"subject\":{\"scheme\":\"FOS\",\"value\":\"02
+        engineering and technology\"},\"provenance\":null},{\"subject\":{\"scheme\":\"keyword\",\"value\":\"Machine
+        Learning (cs.LG)\"},\"provenance\":null},{\"subject\":{\"scheme\":\"keyword\",\"value\":\"Machine
+        Learning\"},\"provenance\":null},{\"subject\":{\"scheme\":\"keyword\",\"value\":\"940
+        Geschichte Europas\"},\"provenance\":null},{\"subject\":{\"scheme\":\"FOS\",\"value\":\"0202
+        electrical engineering, electronic engineering, information engineering\"},\"provenance\":null},{\"subject\":{\"scheme\":\"keyword\",\"value\":\"Computation
+        and Language\"},\"provenance\":null},{\"subject\":{\"scheme\":\"keyword\",\"value\":\"943
+        Geschichte Deutschlands\"},\"provenance\":null},{\"subject\":{\"scheme\":\"keyword\",\"value\":\"NT
+        3900\"},\"provenance\":null},{\"subject\":{\"scheme\":\"keyword\",\"value\":\"Computation
+        and Language (cs.CL)\"},\"provenance\":null},{\"subject\":{\"scheme\":\"keyword\",\"value\":\"230
+        Theologie, Christentum\"},\"provenance\":null},{\"subject\":{\"scheme\":\"keyword\",\"value\":\"PW
+        9255\"},\"provenance\":null}],\"mainTitle\":\"Attention Is All You Need\",\"subTitle\":null,\"descriptions\":[\"<jats:p>The
+        dominant sequence transduction models are based on complex recurrent or convolutional
+        neural networks in an encoder-decoder configuration. The best performing models
+        also connect the encoder and decoder through an attention mechanism. We propose
+        a new simple network architecture, the Transformer, based solely on attention
+        mechanisms, dispensing with recurrence and convolutions entirely. Experiments
+        on two machine translation tasks show these models to be superior in quality
+        while being more parallelizable and requiring significantly less time to train.
+        Our model achieves 28.4 BLEU on the WMT 2014 English-to-German translation
+        task, improving over the existing best results, including ensembles by over
+        2 BLEU. On the WMT 2014 English-to-French translation task, our model establishes
+        a new single-model state-of-the-art BLEU score of 41.8 after training for
+        3.5 days on eight GPUs, a small fraction of the training costs of the best
+        models from the literature. We show that the Transformer generalizes well
+        to other tasks by applying it successfully to English constituency parsing
+        both with large and limited training data.</jats:p>\"],\"publicationDate\":\"2025-08-23\",\"publisher\":\"Shenzhen
+        Medical Academy of Research and Translation\",\"embargoEndDate\":\"2017-06-01\",\"sources\":[\"Crossref\"],\"formats\":null,\"contributors\":null,\"coverages\":null,\"bestAccessRight\":{\"code\":\"c_abf2\",\"label\":\"OPEN\",\"scheme\":\"http://vocabularies.coar-repositories.org/documentation/access_rights/\"},\"container\":null,\"documentationUrls\":null,\"codeRepositoryUrl\":null,\"programmingLanguage\":null,\"contactPeople\":null,\"contactGroups\":null,\"tools\":null,\"size\":null,\"version\":null,\"geoLocations\":null,\"id\":\"doi_dedup___::5e53125f15c47535bb231d51dc2a2cce\",\"originalIds\":[\"10.65215/r5bs2d54\",\"50|doiboost____|3b82d60d76b09bef72aa15976d896e51\",\"10.65215/mdcm8z23\",\"50|doiboost____|4ba126e6fbd727f9daad05763a68417f\",\"10.65215/2q58a426\",\"50|doiboost____|4c10d6f027a327e93f14a5632955b05e\",\"10.65215/ysbyhc05\",\"50|doiboost____|95d87cd8850b33512450348fb5a82a6f\",\"10.65215/ctdc8e75\",\"50|doiboost____|ada828e6885a35e3673399c8f165cdd2\",\"10.65215/nxvz2v36\",\"50|doiboost____|b56f7e4b1f16292704852162e9dafa3e\",\"10.65215/pc26a033\",\"50|doiboost____|d8a6434027afdd8ed8202b93f1335e34\",\"50|datacite____::5e53125f15c47535bb231d51dc2a2cce\",\"10.48550/arxiv.1706.03762\",\"50|datacite____::715b2608120ed5451926f4af22b18a5d\",\"10.5283/epub.78347\",\"50|datacite____::9d8b78726215620e75889e98b377b4c1\",\"10.5283/epub.78343\",\"50|od________18::4bcf8ae6d49b00d7d2e1624298c9764f\",\"oai:arXiv.org:1706.03762\",\"50|dblp________::1a6a4125d3835ff92444824884c3693b\",\"50|dblp________::798545d6b12223b69a616e60cbfa622e\"],\"pids\":[{\"scheme\":\"doi\",\"value\":\"10.65215/r5bs2d54\"},{\"scheme\":\"doi\",\"value\":\"10.65215/mdcm8z23\"},{\"scheme\":\"doi\",\"value\":\"10.65215/2q58a426\"},{\"scheme\":\"doi\",\"value\":\"10.65215/ysbyhc05\"},{\"scheme\":\"doi\",\"value\":\"10.65215/ctdc8e75\"},{\"scheme\":\"doi\",\"value\":\"10.65215/nxvz2v36\"},{\"scheme\":\"doi\",\"value\":\"10.65215/pc26a033\"},{\"scheme\":\"doi\",\"value\":\"10.48550/arxiv.1706.03762\"},{\"scheme\":\"doi\",\"value\":\"10.5283/epub.78347\"},{\"scheme\":\"doi\",\"value\":\"10.5283/epub.78343\"},{\"scheme\":\"arXiv\",\"value\":\"1706.03762\"}],\"dateOfCollection\":null,\"lastUpdateTimeStamp\":null,\"indicators\":{\"citationImpact\":{\"citationCount\":16770.0,\"influence\":8.9192224E-7,\"popularity\":1.07007545E-5,\"impulse\":16770.0,\"citationClass\":\"C1\",\"influenceClass\":\"C1\",\"impulseClass\":\"C1\",\"popularityClass\":\"C1\"}},\"instances\":[{\"pids\":[{\"scheme\":\"doi\",\"value\":\"10.65215/r5bs2d54\"}],\"type\":\"Article\",\"urls\":[\"https://doi.org/10.65215/r5bs2d54\"],\"publicationDate\":\"2025-11-13\",\"refereed\":\"peerReviewed\"},{\"pids\":[{\"scheme\":\"doi\",\"value\":\"10.65215/mdcm8z23\"}],\"type\":\"Article\",\"urls\":[\"https://doi.org/10.65215/mdcm8z23\"],\"publicationDate\":\"2025-08-23\",\"refereed\":\"peerReviewed\"},{\"pids\":[{\"scheme\":\"doi\",\"value\":\"10.65215/2q58a426\"}],\"type\":\"Article\",\"urls\":[\"https://doi.org/10.65215/2q58a426\"],\"publicationDate\":\"2025-08-23\",\"refereed\":\"peerReviewed\"},{\"pids\":[{\"scheme\":\"doi\",\"value\":\"10.65215/ysbyhc05\"}],\"type\":\"Article\",\"urls\":[\"https://doi.org/10.65215/ysbyhc05\"],\"publicationDate\":\"2025-08-23\",\"refereed\":\"peerReviewed\"},{\"pids\":[{\"scheme\":\"doi\",\"value\":\"10.65215/ctdc8e75\"}],\"type\":\"Article\",\"urls\":[\"https://doi.org/10.65215/ctdc8e75\"],\"publicationDate\":\"2025-08-23\",\"refereed\":\"peerReviewed\"},{\"pids\":[{\"scheme\":\"doi\",\"value\":\"10.65215/nxvz2v36\"}],\"type\":\"Article\",\"urls\":[\"https://doi.org/10.65215/nxvz2v36\"],\"publicationDate\":\"2025-08-23\",\"refereed\":\"peerReviewed\"},{\"pids\":[{\"scheme\":\"doi\",\"value\":\"10.65215/pc26a033\"}],\"type\":\"Article\",\"urls\":[\"https://doi.org/10.65215/pc26a033\"],\"publicationDate\":\"2025-08-23\",\"refereed\":\"peerReviewed\"},{\"pids\":[{\"scheme\":\"doi\",\"value\":\"10.48550/arxiv.1706.03762\"}],\"license\":\"http://arxiv.org/licenses/nonexclusive-distrib/1.0/\",\"type\":\"Article\",\"urls\":[\"https://dx.doi.org/10.48550/arxiv.1706.03762\"],\"publicationDate\":\"2017-01-01\",\"refereed\":\"nonPeerReviewed\"},{\"pids\":[{\"scheme\":\"doi\",\"value\":\"10.5283/epub.78347\"}],\"type\":\"Thesis\",\"urls\":[\"https://dx.doi.org/10.5283/epub.78347\"],\"publicationDate\":\"2025-01-01\",\"refereed\":\"nonPeerReviewed\"},{\"pids\":[{\"scheme\":\"doi\",\"value\":\"10.5283/epub.78343\"}],\"type\":\"Thesis\",\"urls\":[\"https://dx.doi.org/10.5283/epub.78343\"],\"publicationDate\":\"2025-01-01\",\"refereed\":\"nonPeerReviewed\"},{\"pids\":[{\"scheme\":\"arXiv\",\"value\":\"1706.03762\"}],\"type\":\"Preprint\",\"urls\":[\"http://arxiv.org/abs/1706.03762\",\"https://arxiv.org/abs/1706.03762\"],\"publicationDate\":\"2017-06-12\",\"refereed\":\"nonPeerReviewed\"},{\"alternateIdentifiers\":[{\"scheme\":\"arXiv\",\"value\":\"1706.03762\"}],\"type\":\"Article\",\"urls\":[\"https://dblp.org/rec/journals/corr/VaswaniSPUJGKP17.html\",\"http://arxiv.org/abs/1706.03762\"],\"publicationDate\":\"2017-01-01\",\"refereed\":\"nonPeerReviewed\"},{\"type\":\"Conference
+        object\",\"urls\":[\"https://proceedings.neurips.cc/paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html\",\"https://dblp.org/rec/conf/nips/VaswaniSPUJGKP17.html\"],\"refereed\":\"nonPeerReviewed\"}],\"isGreen\":true,\"isInDiamondJournal\":false}]}"
+    headers:
+      content-type:
+      - application/json
+      date:
+      - Sat, 07 Nov 2026 15:19:51 GMT
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      - Access-Control-Request-Method
+      - Access-Control-Request-Headers
+      x-ratelimit-limit:
+      - '7199'
+      x-ratelimit-used:
+      - '1'
+    status:
+      code: 200
+      message: OK
+version: 1
