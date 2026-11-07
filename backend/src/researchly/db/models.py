@@ -177,6 +177,19 @@ class ChunkEmbedding(Base):
     __table_args__ = (_hnsw("ix_chunk_embedding_hnsw"),)
 
 
+class PaperCode(Base):
+    """Papers with Code archive links (CC BY-SA 4.0): a local lookup, never exported or redistributed (spec §8.4)."""
+
+    __tablename__ = "paper_code"
+    paper_url: Mapped[str] = mapped_column(Text, primary_key=True)
+    repo_url: Mapped[str] = mapped_column(Text, primary_key=True)
+    arxiv_id: Mapped[str | None] = mapped_column(Text, index=True)
+    title_norm: Mapped[str | None] = mapped_column(Text, index=True)
+    is_official: Mapped[bool] = mapped_column(Boolean)
+    framework: Mapped[str | None] = mapped_column(Text)
+    mentioned_in_paper: Mapped[bool] = mapped_column(Boolean)
+
+
 # ponytail: expired rows are never pruned; a startup sweep arrives with step 9 maintenance
 class HttpCacheRow(Base):
     """Response cache (spec §8.2). UNLOGGED: lost after a crash, by design."""
