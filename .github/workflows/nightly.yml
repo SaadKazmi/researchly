@@ -24,5 +24,17 @@ jobs:
           version: "0.12.10"
           enable-cache: true
           cache-dependency-glob: backend/uv.lock
+      - name: Start the pinned SearXNG with the shipped settings
+        working-directory: .
+        run: |
+          docker run -d --name searxng -p 127.0.0.1:8888:8080 \
+            -e SEARXNG_SECRET="$(openssl rand -hex 32)" \
+            -v "$PWD/infra/searxng/settings.yml:/etc/searxng/settings.yml:ro" \
+            searxng/searxng:2026.10.25-54ca1d9cf
+          for _ in $(seq 60); do curl -fsS http://127.0.0.1:8888/healthz && exit 0; sleep 2; done
+          docker logs searxng
+          exit 1
       - run: uv sync --locked
       - run: uv run pytest -m nightly -q
+        env:
+          RESEARCHLY_SEARXNG_URL: http://127.0.0.1:8888

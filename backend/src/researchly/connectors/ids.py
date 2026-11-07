@@ -1,6 +1,7 @@
 """Identifier normalization shared by connectors and identity resolution (spec §8.3)."""
 
 import re
+from urllib.parse import unquote, urlsplit
 
 from researchly.connectors.base import ExternalId
 
@@ -83,3 +84,35 @@ def normalize(eid: ExternalId) -> ExternalId | None:
         return eid
     value = fn(eid.value)
     return ExternalId(eid.scheme, value) if value else None
+
+
+def from_url(url: str) -> ExternalId | None:
+    """The scholarly ID a landing-page URL names (web search results, OpenReview links), or None. Never raises."""
+    try:
+        parts = urlsplit(url.strip())
+        host = (parts.hostname or "").removeprefix("www.")
+    except ValueError:  # e.g. an unbalanced IPv6 bracket
+        return None
+    if parts.scheme.lower() not in ("http", "https"):
+        return None
+    path = unquote(parts.path)
+    segs = [s for s in path.split("/") if s]
+    value: str | None
+    if host in ("doi.org", "dx.doi.org", "oadoi.org"):
+        return ExternalId("doi", value) if (value := doi(path.lstrip("/"))) else None
+    if host in ("arxiv.org", "export.arxiv.org") and len(segs) >= 2 and segs[0] in ("abs", "pdf", "html"):
+        return ExternalId("arxiv", value) if (value := arxiv("/".join(segs[1:]))) else None
+    if host == "pubmed.ncbi.nlm.nih.gov" and len(segs) == 1:
+        return ExternalId("pmid", value) if (value := pmid(segs[0])) else None
+    if host == "ncbi.nlm.nih.gov" and len(segs) == 2 and segs[0] == "pubmed":
+        return ExternalId("pmid", value) if (value := pmid(segs[1])) else None
+    if host == "ncbi.nlm.nih.gov" and len(segs) >= 3 and segs[:2] == ["pmc", "articles"]:
+        return ExternalId("pmcid", value) if (value := pmcid(segs[2])) else None
+    if host == "pmc.ncbi.nlm.nih.gov" and len(segs) >= 2 and segs[0] == "articles":
+        return ExternalId("pmcid", value) if (value := pmcid(segs[1])) else None
+    if host == "europepmc.org" and len(segs) == 3 and segs[0] in ("article", "abstract"):
+        if segs[1].upper() == "MED":
+            return ExternalId("pmid", value) if (value := pmid(segs[2])) else None
+        if segs[1].upper() == "PMC":
+            return ExternalId("pmcid", value) if (value := pmcid(segs[2])) else None
+    return None
