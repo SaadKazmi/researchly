@@ -6,6 +6,8 @@ import subprocess
 from collections.abc import Sequence
 from pathlib import Path
 
+import typer
+
 from researchly_cli import state
 
 # ponytail: works from a source checkout only; ship the compose file with the release images (step 10)
@@ -59,8 +61,11 @@ def start(secrets: state.Secrets, compose: Sequence[str], web_search: bool = Tru
     try:
         _compose(compose, ["up", "-d", "--wait", "postgres"], env)
         _compose(compose, ["run", "--rm", "migrate"], env)  # spec §16.1: a failed migration aborts the start
-        if web_search:
-            _compose(compose, ["up", "-d", "searxng"], env)  # optional: the app probes it, so never wait on it
+        if web_search:  # optional: the app probes it, so never wait on it, and never fail the start over it
+            try:
+                _compose(compose, ["up", "-d", "searxng"], env)
+            except DockerStartError as exc:
+                typer.secho(f"warning: web search is off: {exc}", err=True)
         _compose(compose, ["up", "-d", "--wait", "app"], env)
     except BaseException:  # a failed or interrupted start leaves nothing running
         with contextlib.suppress(Exception):

@@ -63,6 +63,21 @@ def test_failed_start_takes_the_stack_down(monkeypatch):
     assert calls[-1] == ["--profile", "*", "down"]
 
 
+def test_a_failing_searxng_step_warns_and_the_start_goes_on(monkeypatch, capsys):
+    calls: list[list[str]] = []
+
+    def compose(cmd, args, env):
+        calls.append(list(args))
+        if "searxng" in args:
+            raise docker.DockerStartError("`docker compose up -d searxng` failed")
+
+    monkeypatch.setattr(docker, "_compose", compose)
+    run = docker.start(state.load_secrets(), ("docker", "compose"))
+    assert run.mode == "docker"
+    assert calls[-1] == ["up", "-d", "--wait", "app"] and ["--profile", "*", "down"] not in calls
+    assert "warning: web search is off" in capsys.readouterr().err
+
+
 def test_app_image_builds_the_frontend():
     text = docker.COMPOSE_FILE.read_text("utf-8")
     assert "additional_contexts" in text and "frontend: ../frontend" in text
