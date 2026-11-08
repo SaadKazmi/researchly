@@ -1,9 +1,10 @@
+import asyncio
 from pathlib import Path
 
 import httpx
 import pytest
 
-from researchly.app import create_app
+from researchly.app import create_app, require_selector_loop
 from researchly.config import Settings
 from researchly.security.localhost_guard import TOKEN_HEADER
 from researchly.security.redact import redact
@@ -52,3 +53,28 @@ def test_settings_read_the_searxng_url(monkeypatch):
     assert Settings().searxng_url == "http://127.0.0.1:8766"
     monkeypatch.delenv("RESEARCHLY_SEARXNG_URL")
     assert Settings().searxng_url is None
+
+
+def test_a_proactor_loop_is_refused():
+    proactor = getattr(asyncio, "ProactorEventLoop", None)
+    if proactor is None:
+        pytest.skip("Windows only")
+    loop = proactor()
+    try:
+        with pytest.raises(RuntimeError, match="SelectorEventLoop"):
+            require_selector_loop(loop)
+    finally:
+        loop.close()
+
+
+def test_a_selector_loop_is_accepted():
+    loop = asyncio.SelectorEventLoop()
+    try:
+        require_selector_loop(loop)
+    finally:
+        loop.close()
+
+
+def test_the_docker_image_runs_uvicorn_on_a_selector_loop():
+    dockerfile = Path(__file__).resolve().parents[2] / "infra" / "app.Dockerfile"
+    assert '"--loop", "asyncio:SelectorEventLoop"' in dockerfile.read_text("utf-8")

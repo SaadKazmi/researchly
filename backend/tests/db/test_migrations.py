@@ -4,7 +4,7 @@ from alembic.migration import MigrationContext
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import make_url
 
-from researchly.db import migrate
+from researchly.db import migrate, provision
 from researchly.db.base import Base
 
 pytestmark = pytest.mark.db
@@ -23,8 +23,10 @@ TABLES = {
 }
 
 
-def _not_bm25(obj, name, type_, reflected, compare_to):
-    return not (name and "bm25" in name)  # engine-specific BM25 objects live in migration 0003 only (spec §9.3)
+def _ours(obj, name, type_, reflected, compare_to):
+    # engine-specific BM25 objects live in migration 0003 only (spec §9.3); LangGraph owns its tables (ADR 0011)
+    table = name if type_ == "table" else getattr(getattr(obj, "table", None), "name", None)
+    return not (name and "bm25" in name) and table not in provision.AGENT_TABLES
 
 
 def test_upgrade_downgrade_upgrade(db_url):
@@ -50,9 +52,10 @@ def test_baseline_extensions_and_bm25_capability(db_url):
 
 def test_models_match_migrations(db_url):
     migrate.upgrade(db_url)
+    provision.setup_agent_tables(db_url)  # present in every real database; must not show up as drift
     engine = create_engine(db_url)
     with engine.connect() as conn:
-        diff = compare_metadata(MigrationContext.configure(conn, opts={"include_object": _not_bm25}), Base.metadata)
+        diff = compare_metadata(MigrationContext.configure(conn, opts={"include_object": _ours}), Base.metadata)
     engine.dispose()
     assert diff == []
 

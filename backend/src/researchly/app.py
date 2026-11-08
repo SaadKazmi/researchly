@@ -30,9 +30,20 @@ def _redact_server_logs() -> None:
             target.addFilter(kind())
 
 
+def require_selector_loop(loop: asyncio.AbstractEventLoop) -> None:
+    """psycopg's async driver (runs, checkpoints) cannot run on Windows' default Proactor loop."""
+    proactor = getattr(asyncio, "ProactorEventLoop", None)  # Windows only
+    if proactor is not None and isinstance(loop, proactor):
+        raise RuntimeError(
+            "Researchly needs a selector event loop: start uvicorn with --loop asyncio:SelectorEventLoop"
+        )
+
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings: Settings = app.state.settings
+    if settings.env != "test":  # TestClient apps run on the default loop and have no database
+        require_selector_loop(asyncio.get_running_loop())
     searxng = None
     if settings.searxng_url:
         try:

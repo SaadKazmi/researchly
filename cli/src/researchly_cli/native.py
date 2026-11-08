@@ -72,6 +72,8 @@ def start(secrets: state.Secrets, searxng_home: Path | None = None) -> state.Sta
             "uvicorn",
             "--factory",
             "researchly.app:create_app",
+            "--loop",
+            "asyncio:SelectorEventLoop",  # psycopg's async driver cannot run on Windows' Proactor loop (ADR 0011)
             "--host",
             "127.0.0.1",
             "--port",
