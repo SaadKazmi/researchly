@@ -16,7 +16,12 @@ dependencies = [
   "cryptography>=46",
   "pyyaml>=6.0.2",
   "litellm==1.105.1",
-  "langchain-core==1.6.12",
+  "deepagents==0.7.32",
+  "langchain==1.4.7",
+  "langchain-core==1.7.3",
+  "langgraph==1.2.19",
+  "langgraph-checkpoint-postgres==3.2.0",
+  "psycopg-pool>=3.2",
   "langchain-litellm==0.11.1",
   "deno==2.9.8",  # Deno runtime as a wheel: light code cells (ADR 0006)
   "fastembed==0.9.1",  # ONNX embedder + reranker on CPU, no torch (ADR 0007)
