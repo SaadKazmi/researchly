@@ -8,6 +8,7 @@ from typing import Any
 from pgvector.sqlalchemy import HALFVEC
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     DateTime,
     Double,
     ForeignKey,
@@ -15,8 +16,10 @@ from sqlalchemy import (
     Integer,
     LargeBinary,
     Numeric,
+    SmallInteger,
     String,
     Text,
+    UniqueConstraint,
     func,
     text,
 )
@@ -203,3 +206,109 @@ class HttpCacheRow(Base):
     etag: Mapped[str | None] = mapped_column(Text)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     __table_args__ = {"prefixes": ["UNLOGGED"]}
+
+
+RUN_STATUSES = (
+    "pending",
+    "planning",
+    "awaiting_user",
+    "running",
+    "paused",
+    "partial",
+    "completed",
+    "cancelled",
+    "failed",
+)
+EFFORT_NAMES = ("quick", "standard", "deep")
+
+
+def _in(column: str, values: tuple[str, ...]) -> str:
+    return f"{column} IN ({','.join(repr(v) for v in values)})"
+
+
+class Project(Base):
+    __tablename__ = "project"
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
+    settings: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default=text("'{}'::jsonb"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Thread(Base):
+    __tablename__ = "thread"
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
+    project_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("project.id", ondelete="CASCADE"), index=True)
+    title: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Run(Base):
+    __tablename__ = "run"
+    __table_args__ = (
+        CheckConstraint(_in("status", RUN_STATUSES), name="status"),
+        CheckConstraint(_in("effort", EFFORT_NAMES), name="effort"),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
+    project_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("project.id", ondelete="CASCADE"), index=True)
+    thread_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("thread.id", ondelete="CASCADE"), index=True)
+    effort: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(Text)
+    plan: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    budget_usd: Mapped[Decimal] = mapped_column(Numeric(12, 6))
+    spent_usd: Mapped[Decimal] = mapped_column(Numeric(12, 6), default=Decimal(0), server_default="0")
+    checkpoint_thread_id: Mapped[str] = mapped_column(Text, index=True)  # LangGraph thread_id; branches share it
+    parent_run_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("run.id", ondelete="SET NULL"))
+    branch_from_checkpoint: Mapped[str | None] = mapped_column(Text)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Message(Base):
+    __tablename__ = "message"
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
+    thread_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("thread.id", ondelete="CASCADE"), index=True)
+    role: Mapped[str] = mapped_column(Text)  # user | assistant
+    content: Mapped[dict[str, Any]] = mapped_column(JSONB)  # {"text": ...}
+    run_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("run.id", ondelete="SET NULL"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class RunEvent(Base):
+    __tablename__ = "run_event"
+    __table_args__ = (UniqueConstraint("run_id", "seq"),)
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("run.id", ondelete="CASCADE"))
+    seq: Mapped[int] = mapped_column(Integer)
+    type: Mapped[str] = mapped_column(Text)
+    agent: Mapped[str | None] = mapped_column(Text)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict, server_default=text("'{}'::jsonb"))
+    ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Evidence(Base):
+    """An evidence card (spec §6.3 step 5): a verified verbatim quote plus the extractor's claim about it."""
+
+    __tablename__ = "evidence"
+    __table_args__ = (CheckConstraint("relevance BETWEEN 0 AND 10", name="relevance"),)
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
+    run_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("run.id", ondelete="SET NULL"), index=True)
+    project_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("project.id", ondelete="CASCADE"), index=True)
+    paper_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("paper.id", ondelete="CASCADE"), index=True)
+    chunk_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("chunk.id", ondelete="SET NULL"))
+    question: Mapped[str] = mapped_column(Text)
+    claim: Mapped[str] = mapped_column(Text)
+    quote: Mapped[str] = mapped_column(Text)  # sliced from the source text, never the model's own string
+    quote_start: Mapped[int] = mapped_column(Integer)  # offsets into chunk.text, or paper.abstract if chunk_id is null
+    quote_end: Mapped[int] = mapped_column(Integer)
+    relevance: Mapped[int] = mapped_column(SmallInteger)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ToolCache(Base):
+    __tablename__ = "tool_cache"
+    key: Mapped[str] = mapped_column(Text, primary_key=True)  # sha256 of (tool, args)
+    tool: Mapped[str] = mapped_column(Text)
+    result: Mapped[Any] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    ttl: Mapped[int | None] = mapped_column(Integer)  # seconds; null never expires

@@ -3,6 +3,7 @@ from alembic.autogenerate import compare_metadata
 from alembic.migration import MigrationContext
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import make_url
+from sqlalchemy.exc import IntegrityError
 
 from researchly.db import migrate, provision
 from researchly.db.base import Base
@@ -20,6 +21,13 @@ TABLES = {
     "author",
     "paper_author",
     "http_cache",
+    "project",
+    "thread",
+    "message",
+    "run",
+    "run_event",
+    "evidence",
+    "tool_cache",
 }
 
 
@@ -74,3 +82,35 @@ def test_migrations_run_as_non_superuser_owner(db_url):
     migrate.upgrade(owner_url)
     migrate.downgrade(owner_url)
     migrate.upgrade(owner_url)
+
+
+RUN_SQL = (
+    "INSERT INTO run (id, project_id, thread_id, effort, status, budget_usd, checkpoint_thread_id) "
+    "VALUES (gen_random_uuid(), :p, :t, :effort, :status, 1, 'x')"
+)
+
+
+def test_run_status_effort_and_evidence_relevance_are_checked(db_url):
+    migrate.upgrade(db_url)
+    engine = create_engine(db_url)
+    with engine.connect() as conn:
+        p = conn.scalar(text("INSERT INTO project (id, name) VALUES (gen_random_uuid(), 'p') RETURNING id"))
+        t = conn.scalar(
+            text("INSERT INTO thread (id, project_id) VALUES (gen_random_uuid(), :p) RETURNING id"), {"p": p}
+        )
+        conn.execute(text(RUN_SQL), {"p": p, "t": t, "effort": "standard", "status": "pending"})
+        for effort, status in (("standard", "done"), ("huge", "pending")):
+            with pytest.raises(IntegrityError), conn.begin_nested():
+                conn.execute(text(RUN_SQL), {"p": p, "t": t, "effort": effort, "status": status})
+        paper = conn.scalar(
+            text("INSERT INTO paper (id, title, title_norm) VALUES (gen_random_uuid(), 'a', 'a') RETURNING id")
+        )
+        evidence = (
+            "INSERT INTO evidence (id, project_id, paper_id, question, claim, quote, "
+            "quote_start, quote_end, relevance) "
+            "VALUES (gen_random_uuid(), :p, :paper, 'q', 'c', 'quote', 0, 5, :r)"
+        )
+        conn.execute(text(evidence), {"p": p, "paper": paper, "r": 10})
+        with pytest.raises(IntegrityError), conn.begin_nested():
+            conn.execute(text(evidence), {"p": p, "paper": paper, "r": 11})
+    engine.dispose()
