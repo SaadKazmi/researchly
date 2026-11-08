@@ -2,14 +2,19 @@
 
 import hashlib
 import itertools
-from typing import Any
+import uuid
+from decimal import Decimal
+from types import SimpleNamespace
+from typing import Any, Literal
 
 import numpy as np
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
 from langchain_core.messages import AIMessage, BaseMessage
 from pydantic import Field
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from researchly.db.models import EMBED_DIM
+from researchly.connectors.base import ConnectorCaps, ExternalId, PaperRecord, SearchQuery, SourceUnavailable
+from researchly.db.models import EMBED_DIM, Message, Project, Run, Thread
 
 _ids = itertools.count()
 
@@ -84,3 +89,73 @@ class StubFetcher:
     async def fetch(self, target):
         self.targets.append(target)
         return self.full
+
+
+class MemoryFiles:
+    """The project store as a dict, keyed by the paths tools pass (deepagents' StoreBackend in the app)."""
+
+    def __init__(self) -> None:
+        self.files: dict[str, str] = {}
+
+    async def aread(self, file_path: str, offset: int = 0, limit: int = 2000) -> Any:
+        if file_path not in self.files:
+            return SimpleNamespace(file_data=None, error=f"File '{file_path}' not found")
+        return SimpleNamespace(file_data={"content": self.files[file_path]}, error=None)
+
+    async def awrite(self, file_path: str, content: str) -> Any:
+        self.files[file_path] = content
+        return SimpleNamespace(error=None, path=file_path)
+
+
+class StubConnector:
+    def __init__(self, name: str, records: list[PaperRecord] | None = None, *, fail: bool = False) -> None:
+        self.name, self.records, self.fail = name, records or [], fail
+        self.queries: list[SearchQuery] = []
+        self.got: list[list[ExternalId]] = []
+
+    async def search(self, query: SearchQuery) -> list[PaperRecord]:
+        self.queries.append(query)
+        if self.fail:
+            raise SourceUnavailable(self.name, "down")
+        return list(self.records)
+
+    async def get(self, ids: list[ExternalId], /) -> list[PaperRecord]:
+        self.got.append(list(ids))
+        return [r for r in self.records if set(r.ids) & set(ids)]
+
+    async def citations(self, id: ExternalId, direction: Literal["in", "out"]) -> list[ExternalId]:
+        return []
+
+    def capabilities(self) -> ConnectorCaps:
+        return ConnectorCaps(search=True, get=True, citations_in=False, citations_out=False)
+
+
+async def seed_run(
+    sessions: async_sessionmaker[AsyncSession],
+    *,
+    effort: str = "standard",
+    status: str = "pending",
+    budget: str = "1",
+    question: str = "What makes Transformers fast to train?",
+    domains: tuple[str, ...] = (),
+) -> Run:
+    """A project, a thread, a run and the run's user message. Parents are flushed first (no relationship())."""
+    project = Project(id=uuid.uuid4(), name="p", settings={"domains": list(domains)})
+    thread = Thread(id=uuid.uuid4(), project_id=project.id)
+    run_id = uuid.uuid4()
+    run = Run(
+        id=run_id,
+        project_id=project.id,
+        thread_id=thread.id,
+        effort=effort,
+        status=status,
+        budget_usd=Decimal(budget),
+        spent_usd=Decimal(0),
+        checkpoint_thread_id=str(run_id),
+    )
+    async with sessions() as session, session.begin():
+        for row in (project, thread, run):
+            session.add(row)
+            await session.flush()
+        session.add(Message(thread_id=thread.id, role="user", content={"text": question}, run_id=run.id))
+    return run
