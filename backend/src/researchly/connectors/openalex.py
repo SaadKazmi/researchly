@@ -25,13 +25,13 @@ LOW_BUDGET = 0.2  # remaining/limit at or below this: paid calls stop
 CITERS_CAP = 1000
 BATCH = 100  # max OR values in one filter
 
-# Changing SELECT changes what the cache holds: bump KEY ("openalex:v1" -> "openalex:v2") with it.
+# Changing SELECT changes what the cache holds: bump KEY with it.
 SELECT = (
     "id,doi,title,publication_year,abstract_inverted_index,authorships,primary_location,best_oa_location,"
     "open_access,locations,ids,cited_by_count,fwci,citation_normalized_percentile,is_retracted,"
-    "referenced_works,topics"
+    "referenced_works,topics,counts_by_year"
 )
-KEY = "openalex:v1"
+KEY = "openalex:v2"  # v2: counts_by_year (velocity, spec §10)
 
 _ORCID = re.compile(r"\d{4}-\d{4}-\d{4}-\d{3}[\dX]")
 _AUTHOR = re.compile(r"A\d+")
@@ -86,6 +86,15 @@ def _refs(work: dict[str, Any]) -> list[ExternalId]:
     return [ExternalId("openalex", w) for w in parsed if w]
 
 
+def _counts_by_year(work: dict[str, Any]) -> dict[int, int]:
+    rows = work.get("counts_by_year") or []
+    return {
+        r["year"]: r["cited_by_count"]
+        for r in rows
+        if isinstance(r, dict) and isinstance(r.get("year"), int) and isinstance(r.get("cited_by_count"), int)
+    }
+
+
 def parse_work(work: dict[str, Any]) -> PaperRecord:
     primary = work.get("primary_location") or {}
     best = work.get("best_oa_location") or {}
@@ -117,7 +126,10 @@ def parse_work(work: dict[str, Any]) -> PaperRecord:
         license=best.get("license") or primary.get("license"),
         is_retracted=work.get("is_retracted"),
         references=_refs(work),
-        extra={"topics": [t["display_name"] for t in work.get("topics") or [] if t.get("display_name")]},
+        extra={
+            "topics": [t["display_name"] for t in work.get("topics") or [] if t.get("display_name")],
+            "counts_by_year": _counts_by_year(work),
+        },
     )
 
 

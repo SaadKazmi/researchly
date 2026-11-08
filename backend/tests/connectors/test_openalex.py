@@ -42,6 +42,7 @@ WORK = {
     "is_retracted": False,
     "referenced_works": ["https://openalex.org/W10", "https://openalex.org/W11"],
     "topics": [{"display_name": "Neural networks"}],
+    "counts_by_year": [{"year": 2024, "cited_by_count": 3}, {"year": 2023, "cited_by_count": 2}],
 }
 
 
@@ -75,6 +76,7 @@ def test_parse_work():
     ]
     assert rec.references == [ExternalId("openalex", "W10"), ExternalId("openalex", "W11")]
     assert rec.extra["topics"] == ["Neural networks"]
+    assert rec.extra["counts_by_year"] == {2024: 3, 2023: 2}
 
 
 def test_parse_work_tolerates_sparse_payload():
@@ -236,6 +238,7 @@ async def test_get_by_doi(polite):
     assert rec.id("doi") == "10.1038/nature14539" and rec.id("pmid") == "26017442"
     assert rec.venue == "Nature" and rec.venue_type == "journal"
     assert rec.fwci and rec.pct is not None and rec.extra["topics"]
+    assert rec.extra["counts_by_year"] and all(isinstance(y, int) for y in rec.extra["counts_by_year"])
 
 
 @pytest.mark.vcr
@@ -364,7 +367,7 @@ async def test_references_out_reuses_the_full_record_request():
 
 
 def test_cache_keys_are_versioned():
-    assert oa.singleton_key("doi", "10.1234/a") == "openalex:v1:doi:10.1234/a"
+    assert oa.singleton_key("doi", "10.1234/a") == "openalex:v2:doi:10.1234/a"
 
 
 async def test_citers_recheck_the_budget_between_pages():
