@@ -116,6 +116,13 @@ def chat_model(
         return dev
     if settings.llm_fixtures == "record":
         raise ValueError("recording fixtures needs RESEARCHLY_ENV=development and RESEARCHLY_DEV_PROVIDER=claude-code")
-    spec, name = resolve_model(role, providers, table or load_table())
+    table = table or load_table()
+    spec, name = resolve_model(role, providers, table)
     api_key = get_secret(spec.key_ref) if spec.key_ref else None  # fetched per construction, never stored
-    return _KeyedChatLiteLLM(model=name, api_key=api_key, api_base=spec.base_url)
+    window = model_info(name, table).context_window
+    return _KeyedChatLiteLLM(
+        model=name,
+        api_key=api_key,
+        api_base=spec.base_url,
+        profile={"max_input_tokens": window} if window else None,  # Deep Agents summarises against it (§6.6)
+    )
