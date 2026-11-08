@@ -142,14 +142,16 @@ Rulings made while planning (mine):
     - EffortGuard counts `task` calls by `subagent_type` against the tier caps and wraps each in `asyncio.wait_for` (scout 300 s, reader 480 s).
 15. **BudgetGuard takes a `spent(run_id)` callable.** The live runtime passes `partial(ledger.spent_usd, sessions)`, so unit tests need no database. The 80% wrap-up applies to the Lead only.
 16. **Run status at the end:**
-    - `partial` when spend ≥ budget or the last message is the BudgetGuard or LoopGuard stop text; `completed` otherwise.
+    - `partial` when spend ≥ budget, the last message is the BudgetGuard or LoopGuard stop text, or the Quick tool-call
+      cap was hit (a `ToolMessage` with langchain's limit text); `completed` otherwise.
     - `awaiting_user` when the graph returns an `__interrupt__`.
     - `failed` on any exception, plus a `RUN_ERROR` `run_event` that carries the exception type only.
     - `planning` is unused in 3a.
 17. **Quick effort:**
     - the Lead has no subagents, no `ask_user`, no `submit_plan` and no TodoList;
     - it gets `search_papers`, `search_web`, `rank_candidates` and `gather_evidence` directly;
-    - `ToolCallLimitMiddleware(thread_limit=10, exit_behavior="end")`.
+    - `ToolCallLimitMiddleware(thread_limit=10, exit_behavior="continue")`: past the cap every tool call gets an error, so
+      the Lead answers from what it has, and the run ends `partial` (F1.4, pre-flight S4).
 
     Titles reach the Quick Lead inside `<untrusted>` tags (spotlighting, §19.1). This is the one place the Lead sees paper metadata from a search tool.
 18. **Project files:**
@@ -292,7 +294,7 @@ Expected: `ok`. If `uv lock` reports a conflict, stop and report it: do not loos
 
 - [ ] **Step 4: Run the lock tests and the full suite**
 
-Run: `uv run --directory backend pytest tests/test_lock.py -q`. Expected: PASS (6 tests), with no torch in either lock.
+Run: `uv run --directory backend pytest tests/test_lock.py -q`. Expected: PASS (5 tests), with no torch in either lock.
 Run: `uv run --directory backend pytest -q`. Expected: PASS. The `langchain-core` bump must not break `llm/record_replay.py`, `llm/ledger.py` or `llm/dev/claude_code.py`. If a test fails, fix the call site against the 1.7.3 API rather than downgrading.
 Run: `uv run --directory cli pytest -q -x -k "not docker"`. Expected: PASS.
 
@@ -1109,6 +1111,8 @@ Expected:
 
 If a request answered 429 or 5xx, delete that cassette and record again later.
 
+Live data drifts (citer counts, topics). When a re-recorded cassette changes a value a test asserts, update the assertion to the recorded value; never edit a cassette to fit an old assertion.
+
 - [ ] **Step 5: Run the tests in replay**
 
 Run: `uv run --directory backend pytest tests/connectors -q`. Expected: PASS.
@@ -1476,7 +1480,9 @@ def rank(
 
 
 def chao2(lists: Sequence[Collection[Hashable]]) -> tuple[int, float]:
-    """Bias-corrected Chao2 richness from incidence lists (one per sub-question × source): (observed, estimated).
+    """Chao2 richness from incidence lists (one per sub-question × source): (observed, estimated).
+
+    The classic q1²/(2·q2), and the bias-corrected q1(q1−1)/2 when q2 = 0.
 
     A lower bound on how many relevant papers exist (R-read §5): the sources overlap by design, which biases it down.
     """
@@ -1809,10 +1815,9 @@ Create `backend/src/researchly/services/tool_cache.py`:
 import hashlib
 import json
 from collections.abc import Mapping
-from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import func
+from sqlalchemy import func, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -1824,12 +1829,10 @@ def cache_key(tool: str, args: Mapping[str, Any]) -> str:
 
 
 async def get(session: AsyncSession, key: str) -> Any | None:
-    row = await session.get(ToolCache, key, populate_existing=True)
-    if row is None:
-        return None
-    if row.ttl is not None and row.created_at + timedelta(seconds=row.ttl) <= datetime.now(UTC):
-        return None
-    return row.result
+    # expiry is judged by the database clock, which also wrote created_at
+    age = func.extract("epoch", func.now() - ToolCache.created_at)
+    fresh = or_(ToolCache.ttl.is_(None), age < ToolCache.ttl)
+    return await session.scalar(select(ToolCache.result).where(ToolCache.key == key, fresh))
 
 
 async def put(session: AsyncSession, key: str, tool: str, result: Any, *, ttl: int | None = None) -> None:
@@ -1960,7 +1963,10 @@ def neutralize(text: str) -> str:
 
 
 def untrusted(source: str, text: str) -> str:
-    """Spotlighting by delimiting (spec §19.1): the tags are ours; any inside the text are defused."""
+    """Spotlighting by delimiting (spec §19.1): the tags are ours; any inside the text are defused.
+
+    `source` is not escaped: callers pass constants only.
+    """
     return f'<untrusted source="{source}">\n{neutralize(text)}\n</untrusted>'
 
 
@@ -2003,7 +2009,10 @@ async def gather(
     reranker: Scorer,
     tau_chunk: float,
 ) -> list[Evidence]:
-    """Evidence cards for one paper, best first. Uses the abstract when the paper has no chunks. Flushes only."""
+    """Evidence cards for one paper, best first. Uses the abstract when the paper has no chunks.
+
+    Commits the read transaction before the model calls; the cards are flushed only.
+    """
     vector = await asyncio.to_thread(embedder.query, question)
     hits = await search_chunks(session, question, vector, model_id=embedder.model_id, limit=POOL, paper_ids=[paper_id])
     sources: list[tuple[uuid.UUID | None, str]]
@@ -2015,6 +2024,7 @@ async def gather(
     else:
         paper = await session.get_one(Paper, paper_id)
         sources = [(None, paper.abstract)] if paper.abstract else []
+    await session.commit()  # no connection is held during the model calls (readers run in parallel)
     found = await asyncio.gather(*(extract(model, question, text, source="paper excerpt") for _, text in sources))
     cards: list[Evidence] = []
     for (chunk_id, text), result in zip(sources, found, strict=True):
@@ -2443,7 +2453,7 @@ from typing import Any, Protocol
 from langchain.tools import ToolRuntime
 from langchain_core.language_models import BaseChatModel
 from langchain_core.tools import BaseTool, tool
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from researchly.agents.context import RunContext
@@ -2517,7 +2527,8 @@ async def _add_candidates(files: ProjectFiles, name: str, records: Sequence[Pape
     """Merge into the file and dedupe, so a repeated search (or a resumed step) adds nothing. Returns (new, total)."""
     old = await _load(files, name)
     merged = dedupe(old + list(records))
-    body = "".join(json.dumps(record_to_json(r), ensure_ascii=False) + "\n" for r in merged)
+    # ASCII escapes: str.splitlines (here and in deepagents) also splits on U+2028, U+2029 and U+0085
+    body = "".join(json.dumps(record_to_json(r)) + "\n" for r in merged)
     await files.awrite(f"{CANDIDATES}/{name}.jsonl", body)
     return len(merged) - len(old), len(merged)
 
@@ -2611,7 +2622,11 @@ async def gather_evidence(deps: ToolDeps, files: ProjectFiles, ctx: RunContext, 
         cached = await tool_cache.get(session, key)
         if cached is None:
             if paper.fulltext_at is None:
-                await ingest_paper(session, pid, fetcher=deps.fetcher, embedder=deps.embedder)
+                # two readers can get the same paper: the second waits here, then sees the first one's full text
+                await session.execute(select(func.pg_advisory_xact_lock(int.from_bytes(pid.bytes[:8], signed=True))))
+                await session.refresh(paper)
+                if paper.fulltext_at is None:
+                    await ingest_paper(session, pid, fetcher=deps.fetcher, embedder=deps.embedder)
                 await session.commit()
             cards = await evidence.gather(
                 session,
@@ -3348,7 +3363,7 @@ def build_agent(
             middleware=[
                 BudgetGuard(spent, wrap_up=True),
                 LoopGuard(),
-                ToolCallLimitMiddleware(thread_limit=effort.tool_calls, exit_behavior="end"),
+                ToolCallLimitMiddleware(thread_limit=effort.tool_calls, exit_behavior="continue"),  # answers; run is partial
             ],
         )
     scout_tools = [tools["search_papers"], tools["search_web"]]
@@ -3417,13 +3432,14 @@ Create `backend/tests/runs/__init__.py` (empty) and `backend/tests/runs/test_man
 ```python
 import asyncio
 import uuid
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 
 import anyio
 import pytest
 from langchain.agents import create_agent
-from langchain.agents.middleware import HumanInTheLoopMiddleware
+from langchain.agents.middleware import HumanInTheLoopMiddleware, ToolCallLimitMiddleware
 from langchain_core.messages import HumanMessage, ToolMessage
 from langchain_core.tools import tool
 from langgraph.checkpoint.memory import InMemorySaver
@@ -3653,6 +3669,52 @@ async def test_a_branch_reruns_from_a_checkpoint_and_supersedes_its_parent(sm):
         await m.resume(run.id)  # the thread's latest checkpoint is the branch's
 
 
+async def test_a_branch_stopped_before_its_first_checkpoint_resumes_from_its_fork(sm):
+    run = await seed_run(sm)
+    graph = agent(script("first answer", "second answer"))
+    m = manager(sm, graph)
+    await m.start(run.id)
+    await m.wait(run.id)
+    cfg = {"configurable": {"thread_id": run.checkpoint_thread_id}}
+    [point] = [s async for s in graph.aget_state_history(cfg) if s.next == ("model",)]
+    child = Run(
+        id=uuid.uuid4(),
+        project_id=run.project_id,
+        thread_id=run.thread_id,
+        effort=run.effort,
+        status="running",
+        budget_usd=run.budget_usd,
+        spent_usd=Decimal(0),
+        checkpoint_thread_id=run.checkpoint_thread_id,
+        parent_run_id=run.id,
+        branch_from_checkpoint=point.config["configurable"]["checkpoint_id"],
+        started_at=datetime.now(UTC),
+    )
+    async with sm() as session, session.begin():
+        session.add(child)  # the app stopped after branch() stored the row, before the child's first checkpoint
+    restarted = manager(sm, graph)
+    await restarted.resume_running()
+    await restarted.wait(child.id)
+    assert await answers(sm, child.id) == ["second answer"]  # not the parent's finished state
+
+
+async def test_the_quick_tool_cap_ends_the_run_partial_with_an_answer(sm):
+    run = await seed_run(sm)
+
+    @tool
+    def echo(x: str) -> str:
+        """Echo."""
+        return x
+
+    model = script(call("echo", {"x": "a"}), call("echo", {"x": "b"}), "What I found.")
+    cap = ToolCallLimitMiddleware(thread_limit=1, exit_behavior="continue")
+    m = manager(sm, agent(model, [echo], [cap]))
+    await m.start(run.id)
+    await m.wait(run.id)
+    assert (await row(sm, run.id)).status == "partial"
+    assert await answers(sm, run.id) == ["What I found."]
+
+
 async def test_a_failing_build_fails_the_run_with_an_event(sm):
     run = await seed_run(sm)
 
@@ -3704,7 +3766,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any, cast
 
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, ToolMessage
 from langgraph.types import Command
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -3720,6 +3782,7 @@ TERMINAL = ("partial", "completed", "cancelled", "failed")
 RUN_ERROR = "RUN_ERROR"
 INTERRUPT = "INTERRUPT"
 STOPPED = (BUDGET_SPENT, LOOP_STOP)
+LIMIT_HIT = "Tool call limit exceeded. Do not make additional tool calls."  # langchain ToolCallLimitMiddleware
 
 
 class RunStateError(Exception):
@@ -3864,6 +3927,10 @@ class RunManager:
                 project = await session.get_one(Project, run.project_id)
             graph = await self.build(run)
             configurable = {"thread_id": run.checkpoint_thread_id}
+            if checkpoint_id is None and run.branch_from_checkpoint is not None and run.started_at is not None:
+                latest = await graph.aget_state({"configurable": dict(configurable)})
+                if latest.created_at is None or datetime.fromisoformat(latest.created_at) < run.started_at:
+                    checkpoint_id = run.branch_from_checkpoint  # stopped before the branch's first checkpoint
             if checkpoint_id is not None:
                 configurable["checkpoint_id"] = checkpoint_id
             config = {"configurable": configurable}
@@ -3882,7 +3949,8 @@ class RunManager:
             logger.warning("run %s failed: %s", run_id, type(exc).__name__)
             async with self.sessions.begin() as session:
                 await self._event(session, run_id, RUN_ERROR, {"error": type(exc).__name__})
-                await session.execute(update(Run).where(Run.id == run_id).values(status="failed", ended_at=_now()))
+                running = (Run.id == run_id, Run.status == "running")  # a pause or cancel in flight wins
+                await session.execute(update(Run).where(*running).values(status="failed", ended_at=_now()))
 
     async def _finish(self, run: Run, out: dict[str, Any]) -> None:
         if interrupts := out.get("__interrupt__"):
@@ -3893,7 +3961,8 @@ class RunManager:
             return
         text = out["messages"][-1].text
         spent = await spent_usd(self.sessions, run.id)
-        status = "partial" if text in STOPPED or spent >= run.budget_usd else "completed"
+        limited = any(isinstance(m, ToolMessage) and m.text == LIMIT_HIT for m in out["messages"])
+        status = "partial" if text in STOPPED or limited or spent >= run.budget_usd else "completed"
         async with self.sessions.begin() as session:
             await self._set(session, run.id, status, ("running",), spent_usd=spent, ended_at=_now())
             session.add(Message(thread_id=run.thread_id, role="assistant", content={"text": text}, run_id=run.id))
@@ -3938,7 +4007,7 @@ class RunManager:
 - [ ] **Step 4: Run the tests**
 
 Run: `uv run --directory backend pytest tests/runs -m db -q`
-Expected: PASS (10 tests).
+Expected: PASS (12 tests).
 
 If `test_running_runs_resume_after_a_restart` times out in `until(checkpointed)`, the saver is not writing the model step's checkpoint before the tool runs. Print `(await first.aget_state(cfg)).next` and fix the test's wait condition, not the manager.
 
@@ -4031,7 +4100,7 @@ async def test_the_app_resumes_running_runs_on_startup(sm, db_url, tmp_path, mon
 
 async def test_a_run_without_a_provider_fails_before_any_model_loads(sm, tmp_path):
     run = await seed_run(sm)
-    settings = Settings(env="development", data_dir=tmp_path)
+    settings = Settings(env="development", data_dir=tmp_path, dev_provider=None, llm_fixtures="off")  # not the dev box env
     runtime = LiveRuntime(settings, sm, checkpointer=InMemorySaver(), store=InMemoryStore(), searxng=None)
     with pytest.raises(NoModelForRole):
         await runtime.build(run)
@@ -4207,11 +4276,10 @@ In `_lifespan`, replace the block from `app.state.capability_probe = probe` to t
             await searxng.aclose()
 ```
 
-`psycopg_pool` arrives with `langgraph-checkpoint-postgres`; it is not a direct dependency, like `tokenizers` (2b ruling).
 
 - [ ] **Step 5: Run the tests**
 
-Run: `uv run --directory backend pytest tests/runs -m db -q`. Expected: PASS (12 tests).
+Run: `uv run --directory backend pytest tests/runs -m db -q`. Expected: PASS (14 tests).
 Run: `uv run --directory backend pytest tests/test_app.py -q`. Expected: PASS (env `test` apps skip the run manager).
 
 - [ ] **Step 6: Lint, types, commit**
@@ -4286,7 +4354,8 @@ ranking). The decisions below are the ones that constrain later steps.
     error; after 2 such errors the agent ends.
   - EffortGuard: scout and reader task caps per tier, and `asyncio.wait_for` per task (scout 300 s, reader 480 s).
   - Model and tool call limits per subagent invocation from the tier (`ModelCallLimitMiddleware`,
-    `ToolCallLimitMiddleware(exit_behavior="end")`).
+    `ToolCallLimitMiddleware(exit_behavior="end")`). Quick runs use `exit_behavior="continue"` instead, so the Lead still
+    answers past the cap; the run then ends `partial`.
 - **Project files:** tools write full candidate records and evidence cards to the project store; a
   `FilesystemPermission` deny rule keeps every agent's file tools off both folders, so paper text reaches agents only
   through tool results inside `<untrusted>` tags.
@@ -4299,7 +4368,8 @@ ranking). The decisions below are the ones that constrain later steps.
 - The extractor at `mid` costs more per paper than `cheap`; quote fidelity is worth it (step 4 measures it).
 - Tools must stay idempotent: a paused tool step runs again on resume.
 - Watch: checkpoint growth (pruning is deferred), and whether `get_model_provider` still turns the general-purpose
-  subagent off after a bump (`test_factory.py` checks it).
+  subagent off after a bump (`test_factory.py` checks it). LoopGuard and EffortGuard count from `state["messages"]`,
+  so if Deep Agents' summarisation drops old messages their counts restart.
 
 ## Evidence
 - Probes against the pinned versions (step 3a planning): middleware jump-to-end, wrap-up injection, loop and effort
