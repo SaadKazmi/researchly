@@ -7,6 +7,7 @@ A card whose quote cannot be found (after one retry) is dropped, never kept unve
 """
 
 import asyncio
+import logging
 import re
 import unicodedata
 import uuid
@@ -22,6 +23,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from researchly.db.models import Chunk, Evidence, Paper
 from researchly.services.retrieval import Scorer, rerank, search_chunks
+
+logger = logging.getLogger(__name__)
 
 POOL = 30  # chunks retrieved inside the paper
 RERANK_DEPTH = 20
@@ -174,10 +177,17 @@ async def gather(
         paper = await session.get_one(Paper, paper_id)
         sources = [(None, paper.abstract)] if paper.abstract else []
     await session.commit()  # no connection is held during the model calls (readers run in parallel)
-    found = await asyncio.gather(*(extract(model, question, text, source="paper excerpt") for _, text in sources))
+    found = await asyncio.gather(
+        *(extract(model, question, text, source="paper excerpt") for _, text in sources), return_exceptions=True
+    )
+    failed = [r for r in found if isinstance(r, BaseException)]
+    if failed and len(failed) == len(found):
+        raise failed[0]  # a provider outage must not look like "no evidence"
+    for exc in failed:
+        logger.warning("evidence extraction call failed: %s", type(exc).__name__)  # the type only
     cards: list[Evidence] = []
     for (chunk_id, text), result in zip(sources, found, strict=True):
-        if result is None:
+        if result is None or isinstance(result, BaseException):
             continue
         draft, (start, end) = result
         cards.append(

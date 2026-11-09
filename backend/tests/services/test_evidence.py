@@ -138,3 +138,51 @@ async def test_gather_falls_back_to_the_abstract_without_full_text(sm):
             tau_chunk=-3.0,
         )
     assert row.chunk_id is None and SOURCE[row.quote_start : row.quote_end] == row.quote
+
+
+class FlakyModel:
+    """Quarantined-extractor stand-in: the calls whose index is in `fail` raise, the others return a good card."""
+
+    def __init__(self, fail: set[int]) -> None:
+        self.fail, self.calls = fail, 0
+
+    def with_structured_output(self, schema):
+        return self
+
+    async def ainvoke(self, messages):
+        i, self.calls = self.calls, self.calls + 1
+        if i in self.fail:
+            raise RuntimeError("provider said something private")
+        return CardDraft(relevance=8, quote="Self-attention relates all positions", claim="c")
+
+
+async def _gather_three(sm, model):
+    sections = [Section((f"{i} Heading",), f"Self-attention relates all positions, part {i}.") for i in range(3)]
+    project_id, paper_id = await seed(sm, full=FullText("arxiv_html", sections))
+    async with sm() as session:
+        return await evidence.gather(
+            session,
+            paper_id,
+            "q",
+            run_id=None,
+            project_id=project_id,
+            model=model,  # pyright: ignore[reportArgumentType]
+            embedder=FakeEmbedder(),
+            reranker=KeywordReranker("self-attention"),
+            tau_chunk=-3.0,
+        )
+
+
+@pytest.mark.db
+@pytest.mark.anyio
+async def test_one_failed_extractor_call_keeps_the_other_cards(sm):
+    model = FlakyModel({1})
+    cards = await _gather_three(sm, model)
+    assert model.calls == 3 and len(cards) == 2
+
+
+@pytest.mark.db
+@pytest.mark.anyio
+async def test_every_extractor_call_failing_propagates(sm):
+    with pytest.raises(RuntimeError):  # a provider outage must not look like "no evidence"
+        await _gather_three(sm, FlakyModel({0, 1, 2}))
