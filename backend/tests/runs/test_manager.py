@@ -310,3 +310,40 @@ async def test_illegal_transitions_are_refused(sm):
         await m.branch(run.id, "any")
     await m.cancel(run.id)
     assert (await row(sm, run.id)).status == "cancelled"
+
+
+async def test_decisions_for_a_paused_run_are_not_dropped(sm):
+    run = await seed_run(sm)
+
+    @tool
+    def submit_plan(plan: str) -> str:
+        """Submit the plan."""
+        return "approved"
+
+    hitl = HumanInTheLoopMiddleware(interrupt_on={"submit_plan": {"allowed_decisions": ["approve", "edit", "reject"]}})
+    model = script(call("submit_plan", {"plan": "p"}), "never said")
+    m = manager(sm, agent(model, [submit_plan], [hitl]))
+    await m.start(run.id)
+    await m.wait(run.id)
+    await m.pause(run.id)  # paused while the plan awaits review
+    assert (await row(sm, run.id)).status == "paused"
+    await m.resume(run.id, [{"type": "reject"}])
+    assert (await row(sm, run.id)).status == "cancelled" and len(model.seen) == 1
+
+
+@pytest.mark.parametrize("attempt", range(5))
+async def test_cancel_cannot_race_resume(sm, attempt):
+    run = await seed_run(sm)
+    fetch, entered, gate, calls = blocking_tool()
+    m = manager(sm, agent(script(call("fetch", {"x": "a"}), "done"), [fetch]))
+    await m.start(run.id)
+    await entered.wait()
+    await m.pause(run.id)
+    await asyncio.gather(m.resume(run.id), m.cancel(run.id), return_exceptions=True)
+    try:
+        assert (await row(sm, run.id)).status == "cancelled"
+        assert run.id not in m._tasks  # no orphan task left running
+    finally:
+        gate.set()
+        await m.wait(run.id)
+    assert await answers(sm, run.id) == []

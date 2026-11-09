@@ -9,6 +9,7 @@ import contextlib
 import json
 import logging
 import uuid
+from collections import defaultdict
 from collections.abc import Awaitable, Callable, Iterable
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -45,6 +46,9 @@ class RunManager:
     def __init__(self, sessions: async_sessionmaker[AsyncSession], build: Callable[[Run], Awaitable[Any]]) -> None:
         self.sessions, self.build = sessions, build
         self._tasks: dict[uuid.UUID, asyncio.Task[None]] = {}
+        # a pause or cancel must not interleave with a resume or start of the same run
+        # ponytail: in-process locks; one app process
+        self._locks: defaultdict[uuid.UUID, asyncio.Lock] = defaultdict(asyncio.Lock)
 
     async def create(
         self,
@@ -73,34 +77,44 @@ class RunManager:
         return run
 
     async def start(self, run_id: uuid.UUID) -> None:
-        async with self.sessions.begin() as session:
-            await self._set(session, run_id, "running", ("pending",), started_at=_now())
-        self._spawn(run_id, None)
+        async with self._locks[run_id]:
+            async with self.sessions.begin() as session:
+                await self._set(session, run_id, "running", ("pending",), started_at=_now())
+            self._spawn(run_id, None)
 
     async def resume(self, run_id: uuid.UUID, decisions: list[dict[str, Any]] | None = None) -> None:
+        async with self._locks[run_id]:
+            await self._resume(run_id, decisions)
+
+    async def _resume(self, run_id: uuid.UUID, decisions: list[dict[str, Any]] | None) -> None:
         async with self.sessions() as session:
             run = await session.get_one(Run, run_id)
             superseded = await self._superseded(session, run)
         if superseded:
             raise RunStateError("a newer branch owns this run's checkpoints; resume the branch instead")
         payload: Command | None = None
-        if run.status == "awaiting_user":
-            if not decisions:
-                raise RunStateError("this run is waiting for the user's decisions")
+        if decisions:  # a run paused while awaiting the user still has its interrupt pending
             if any(d.get("type") == "reject" for d in decisions):
-                await self.cancel(run_id)
+                await self._cancel(run_id)
                 return
             payload = Command(resume={"decisions": decisions})
+        elif run.status == "awaiting_user":
+            raise RunStateError("this run is waiting for the user's decisions")
         async with self.sessions.begin() as session:
             await self._set(session, run_id, "running", ("paused", "awaiting_user"))
         self._spawn(run_id, payload)
 
     async def pause(self, run_id: uuid.UUID) -> None:
-        await self._stop(run_id)
-        async with self.sessions.begin() as session:
-            await self._set(session, run_id, "paused", ("running", "awaiting_user"))
+        async with self._locks[run_id]:
+            await self._stop(run_id)
+            async with self.sessions.begin() as session:
+                await self._set(session, run_id, "paused", ("running", "awaiting_user"))
 
     async def cancel(self, run_id: uuid.UUID) -> None:
+        async with self._locks[run_id]:
+            await self._cancel(run_id)
+
+    async def _cancel(self, run_id: uuid.UUID) -> None:
         await self._stop(run_id)
         async with self.sessions.begin() as session:
             await self._set(
@@ -108,6 +122,10 @@ class RunManager:
             )
 
     async def branch(self, run_id: uuid.UUID, checkpoint_id: str) -> Run:
+        async with self._locks[run_id]:
+            return await self._branch(run_id, checkpoint_id)
+
+    async def _branch(self, run_id: uuid.UUID, checkpoint_id: str) -> Run:
         if run_id in self._tasks:
             raise RunStateError("pause the run before branching it")
         async with self.sessions.begin() as session:
