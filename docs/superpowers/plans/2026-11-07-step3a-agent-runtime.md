@@ -4472,7 +4472,7 @@ git commit -m "docs: ADR 0011 agent runtime, spec deltas, gotchas and the step 3
 
 - **The general-purpose subagent** is turned off through `get_model_provider`, a private deepagents helper. It returns a class-derived name for every chat model probed (`litellm`, `genericfakechatmodel`), and `test_factory.py` fails if the task tool lists `general-purpose`.
 - **Reranking every candidate** costs about 0.25 s a pair on CPU, so a few hundred candidates take a minute. Step 4 caps the depth.
-- **A branch paused before its first checkpoint** resumes from its thread's latest checkpoint, which is the parent's, not the branch point.
+- ~~**A branch paused before its first checkpoint** resumes from its thread's latest checkpoint.~~ Resolved by pre-flight S6: `_drive` restarts it from `branch_from_checkpoint`.
 - **Evidence offsets go stale** if a paper is re-ingested: `chunk_id` is set to null, and the quote stays but its offsets no longer point anywhere.
 - **The extractor at `mid`** costs more per paper than the spec's `cheap`.
 - **`ag-ui-langgraph`** is unverified against a `create_deep_agent` graph; 3b starts with a spike.
