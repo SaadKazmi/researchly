@@ -23,6 +23,7 @@ from langgraph.runtime import Runtime
 from langgraph.types import Command
 
 from researchly.agents.context import TIMEOUTS_S, Effort, RunContext
+from researchly.services.evidence import untrusted
 
 BUDGET_WRAP_UP = (
     "Budget note: 80% of this run's budget is spent. Start no new searches or readers; write the answer from what "
@@ -55,6 +56,29 @@ def _words(args: Mapping[str, Any]) -> set[str]:
 
 def _refuse(call: ToolCall, text: str) -> ToolMessage:
     return ToolMessage(text, tool_call_id=call["id"] or "", name=call["name"], status="error")
+
+
+def _quarantine(result: ToolMessage | Command) -> ToolMessage | Command:
+    """A subagent's summary carries claims derived from paper text: the Lead sees it as untrusted (spec §19.1)."""
+
+    def wrap(m: Any) -> Any:
+        if not isinstance(m, ToolMessage):
+            return m
+        return ToolMessage(
+            untrusted("subagent result", m.text), tool_call_id=m.tool_call_id, name=m.name, status=m.status
+        )
+
+    if isinstance(result, ToolMessage):
+        return wrap(result)
+    update = result.update
+    if isinstance(update, dict) and isinstance(update.get("messages"), list):
+        return Command(
+            graph=result.graph,
+            goto=result.goto,
+            resume=result.resume,
+            update={**update, "messages": [wrap(m) for m in update["messages"]]},
+        )
+    return result
 
 
 class BudgetGuard(AgentMiddleware[AgentState[Any], RunContext]):
@@ -126,6 +150,7 @@ class EffortGuard(AgentMiddleware[AgentState[Any], RunContext]):
                 call, f"Error: this effort tier allows {self.caps[kind]} {kind} tasks per run; all are used."
             )
         try:
-            return await asyncio.wait_for(handler(request), self.timeouts[kind])
+            result = await asyncio.wait_for(handler(request), self.timeouts[kind])
         except TimeoutError:
             return _refuse(call, f"Error: the {kind} task timed out after {self.timeouts[kind]:.0f} s.")
+        return _quarantine(result)

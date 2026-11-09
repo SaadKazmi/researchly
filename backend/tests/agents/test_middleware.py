@@ -114,7 +114,7 @@ async def test_effort_guard_caps_tasks_per_subagent_and_times_them_out():
     agent = create_agent(model, [task], middleware=[guard], context_schema=RunContext)
     out = await agent.ainvoke(GO, context=CTX)
     results = [(m.status, m.text) for m in out["messages"] if isinstance(m, ToolMessage)]
-    assert results[0] == ("success", "sub done")
+    assert results[0] == ("success", '<untrusted source="subagent result">\nsub done\n</untrusted>')
     assert results[1][0] == "error" and "1 scout" in results[1][1]
     assert results[2][0] == "error" and "timed out" in results[2][1]
     assert calls == ["a", "slow"]  # the refused task never ran

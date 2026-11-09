@@ -117,6 +117,7 @@ async def test_plan_review_then_a_scout_fills_the_project_store(sm):
     assert out["messages"][-1].text == "The answer."
     answers = [m.text for m in out["messages"] if isinstance(m, ToolMessage)]
     assert answers[0] == "2020 on" and "Plan approved" in answers[1] and '"status":"complete"' in answers[2]
+    assert answers[2].startswith('<untrusted source="subagent result">')  # spec §19.1: derived from paper text
     async with sm() as session:
         assert (await session.get_one(Run, run.id)).plan == {"text": "1. search from 2020"}
     item = await store.aget(("project", str(run.project_id)), "/candidates/sq1.jsonl")
