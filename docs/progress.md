@@ -136,9 +136,16 @@ Newest entries at the bottom. Each session appends: date, plan + task, what chan
   - **Agents:** tools, guards (budget, loop, effort), prompts, and the factory (Quick Lead; Lead with scouts and readers, plan review, `ask_user`).
   - **Run manager:** start, pause, resume, cancel, branch, resume on startup; `LiveRuntime`; the app's pool, checkpointer and store.
   - ADR 0011; spec §6.2–6.6, §16 and §24 amended.
-- Tests: backend 715 passed, 2 skipped; `-m db` 77 passed; CLI (`-k "not docker"`) 95 passed.
+- Tests: backend 726 passed, 2 skipped; `-m db` 88 passed; CLI (`-k "not docker"`) 95 passed; pyright 0 errors.
 - CI: pending (PR).
 - Rulings: see the plan (rulings 12–32); pre-flight rulings: Quick Lead tool cap uses `exit_behavior="continue"` and the run ends `partial`; `evidence.gather` releases its DB connection before the parallel model calls; `gather_evidence` takes a per-paper advisory lock before ingesting; tool-cache expiry uses the DB clock; a branch resumed before its first checkpoint restarts from its fork.
-- Deferred: see the plan's Deferred list (3b API and streaming, 3c UI and E2E, step 4 calibration).
+- Final review (opus) fixes:
+  - `gather_evidence` held a DB connection through the full-text fetch, so parallel readers could exhaust the pool. The fetch now runs with no session open (`store_fulltext` split out of `ingest_paper`), under a per-paper lock.
+  - Subagent results reached the Lead untagged; they now arrive inside `<untrusted>` (§19.1).
+  - Evidence extraction ignored the budget; `gather_evidence` refuses once the run's budget is spent.
+  - A pause or cancel could race a resume and leave a cancelled run running; control calls now take a per-run lock.
+  - Decisions sent for a paused run were dropped, and a reject sent to a running run cancelled it.
+  - One failed extractor call failed the whole paper; failed chunks are now dropped, and the error is re-raised only if every call fails.
+- Deferred: see the plan's Deferred list (3b API and streaming, 3c UI and E2E, step 4 calibration, and the evidence `chunk_id` migration before any re-ingest path).
 - No features.json flips: F1 and F2 flip with the 3c E2E specs.
 - Next: plan 3b (projects, threads and runs API; AG-UI streaming).
