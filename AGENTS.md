@@ -81,6 +81,11 @@ The default `python` on dev machines may be old; always go through `uv`.
 - Full-text fetches pass the host as the breaker `source` (`arxiv.org`, the PDF host), so one blocked publisher cannot open a shared breaker.
 - Web search: SearXNG runs only brave, mojeek, yahoo (general) and github (code), JSON only (ADR 0010). The CLI passes `RESEARCHLY_SEARXNG_URL`; `RESEARCHLY_WEB_SEARCH=off` turns it off. `capability.web_search` is written by a background probe, so it reads `ready` up to a minute after the app starts.
 - The `paper_code` table holds the PwC archive (CC BY-SA 4.0): show its attribution and never export it. DBLP is SPARQL only and OpenReview is `/notes/search` only: their other endpoints are bot-gated, so never add a workaround.
+- Agent runtime (ADR 0011):
+  - uvicorn runs on `--loop asyncio:SelectorEventLoop`; the app refuses a Proactor loop unless `env == "test"`.
+  - LangGraph's checkpoint and store tables come from `provision.setup_agent_tables` (their own `setup()`), not Alembic; `test_models_match_migrations` skips them.
+  - Agents read candidates and evidence only through tools: a `FilesystemPermission` deny rule covers `/projects/candidates/**` and `/projects/evidence/**`.
+  - Tools must be idempotent: a paused run re-runs its last tool step on resume (candidate files dedupe; `gather_evidence` is cached in `tool_cache`).
 
 ## Compact instructions
 When compacting, keep: current plan path and task number, failing test names and errors, files changed this session, decisions made and why. Drop: full file dumps, passing test output, exploration dead ends.

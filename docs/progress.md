@@ -124,3 +124,21 @@ Newest entries at the bottom. Each session appends: date, plan + task, what chan
 - Deferred: see the plan's Deferred list (GROBID and `paper_refs` at step 4, keyed web search at step 9, web result caching and calling enrichment at step 3, CORE and ACL Anthology later).
 - No features.json flips.
 - Next: step 3 (run manager).
+
+## 2026-11-08 — Step 3a agent runtime (plan docs/superpowers/plans/2026-11-07-step3a-agent-runtime.md)
+- Done (feat/step3a-agent-runtime):
+  - **Pins:** deepagents 0.7.32, langchain 1.4.7, langchain-core 1.7.3, langgraph 1.2.19, langgraph-checkpoint-postgres 3.2.0.
+  - **Selector loop** for uvicorn (native and Docker); LangGraph's tables from `setup_agent_tables`.
+  - **Migration 0005:** project, thread, message, run, run_event, evidence, tool_cache.
+  - **Ledger:** agent names from `lc_agent_name`, `attach_ledger`, `spent_usd`; registry models carry `profile`.
+  - **Ranking (§10):** gate, percentiles, renormalised weights in `ranking.yaml`; Chao2 as a pure function. OpenAlex `counts_by_year` (cache key v2).
+  - **Reader:** RCS evidence extraction with verified verbatim quotes (`services/evidence.py`); `tool_cache`.
+  - **Agents:** tools, guards (budget, loop, effort), prompts, and the factory (Quick Lead; Lead with scouts and readers, plan review, `ask_user`).
+  - **Run manager:** start, pause, resume, cancel, branch, resume on startup; `LiveRuntime`; the app's pool, checkpointer and store.
+  - ADR 0011; spec §6.2–6.6, §16 and §24 amended.
+- Tests: backend 715 passed, 2 skipped; `-m db` 77 passed; CLI (`-k "not docker"`) 95 passed.
+- CI: pending (PR).
+- Rulings: see the plan (rulings 12–32); pre-flight rulings: Quick Lead tool cap uses `exit_behavior="continue"` and the run ends `partial`; `evidence.gather` releases its DB connection before the parallel model calls; `gather_evidence` takes a per-paper advisory lock before ingesting; tool-cache expiry uses the DB clock; a branch resumed before its first checkpoint restarts from its fork.
+- Deferred: see the plan's Deferred list (3b API and streaming, 3c UI and E2E, step 4 calibration).
+- No features.json flips: F1 and F2 flip with the 3c E2E specs.
+- Next: plan 3b (projects, threads and runs API; AG-UI streaming).
