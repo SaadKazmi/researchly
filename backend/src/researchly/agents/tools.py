@@ -9,9 +9,11 @@ import dataclasses
 import json
 import re
 import uuid
-from collections.abc import Mapping, Sequence
+from collections import defaultdict
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from decimal import Decimal
 from typing import Any, Protocol
 
 from langchain.tools import ToolRuntime
@@ -26,8 +28,9 @@ from researchly.connectors.sidecar import SidecarClient
 from researchly.db.models import Evidence, Paper, Run
 from researchly.services import evidence, paper_code, paper_store, ranking, tool_cache
 from researchly.services.evidence import QueryEmbedder, untrusted
+from researchly.services.fulltext import Target
 from researchly.services.identity import dedupe
-from researchly.services.ingest import Fetcher, TextEmbedder, ingest_paper
+from researchly.services.ingest import Fetcher, TextEmbedder, store_fulltext, target_for
 from researchly.services.retrieval import Scorer
 from researchly.services.search import default_sources, federated_search
 from researchly.services.web_search import web_search
@@ -59,6 +62,9 @@ class ToolDeps:
     reranker: Scorer
     extractor: BaseChatModel  # role `mid`; used only through evidence.extract (quarantined, spec §19.1)
     rank_config: ranking.RankConfig = field(default_factory=ranking.load_config)
+    spent: Callable[[uuid.UUID], Awaitable[Decimal]] | None = None  # the run's ledger total; None = no budget check
+    # ponytail: in-process locks; one app process
+    paper_locks: dict[uuid.UUID, asyncio.Lock] = field(default_factory=lambda: defaultdict(asyncio.Lock))
 
 
 def record_to_json(record: PaperRecord) -> dict[str, Any]:
@@ -178,20 +184,20 @@ async def gather_evidence(deps: ToolDeps, files: ProjectFiles, ctx: RunContext, 
         pid = uuid.UUID(paper_id)
     except ValueError:
         return "Error: paper_id must be a paper_id from rank_candidates."
+    if deps.spent is not None and await deps.spent(ctx.run_id) >= ctx.budget_usd:
+        return "Error: this run's budget is spent. Write the answer from the evidence you have."
     key = tool_cache.cache_key("gather_evidence", {"run": str(ctx.run_id), "paper": str(pid), "question": question})
+    # No connection is held across the fetch (arXiv is paced at 15 s a request): short sessions around it.
     async with deps.sessions() as session:
         paper = await session.get(Paper, pid)
         if paper is None:
             return "Error: unknown paper_id; use one from rank_candidates."
         cached = await tool_cache.get(session, key)
-        if cached is None:
-            if paper.fulltext_at is None:
-                # two readers can get the same paper: the second waits here, then sees the first one's full text
-                await session.execute(select(func.pg_advisory_xact_lock(int.from_bytes(pid.bytes[:8], signed=True))))
-                await session.refresh(paper)
-                if paper.fulltext_at is None:
-                    await ingest_paper(session, pid, fetcher=deps.fetcher, embedder=deps.embedder)
-                await session.commit()
+        target = await target_for(session, pid) if cached is None and paper.fulltext_at is None else None
+    if cached is None:
+        if target is not None:
+            await _ensure_fulltext(deps, pid, target)
+        async with deps.sessions() as session:
             cards = await evidence.gather(
                 session,
                 pid,
@@ -205,7 +211,8 @@ async def gather_evidence(deps: ToolDeps, files: ProjectFiles, ctx: RunContext, 
             )
             cached = {"evidence": [str(c.id) for c in cards]}
             await tool_cache.put(session, key, "gather_evidence", cached)
-            await session.commit()
+            await session.commit()  # the cards and their cache row land together
+    async with deps.sessions() as session:
         stmt = select(Evidence).where(Evidence.project_id == ctx.project_id, Evidence.paper_id == pid)
         every = (await session.scalars(stmt.order_by(Evidence.relevance.desc(), Evidence.id))).all()
     # rebuilt from the table on every call, so a crash between commit and write heals on the next one
@@ -216,6 +223,23 @@ async def gather_evidence(deps: ToolDeps, files: ProjectFiles, ctx: RunContext, 
         return f"No supporting evidence for this question in paper {pid}."
     claims = "\n".join(f"[cite:{c.id}] relevance {c.relevance}/10: {c.claim}" for c in mine)
     return f"{len(mine)} evidence cards from paper {pid}:\n{untrusted('evidence', claims)}"
+
+
+async def _ensure_fulltext(deps: ToolDeps, pid: uuid.UUID, target: Target) -> None:
+    """Two readers can get the same paper: the second waits on the lock, then sees the first one's full text."""
+    async with deps.paper_locks[pid]:
+        async with deps.sessions() as session:
+            if (await session.get_one(Paper, pid)).fulltext_at is not None:
+                return
+        full = await deps.fetcher.fetch(target)  # no session open
+        async with deps.sessions() as session:
+            # the in-process lock covers one app process; this covers a second one
+            await session.execute(select(func.pg_advisory_xact_lock(int.from_bytes(pid.bytes[:8], signed=True))))
+            paper = await session.get_one(Paper, pid)
+            await session.refresh(paper)
+            if paper.fulltext_at is None:
+                await store_fulltext(session, pid, full, embedder=deps.embedder)
+            await session.commit()
 
 
 async def submit_plan(deps: ToolDeps, ctx: RunContext, plan: str) -> str:

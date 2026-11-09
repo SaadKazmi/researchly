@@ -81,6 +81,7 @@ class LiveRuntime:
                     embedder=embedder,
                     reranker=reranker,
                     extractor=extractor,
+                    spent=partial(spent_usd, self.sessions),
                 )
         return dataclasses.replace(self._base, extractor=extractor)
 

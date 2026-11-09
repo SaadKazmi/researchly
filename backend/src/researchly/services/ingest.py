@@ -38,6 +38,13 @@ async def target_for(session: AsyncSession, paper_id: uuid.UUID) -> Target:
 
 async def ingest_paper(session: AsyncSession, paper_id: uuid.UUID, *, fetcher: Fetcher, embedder: TextEmbedder) -> str:
     full = await fetcher.fetch(await target_for(session, paper_id))
+    return await store_fulltext(session, paper_id, full, embedder=embedder)
+
+
+async def store_fulltext(
+    session: AsyncSession, paper_id: uuid.UUID, full: FullText | None, *, embedder: TextEmbedder
+) -> str:
+    """Everything after the fetch, so a caller can fetch without holding a connection."""
     paper = await session.get_one(Paper, paper_id)
     paper.fulltext_at = datetime.now(UTC)
     if full is None:  # an outage, block or quota looks the same: keep what an earlier ingest stored

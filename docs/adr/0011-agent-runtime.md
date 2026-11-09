@@ -50,6 +50,8 @@ ranking). The decisions below are the ones that constrain later steps.
 - Every deepagents, langchain or langgraph bump re-runs the factory and middleware tests and needs an ADR amendment.
 - The extractor at `mid` costs more per paper than `cheap`; quote fidelity is worth it (step 4 measures it).
 - Tools must stay idempotent: a paused tool step runs again on resume.
+- Evidence extraction checks the budget only before each paper, so the overshoot is bounded by one paper's extraction
+  (at most 16 `mid` calls) once the budget is reached.
 - Watch: checkpoint growth (pruning is deferred), and whether `get_model_provider` still turns the general-purpose
   subagent off after a bump (`test_factory.py` checks it). LoopGuard and EffortGuard count from `state["messages"]`,
   so if Deep Agents' summarisation drops old messages their counts restart.

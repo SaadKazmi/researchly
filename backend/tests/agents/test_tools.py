@@ -1,10 +1,13 @@
+import asyncio
+import dataclasses
 import json
 import uuid
 from decimal import Decimal
 from typing import Any, cast
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import select, text
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from researchly.agents import tools
 from researchly.agents.context import RunContext
@@ -158,6 +161,69 @@ async def test_gather_evidence_caches_and_writes_the_evidence_file(sm):
     async with sm() as session:
         assert len((await session.scalars(select(Evidence))).all()) == 1
     assert (await gather_evidence(d, files, run_ctx, "not-a-uuid", "q")).startswith("Error")
+
+
+class SlowFetcher(StubFetcher):
+    async def fetch(self, target):
+        await asyncio.sleep(0.2)
+        return await super().fetch(target)
+
+
+async def _seeded(sm):
+    run = await seed_run(sm)
+    async with sm() as session:
+        paper_id = await paper_store.upsert(session, ATTENTION)
+        await session.commit()
+    return RunContext(project_id=run.project_id, run_id=run.id), paper_id
+
+
+@pytest.mark.db
+async def test_concurrent_readers_fetch_a_paper_once(sm):
+    run_ctx, paper_id = await _seeded(sm)
+    fetcher = SlowFetcher(None)
+    irrelevant = {"relevance": 0, "quote": "x", "claim": "x"}
+    extractor = script(call("CardDraft", irrelevant), call("CardDraft", irrelevant))
+    d = deps(sessions=sm, extractor=extractor, fetcher=fetcher)
+    await asyncio.gather(
+        gather_evidence(d, MemoryFiles(), run_ctx, str(paper_id), "q1"),
+        gather_evidence(d, MemoryFiles(), run_ctx, str(paper_id), "q2"),
+    )
+    assert len(fetcher.targets) == 1
+
+
+@pytest.mark.db
+async def test_no_connection_is_held_during_the_fetch(db_url):
+    migrate.upgrade(db_url)
+    engine = create_async_engine(db_url, pool_size=1, max_overflow=0, pool_timeout=2)
+    sm = make_sessionmaker(engine)
+    run_ctx, paper_id = await _seeded(sm)
+
+    class ProbingFetcher(StubFetcher):
+        async def fetch(self, target):
+            async with sm() as session:  # times out after 2 s when the caller's session still holds the connection
+                await session.execute(text("SELECT 1"))
+            return None
+
+    irrelevant = {"relevance": 0, "quote": "x", "claim": "x"}
+    d = deps(sessions=sm, extractor=script(call("CardDraft", irrelevant)), fetcher=ProbingFetcher())
+    try:
+        await gather_evidence(d, MemoryFiles(), run_ctx, str(paper_id), "q")
+    finally:
+        await engine.dispose()
+
+
+@pytest.mark.db
+async def test_gather_evidence_stops_once_the_budget_is_spent(sm):
+    run_ctx, paper_id = await _seeded(sm)
+    extractor, fetcher = script(), StubFetcher(None)
+
+    async def spent(run_id):
+        return run_ctx.budget_usd
+
+    d = dataclasses.replace(deps(sessions=sm, extractor=extractor, fetcher=fetcher), spent=spent)
+    out = await gather_evidence(d, MemoryFiles(), run_ctx, str(paper_id), "q")
+    assert out.startswith("Error: this run's budget is spent")
+    assert extractor.seen == [] and fetcher.targets == []
 
 
 @pytest.mark.db

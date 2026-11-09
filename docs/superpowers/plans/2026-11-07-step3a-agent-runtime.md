@@ -4461,6 +4461,7 @@ git commit -m "docs: ADR 0011 agent runtime, spec deltas, gotchas and the step 3
 | Rerank depth cap in `rank_candidates` | measure first | step 4 |
 | `enrichment_sources` calls and `paper_code.ensure_loaded` from tools | not needed for the gate; the PwC table loads at setup | step 4 |
 | Docling page cap and timeout | carried from 2b; no runaway PDF seen in tests | step 4 |
+| Evidence `chunk_id` ON DELETE SET NULL would re-anchor offsets to the abstract on a re-ingest | fix with a migration (CASCADE or a source column) before any re-ingest path ships; none exists (ingest runs only when `fulltext_at` is null) | before any re-ingest path |
 | An ingest job queue (procrastinate) | `gather_evidence` ingests inline | step 4 |
 | A web page fetch tool | web results that name no paper are only counted | step 4 |
 | Asserting `LANGSMITH_TRACING` is off | no tracing configured anywhere | step 9 |
