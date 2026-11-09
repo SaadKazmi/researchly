@@ -26,4 +26,4 @@ RUN uv sync --locked --no-dev --no-editable \
  && useradd --system --uid 10001 researchly
 USER researchly
 EXPOSE 8000
-CMD ["uvicorn", "--factory", "researchly.app:create_app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "--factory", "researchly.app:create_app", "--loop", "asyncio:SelectorEventLoop", "--host", "0.0.0.0", "--port", "8000"]

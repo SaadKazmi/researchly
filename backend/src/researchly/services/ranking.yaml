@@ -1,0 +1,45 @@
+# Candidate ranking (spec §10; research docs/research/2026-11-07-step3-reader-ranking.md §4).
+# The user may edit this file. Weights per preset sum to 1; a null component's weight is renormalised away.
+presets:
+  balanced: {relevance: 0.45, impact: 0.20, influential: 0.10, centrality: 0.10, velocity: 0.05, venue: 0.05, practical: 0.05}
+  seminal: {relevance: 0.35, impact: 0.30, influential: 0.15, centrality: 0.15, velocity: 0.00, venue: 0.05, practical: 0.00}
+  recent: {relevance: 0.40, impact: 0.05, influential: 0.05, centrality: 0.05, velocity: 0.25, venue: 0.05, practical: 0.15}
+
+# bge-reranker-v2-m3 logits. Seeds from the step-3 probe; calibrated on LitSearch at step 4 (recall >= 0.95).
+tau_abstract: -2.5
+tau_chunk: -3.0
+
+min_n_for_percentile: 5   # fewer non-null values: the component is n/a for the whole set
+velocity_min_total: 10    # fewer total citations: velocity is n/a (too noisy)
+
+# OpenReview decisions (connectors/openreview.py) as a 0-1 venue prior.
+decision_prior: {oral: 1.0, spotlight: 0.9, poster: 0.7, accepted: 0.7, not_accepted: 0.2}
+
+# Curated venue tiers by name (case and spacing ignored). A seed list; unknown venues are n/a, not zero.
+venue_tiers:
+  Nature: 1.0
+  Science: 1.0
+  Cell: 1.0
+  The Lancet: 1.0
+  New England Journal of Medicine: 1.0
+  NeurIPS: 1.0
+  Advances in Neural Information Processing Systems: 1.0
+  ICML: 1.0
+  International Conference on Machine Learning: 1.0
+  ICLR: 1.0
+  International Conference on Learning Representations: 1.0
+  ACL: 1.0
+  CVPR: 1.0
+  Proceedings of the National Academy of Sciences: 0.8
+  EMNLP: 0.8
+  NAACL: 0.8
+  AAAI: 0.8
+  IJCAI: 0.8
+  KDD: 0.8
+  ICCV: 0.8
+  ECCV: 0.8
+  Journal of Machine Learning Research: 0.8
+  Transactions of the Association for Computational Linguistics: 0.8
+  Nature Communications: 0.8
+  PLOS ONE: 0.5
+  Scientific Reports: 0.5

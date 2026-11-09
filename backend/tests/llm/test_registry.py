@@ -74,3 +74,10 @@ def test_replay_mode_needs_no_provider(tmp_path):
     assert isinstance(model, RecordReplayChatModel)
     assert (model.mode, model.model_alias, model.role) == ("replay", "claude-code/sonnet", "strong")
     assert model.path == tmp_path / "smoke" / "calls.jsonl"
+
+
+def test_litellm_models_carry_their_context_window_as_a_profile():
+    set_secret("anthropic", "sk-ant-api03-ABCDEFGHIJKLMNOPQRSTUVWX")
+    model = chat_model("cheap", [ANTHROPIC], Settings(env="test"), T)
+    assert model.profile is not None
+    assert model.profile.get("max_input_tokens") == 1_000_000  # capabilities.yaml override for the Haiku tier

@@ -290,9 +290,9 @@ class SubagentResult(BaseModel):
 | Agent | Kind | Model role | Tools / skills | Output |
 |---|---|---|---|---|
 | **Lead** | Deep agent (main) | `strong` | `task`, `write_todos`, filesystem, `memory_recall`, `ask_user` (HITL), `rank_candidates`, `build_graph`, `search_library` | `brief.md`, `plan.md`, final answer |
-| **Scout** ×1–8 | Subagent (isolated, parallel) | `cheap` | connector tools, `web_search`, `write_file` | `candidates/{subq}.jsonl` |
-| **Reader** ×N | Subagent (isolated, parallel) | `mid` | `fetch_fulltext`, PaperQA2 `gather_evidence`, `read_file`, `write_file` | `evidence/{paper_id}.json` (evidence cards) |
-| **Quarantined Extractor** | Tool-less LLM call | `cheap` | none; structured output only | typed extraction from untrusted text (§19.1) |
+| **Scout** ×1–8 | Subagent (isolated, parallel) | `cheap` | `search_papers` (connectors), `search_web` (SearXNG); the tools write the files | `candidates/{subq}.jsonl` |
+| **Reader** ×N | Subagent (isolated, parallel) | `mid` | `gather_evidence` (ingests the full text, then PaperQA2's RCS step reimplemented; ADR 0011) | `evidence/{paper_id}.json` (evidence cards) |
+| **Quarantined Extractor** | Tool-less LLM call | `mid` (quote fidelity; ADR 0011) | none; structured output only | typed extraction from untrusted text (§19.1) |
 | **Writer** | Subagent (single) | `strong` | filesystem; skills: `report`, `notebook`, `book-chapter`, `viz-vegalite`, `viz-mermaid`, `study-guide`, `slides`, `audio-script` | `drafts/*.md`, notebook/book blocks |
 | **Verifier** | Subagent | `mid` + code | `resolve_reference`, `match_quote`, `check_grounding` | `verification/{section}.json` |
 | **Critic** | Subagent | `critic` (different provider if configured) | rubric scoring | `critique/{section}.json`; max 2 revision rounds |
@@ -304,7 +304,7 @@ class SubagentResult(BaseModel):
 2. **Plan.** The Lead writes `brief.md` and `plan.md` (sub-questions, sources, budget). This is a HITL interrupt for plan approval (F1.3).
 3. **Scout.** Scouts run in parallel, one per sub-question, starting broad and then narrowing. Results are deduped and identity-resolved.
 4. **Rank.** The `rank_candidates` tool scores and selects the top-K per sub-question.
-5. **Read.** Readers run in parallel per paper batch. They acquire full text (or the abstract only), run PaperQA2 evidence gathering, and write evidence cards incrementally.
+5. **Read.** Readers run in parallel per paper batch. They acquire full text (or the abstract only), extract evidence with the RCS step (verbatim quotes checked against the source), and write evidence cards incrementally.
 6. **Graph.** `build_graph` updates the citation and concept tables and writes `graph.json` for the run.
 7. **Synthesize.** For Quick/Standard answers, the Lead or Writer composes from the evidence cards. For notebooks and books, the Writer runs the §12 pipeline.
 8. **Verify → Critique → Revise.** At most 2 rounds.
@@ -324,7 +324,7 @@ Every step is a LangGraph checkpoint boundary. Nodes with side effects (DB write
 
 - **Enforcement:**
   - `ModelCallLimitMiddleware`, `ToolCallLimitMiddleware(exit_behavior="end")`, and per-subagent `asyncio.wait_for` timeouts (scout 5 min, reader 8 min, writer 20 min per section).
-  - The budget guard reads the ledger before each model call. At 80% it injects a wrap-up instruction to the Lead; at 100% it raises `BudgetExhausted`, which ends the run with status `partial`.
+  - The budget guard reads the ledger before each model call. At 80% it injects a wrap-up instruction to the Lead; at 100% the middleware jumps to the end with a stop message, and the run ends with status `partial`.
 - **Loop detection:** the same `(tool, normalized_args)` hash 3 times, or near-duplicate queries (Jaccard ≥ 0.8), produces a tool error telling the agent to change strategy. After 2 such errors the subagent ends as `partial`.
 - **Stop rule for the Lead:** each sub-question has ≥ k evidence cards (k=3 Standard, 5 Deep), or the budget is reached, or the coverage estimate has plateaued.
 
@@ -338,9 +338,9 @@ Every step is a LangGraph checkpoint boundary. Nodes with side effects (DB write
 - **Durability:** `durability="sync"` for book runs; `"async"` otherwise.
 
 ### 6.6 Deep Agents configuration
-- `deepagents` is pinned to an exact version (≥0.7.32), and `langgraph` and `langchain` likewise. Upgrades go through an ADR plus the full test suite.
+- `deepagents` is pinned exactly (0.7.32 at step 3a, ADR 0011), and `langgraph` and `langchain` likewise. Upgrades go through an ADR plus the full test suite.
 - Agents are created only through `agents/factory.py`, which is the only module that imports `deepagents`.
-- **Backend:** `CompositeBackend(default=StateBackend(), routes={"/projects/": StoreBackend(namespace=lambda rt: ("project", rt.project_id))})` on `AsyncPostgresStore`.
+- **Backend:** `CompositeBackend(default=StateBackend(), routes={"/projects/": StoreBackend(namespace=lambda rt: ("project", str(rt.context.project_id)))})` on `AsyncPostgresStore`.
 - **Checkpointer:** `AsyncPostgresSaver`.
 - TodoList middleware is enabled explicitly (it is opt-in in 0.7).
 - Only synchronous isolated subagents are used. The beta async and fork modes are not.
@@ -707,7 +707,7 @@ citation(src, dst, source, is_influential)                             -- arrive
 concept(...) ; paper_concept(...) ; concept_edge(...)
 collection(id, project_id, name) ; collection_paper(collection_id, paper_id, tags[], note)
 annotation(id, paper_id, project_id, anchor jsonb, text, color)
-evidence(id, run_id, project_id, paper_id, chunk_id, claim, quote, relevance, created_at)
+evidence(id, run_id, project_id, paper_id, chunk_id, question, claim, quote, quote_start, quote_end, relevance 0–10, created_at)  -- offsets into chunk.text, or the abstract when chunk_id is null
 verification(id, document_id, sentence_ref, claim, evidence_id, label, score, method)
 document(id, project_id, kind[answer|notebook|book|study_guide|faq|slides|review], title, content jsonb, bibliography jsonb, status)
 document_version(id, document_id, content jsonb, author[user|agent], ts)
@@ -718,7 +718,7 @@ playbook_item(id, project_id, text, helpful, harmful, status, created_at)
 tool_cache(key, tool, result jsonb, created_at, ttl)
 http_cache(key, url, status, headers, body, etag, expires_at) UNLOGGED  -- url without query; headers allowlisted
 setting(key, value jsonb) ; capability(key, value jsonb) ; provider_config(id, provider, base_url, models jsonb, key_ref)
--- plus: LangGraph checkpoint tables, Deep Agents store tables, procrastinate tables, memory-framework tables
+-- plus: LangGraph checkpoint and store tables (created by their own setup(), not Alembic; ADR 0011), procrastinate tables, memory-framework tables
 ```
 Migrations use Alembic. Every migration has an upgrade → downgrade → upgrade test.
 
@@ -1040,7 +1040,7 @@ There is a single release; the steps below are dependency order only. Each step 
    - Ingestion pipeline, embeddings, hybrid search + rerank.
    - Tier-2 and Tier-3 connectors.
 3. **Agent core:**
-   - Deep Agents factory; Lead, Scout and Reader (PaperQA2).
+   - Deep Agents factory; Lead, Scout and Reader (PaperQA2's RCS step, reimplemented).
    - Ranking, budgets and limits, run manager, resume.
    - AG-UI streaming, chat UI, run tree, plan review, interrupts.
    - (F1, F2)

@@ -9,7 +9,7 @@ from sqlalchemy import select
 from researchly.db import migrate
 from researchly.db.engine import make_engine, make_sessionmaker
 from researchly.db.models import LlmCall
-from researchly.llm.ledger import LedgerCallback
+from researchly.llm.ledger import LedgerCallback, attach_ledger, spent_usd
 
 pytestmark = [pytest.mark.db, pytest.mark.anyio]
 
@@ -71,3 +71,50 @@ async def test_ledger_writes_zero_token_error_row(db_url):
         row = (await s.scalars(select(LlmCall))).one()
     await engine.dispose()
     assert (row.status, row.in_tok, row.cached_tok, row.out_tok, row.cost_usd) == ("error", 0, 0, 0, Decimal("0"))
+
+
+async def test_attached_ledger_records_the_calling_agent(db_url):
+    migrate.upgrade(db_url)
+    engine = make_engine(db_url)
+    sessions = make_sessionmaker(engine)
+    run_id = uuid.uuid4()
+    model = attach_ledger(
+        GenericFakeChatModel(messages=iter([AIMessage("a"), AIMessage("b")])), sessions, run_id=run_id, role="cheap"
+    )
+    await model.ainvoke("hi", config={"metadata": {"lc_agent_name": "scout"}})
+    await model.ainvoke("hi")
+    async with sessions() as session:
+        rows = (await session.scalars(select(LlmCall).where(LlmCall.run_id == run_id))).all()
+    await engine.dispose()
+    assert sorted((r.agent, r.role, r.provider, r.cost_usd) for r in rows) == [
+        ("cheap", "cheap", "GenericFakeChatModel", Decimal(0)),
+        ("scout", "cheap", "GenericFakeChatModel", Decimal(0)),
+    ]
+
+
+async def test_spent_usd_sums_one_run(db_url):
+    migrate.upgrade(db_url)
+    engine = make_engine(db_url)
+    sessions = make_sessionmaker(engine)
+    run_id = uuid.uuid4()
+
+    def row(run: uuid.UUID, cost: str) -> LlmCall:
+        return LlmCall(
+            run_id=run,
+            agent="lead",
+            role="strong",
+            provider="anthropic",
+            model="anthropic/claude-sonnet-5-5",
+            in_tok=1,
+            cached_tok=0,
+            out_tok=1,
+            cost_usd=Decimal(cost),
+            latency_ms=1,
+            status="ok",
+        )
+
+    async with sessions() as session, session.begin():
+        session.add_all([row(run_id, "0.25"), row(run_id, "0.5"), row(uuid.uuid4(), "9")])
+    assert await spent_usd(sessions, run_id) == Decimal("0.75")
+    assert await spent_usd(sessions, uuid.uuid4()) == 0
+    await engine.dispose()

@@ -1,7 +1,7 @@
 import uuid
 
 import pytest
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import ProgrammingError
 
@@ -78,3 +78,16 @@ def test_role_failure_does_not_leak_passwords(db_url, target):
         with admin.connect() as conn:
             conn.execute(text(f"DROP ROLE {weak}"))
         admin.dispose()
+
+
+def test_setup_creates_langgraphs_tables_idempotently(db_url, target):
+    app_url = provision.setup(db_url, APP_PW, RO_PW, database=target)
+    provision.setup(db_url, APP_PW, RO_PW, database=target)
+    engine = create_engine(app_url)
+    assert set(inspect(engine).get_table_names()) >= provision.AGENT_TABLES
+    engine.dispose()
+
+
+def test_conninfo_drops_the_sqlalchemy_driver():
+    url = "postgresql+psycopg://researchly_app:pw@127.0.0.1:54329/researchly"
+    assert provision.conninfo(url) == "postgresql://researchly_app:pw@127.0.0.1:54329/researchly"

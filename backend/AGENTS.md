@@ -6,4 +6,4 @@
 - Settings: `researchly.config.Settings` (`RESEARCHLY_*` env vars). Secrets only via `researchly.security.keychain`.
 - DB: models in `db/models.py`; Alembic revisions in `db/migrations/versions/` (never edit an applied one); every revision is covered by the upgrade → downgrade → upgrade test.
 - Tests: pytest + anyio (`@pytest.mark.anyio`); `@pytest.mark.db` needs Postgres (`RESEARCHLY_TEST_DATABASE_URL` or Docker via testcontainers); `@pytest.mark.live` is opt-in only. Unit tests never touch the network or the OS keychain.
-- LLM in tests: `GenericFakeChatModel` for unit tests; `RecordReplayChatModel` in replay mode for integration.
+- LLM in tests: `ToolFake` (`tests/agents/fakes.py`: a `GenericFakeChatModel` that accepts tools and records prompts) with `call(...)`/`script(...)` for agents; `RecordReplayChatModel` in replay mode for integration. Test packages import the fakes relatively (`from ..agents.fakes import ...`).

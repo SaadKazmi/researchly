@@ -383,3 +383,9 @@ def test_real_settings_enable_exactly_the_four_engines(tmp_path):
         assert refused.value.code == 403  # HTML format is not enabled
     finally:
         supervise.terminate_tree(proc.pid)
+
+
+def test_native_start_runs_the_app_on_a_selector_loop(fakes):
+    native.start(state.load_secrets(), searxng_home=None)
+    _, cmd, _, _ = next(e for e in fakes if e[0] == "spawn")
+    assert cmd[cmd.index("--loop") + 1] == "asyncio:SelectorEventLoop"  # psycopg async cannot run on Proactor

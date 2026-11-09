@@ -1,4 +1,5 @@
 """Database provisioning (spec §16.1): roles, database and untrusted extensions, created as the superuser.
+Then Alembic runs, then LangGraph's own `setup()`.
 
 The CLI calls setup() before starting the app (native mode); Docker mode runs `python -m researchly.db.provision`
 as a one-shot service with RESEARCHLY_DB_SUPERUSER_URL / _APP_PASSWORD / _RO_PASSWORD in the environment.
@@ -7,6 +8,8 @@ as a one-shot service with RESEARCHLY_DB_SUPERUSER_URL / _APP_PASSWORD / _RO_PAS
 import os
 import re
 
+from langgraph.checkpoint.postgres import PostgresSaver
+from langgraph.store.postgres import PostgresStore
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import DBAPIError
@@ -18,6 +21,22 @@ RO_ROLE = "researchly_ro"
 # ensure_secret output (hex; older urlsafe ones still match); DDL cannot take bind parameters
 _PASSWORD = re.compile(r"[A-Za-z0-9_-]{16,}")
 _DATABASE = re.compile(r"[a-z_][a-z0-9_]{0,62}")
+# LangGraph creates and migrates these itself with an idempotent setup(); Alembic never touches them (ADR 0011)
+AGENT_TABLES = frozenset(
+    {"checkpoints", "checkpoint_blobs", "checkpoint_writes", "checkpoint_migrations", "store", "store_migrations"}
+)
+
+
+def conninfo(url: str) -> str:
+    """A SQLAlchemy URL as a libpq URI: LangGraph's savers and psycopg-pool take psycopg connection strings."""
+    return make_url(url).set(drivername="postgresql").render_as_string(hide_password=False)
+
+
+def setup_agent_tables(app_url: str) -> None:
+    with PostgresSaver.from_conn_string(conninfo(app_url)) as saver:
+        saver.setup()
+    with PostgresStore.from_conn_string(conninfo(app_url)) as store:
+        store.setup()
 
 
 def provision(superuser_url: str, app_password: str, ro_password: str, database: str = "researchly") -> str:
@@ -56,9 +75,10 @@ def provision(superuser_url: str, app_password: str, ro_password: str, database:
 
 
 def setup(superuser_url: str, app_password: str, ro_password: str, database: str = "researchly") -> str:
-    """Provision, then migrate as the schema owner. Returns the app-role URL."""
+    """Provision, migrate as the schema owner, then let LangGraph add its tables. Returns the app-role URL."""
     app_url = provision(superuser_url, app_password, ro_password, database)
     migrate.upgrade(app_url)
+    setup_agent_tables(app_url)
     return app_url
 
 

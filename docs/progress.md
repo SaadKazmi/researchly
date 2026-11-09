@@ -118,9 +118,34 @@ Newest entries at the bottom. Each session appends: date, plan + task, what chan
   - **Web search:** `web_search` service and `ids.from_url` (da46ab4); a background probe records `capability.web_search` (1d8f916).
   - **Tier-2 connectors:** PwC archive table with migration 0004 (108a125), bioRxiv/medRxiv (d104f7b), OpenReview decisions (0112fa9), DBLP over SPARQL (9919ec3), OpenAIRE (aca8863); routing as a Deep-run extra and as enrichment (280df8c).
   - ADR 0010; ADRs 0004, 0005 and 0008, the spec and AGENTS.md amended.
-- Tests: backend 654 passed, 2 skipped; `-m db` 51 passed (tsvector); CLI: the searxng settings and URL-plumbing tests, including `test_real_settings_enable_exactly_the_four_engines` against the pinned SearXNG; nightly: live checks for the connectors, the PwC snapshot and web search. CI counts are in the run for this PR.
+- Tests: backend 654 passed, 2 skipped; `-m db` 51 passed (tsvector); CI run 42389334866 green on every job; CLI: the searxng settings and URL-plumbing tests, including `test_real_settings_enable_exactly_the_four_engines` against the pinned SearXNG; nightly: live checks for the connectors, the PwC snapshot and web search.
 - Rulings: see the plan (pre-flight rulings), among them that the origin-pinned sidecar client is the one exception to "all HTTP via PoliteClient".
 - Final review (opus) fixes: OpenReview picks the best decision among same-title notes (a spotlight could be recorded as rejected); DBLP keys moved from `ids` to `extra` (a preprint and its published version shared an ID, so identity merged them); a failed SearXNG start or a malformed SearXNG URL now only turns web search off; the capability reads `starting` until the probe answers; `ids.doi` rejects control characters; bioRxiv routing skips the CSH journals' `10.1101/` DOIs.
 - Deferred: see the plan's Deferred list (GROBID and `paper_refs` at step 4, keyed web search at step 9, web result caching and calling enrichment at step 3, CORE and ACL Anthology later).
 - No features.json flips.
 - Next: step 3 (run manager).
+
+## 2026-11-08 — Step 3a agent runtime (plan docs/superpowers/plans/2026-11-07-step3a-agent-runtime.md)
+- Done (feat/step3a-agent-runtime):
+  - **Pins:** deepagents 0.7.32, langchain 1.4.7, langchain-core 1.7.3, langgraph 1.2.19, langgraph-checkpoint-postgres 3.2.0.
+  - **Selector loop** for uvicorn (native and Docker); LangGraph's tables from `setup_agent_tables`.
+  - **Migration 0005:** project, thread, message, run, run_event, evidence, tool_cache.
+  - **Ledger:** agent names from `lc_agent_name`, `attach_ledger`, `spent_usd`; registry models carry `profile`.
+  - **Ranking (§10):** gate, percentiles, renormalised weights in `ranking.yaml`; Chao2 as a pure function. OpenAlex `counts_by_year` (cache key v2).
+  - **Reader:** RCS evidence extraction with verified verbatim quotes (`services/evidence.py`); `tool_cache`.
+  - **Agents:** tools, guards (budget, loop, effort), prompts, and the factory (Quick Lead; Lead with scouts and readers, plan review, `ask_user`).
+  - **Run manager:** start, pause, resume, cancel, branch, resume on startup; `LiveRuntime`; the app's pool, checkpointer and store.
+  - ADR 0011; spec §6.2–6.6, §16 and §24 amended.
+- Tests: backend 726 passed, 2 skipped; `-m db` 88 passed; CLI (`-k "not docker"`) 95 passed; pyright 0 errors.
+- CI: run 42722425473 green on every job (PR #9).
+- Rulings: see the plan (rulings 12–32); pre-flight rulings: Quick Lead tool cap uses `exit_behavior="continue"` and the run ends `partial`; `evidence.gather` releases its DB connection before the parallel model calls; `gather_evidence` takes a per-paper advisory lock before ingesting; tool-cache expiry uses the DB clock; a branch resumed before its first checkpoint restarts from its fork.
+- Final review (opus) fixes:
+  - `gather_evidence` held a DB connection through the full-text fetch, so parallel readers could exhaust the pool. The fetch now runs with no session open (`store_fulltext` split out of `ingest_paper`), under a per-paper lock.
+  - Subagent results reached the Lead untagged; they now arrive inside `<untrusted>` (§19.1).
+  - Evidence extraction ignored the budget; `gather_evidence` refuses once the run's budget is spent.
+  - A pause or cancel could race a resume and leave a cancelled run running; control calls now take a per-run lock.
+  - Decisions sent for a paused run were dropped, and a reject sent to a running run cancelled it.
+  - One failed extractor call failed the whole paper; failed chunks are now dropped, and the error is re-raised only if every call fails.
+- Deferred: see the plan's Deferred list (3b API and streaming, 3c UI and E2E, step 4 calibration, and the evidence `chunk_id` migration before any re-ingest path).
+- No features.json flips: F1 and F2 flip with the 3c E2E specs.
+- Next: plan 3b (projects, threads and runs API; AG-UI streaming).

@@ -11,7 +11,7 @@ interactions:
       host:
       - api.openalex.org
     method: GET
-    uri: https://api.openalex.org/works/doi:10.1038/nature14539?select=id%2Cdoi%2Ctitle%2Cpublication_year%2Cabstract_inverted_index%2Cauthorships%2Cprimary_location%2Cbest_oa_location%2Copen_access%2Clocations%2Cids%2Ccited_by_count%2Cfwci%2Ccitation_normalized_percentile%2Cis_retracted%2Creferenced_works%2Ctopics
+    uri: https://api.openalex.org/works/doi:10.1038/nature14539?select=id%2Cdoi%2Ctitle%2Cpublication_year%2Cabstract_inverted_index%2Cauthorships%2Cprimary_location%2Cbest_oa_location%2Copen_access%2Clocations%2Cids%2Ccited_by_count%2Cfwci%2Ccitation_normalized_percentile%2Cis_retracted%2Creferenced_works%2Ctopics%2Ccounts_by_year
   response:
     body:
       string: '{"id":"https://openalex.org/W2919115771","doi":"https://doi.org/10.1038/nature14539","title":"Deep
@@ -66,7 +66,9 @@ interactions:
         Institutes of Health","host_organization_lineage":["https://openalex.org/I1299303238"],"host_organization_lineage_names":[],"type":"repository"},"license":null,"license_id":null,"version":"publishedVersion","is_accepted":true,"is_published":true,"raw_source_name":"Nature","raw_type":"Journal
         Article"},{"id":"pmh:oai:HAL:hal-04206682v1","doi":null,"is_oa":true,"landing_page_url":"https://hal.science/hal-04206682","pdf_url":null,"source":{"id":"https://openalex.org/S4306402512","display_name":"HAL","issn_l":null,"issn":null,"is_oa":false,"is_in_doaj":false,"is_core":false,"listed_in":[],"host_organization":"https://openalex.org/I4405252976","host_organization_name":"Centre
         pour la Communication Scientifique Directe","host_organization_lineage":["https://openalex.org/I4405252976"],"host_organization_lineage_names":[],"type":"repository"},"license":"other-oa","license_id":"https://openalex.org/licenses/other-oa","version":"submittedVersion","is_accepted":false,"is_published":false,"raw_source_name":"Nature,
-        2015, 521 (7553), pp.436-444. &#x27E8;10.1038/nature14539&#x27E9;","raw_type":"info:eu-repo/semantics/article"}],"ids":{"openalex":"https://openalex.org/W2919115771","doi":"https://doi.org/10.1038/nature14539","mag":"2919115771","pmid":"https://pubmed.ncbi.nlm.nih.gov/26017442"},"cited_by_count":84170,"fwci":121.6913,"citation_normalized_percentile":{"value":1.0,"is_in_top_1_percent":true,"is_in_top_10_percent":true},"is_retracted":false,"referenced_works":["https://openalex.org/W146900863","https://openalex.org/W170811313","https://openalex.org/W407547601","https://openalex.org/W1487583988","https://openalex.org/W1498436455","https://openalex.org/W1514535095","https://openalex.org/W1573503290","https://openalex.org/W1752712236","https://openalex.org/W1970689298","https://openalex.org/W1978592082","https://openalex.org/W1993845689","https://openalex.org/W1993882792","https://openalex.org/W1999497791","https://openalex.org/W1999798000","https://openalex.org/W2022508996","https://openalex.org/W2025768430","https://openalex.org/W2064675550","https://openalex.org/W2072128103","https://openalex.org/W2074551195","https://openalex.org/W2085989895","https://openalex.org/W2088338354","https://openalex.org/W2095739681","https://openalex.org/W2097117768","https://openalex.org/W2098580305","https://openalex.org/W2100495367","https://openalex.org/W2107878631","https://openalex.org/W2108069432","https://openalex.org/W2111304802","https://openalex.org/W2112796928","https://openalex.org/W2116360511","https://openalex.org/W2117671523","https://openalex.org/W2120284346","https://openalex.org/W2120432001","https://openalex.org/W2121289914","https://openalex.org/W2136922672","https://openalex.org/W2144015117","https://openalex.org/W2144354855","https://openalex.org/W2145339207","https://openalex.org/W2146989110","https://openalex.org/W2157331557","https://openalex.org/W2158778629","https://openalex.org/W2158899491","https://openalex.org/W2160815625","https://openalex.org/W2163922914","https://openalex.org/W2166206801","https://openalex.org/W2169488311","https://openalex.org/W2169805405","https://openalex.org/W2800394774","https://openalex.org/W3139812727","https://openalex.org/W4232280717","https://openalex.org/W4249882522","https://openalex.org/W6630820455","https://openalex.org/W6743198006"],"topics":[{"id":"https://openalex.org/T10320","display_name":"Neural
+        2015, 521 (7553), pp.436-444. &#x27E8;10.1038/nature14539&#x27E9;","raw_type":"info:eu-repo/semantics/article"},{"id":"pmh:oai:RePEc:nat:nature:v:521:y:2015:i:7553:d:10.1038_nature14539","doi":null,"is_oa":false,"landing_page_url":"https://www.nature.com/articles/nature14539","pdf_url":null,"source":{"id":"https://openalex.org/S4306401271","display_name":"RePEc:
+        Research Papers in Economics","issn_l":null,"issn":null,"is_oa":false,"is_in_doaj":false,"is_core":false,"listed_in":[],"host_organization":"https://openalex.org/I77793887","host_organization_name":"Federal
+        Reserve Bank of St. Louis","host_organization_lineage":["https://openalex.org/I77793887"],"host_organization_lineage_names":[],"type":"repository"},"license":null,"license_id":null,"version":"submittedVersion","is_accepted":false,"is_published":false,"raw_source_name":null,"raw_type":"article"}],"ids":{"openalex":"https://openalex.org/W2919115771","doi":"https://doi.org/10.1038/nature14539","mag":"2919115771","pmid":"https://pubmed.ncbi.nlm.nih.gov/26017442"},"cited_by_count":89512,"fwci":97.4286,"citation_normalized_percentile":{"value":1.0,"is_in_top_1_percent":true,"is_in_top_10_percent":true},"is_retracted":false,"referenced_works":["https://openalex.org/W146900863","https://openalex.org/W170811313","https://openalex.org/W407547601","https://openalex.org/W1484210532","https://openalex.org/W1487583988","https://openalex.org/W1498436455","https://openalex.org/W1514535095","https://openalex.org/W1573503290","https://openalex.org/W1686810756","https://openalex.org/W1752712236","https://openalex.org/W1899249567","https://openalex.org/W1970689298","https://openalex.org/W1978592082","https://openalex.org/W1993845689","https://openalex.org/W1993882792","https://openalex.org/W1999497791","https://openalex.org/W1999798000","https://openalex.org/W2022508996","https://openalex.org/W2025768430","https://openalex.org/W2064675550","https://openalex.org/W2072128103","https://openalex.org/W2074551195","https://openalex.org/W2085989895","https://openalex.org/W2088338354","https://openalex.org/W2095739681","https://openalex.org/W2097117768","https://openalex.org/W2098580305","https://openalex.org/W2100495367","https://openalex.org/W2107878631","https://openalex.org/W2108069432","https://openalex.org/W2111304802","https://openalex.org/W2112796928","https://openalex.org/W2116360511","https://openalex.org/W2117671523","https://openalex.org/W2120284346","https://openalex.org/W2120432001","https://openalex.org/W2121289914","https://openalex.org/W2133564696","https://openalex.org/W2136922672","https://openalex.org/W2144015117","https://openalex.org/W2144354855","https://openalex.org/W2145339207","https://openalex.org/W2146989110","https://openalex.org/W2157331557","https://openalex.org/W2158778629","https://openalex.org/W2160815625","https://openalex.org/W2163922914","https://openalex.org/W2166206801","https://openalex.org/W2169488311","https://openalex.org/W2169805405","https://openalex.org/W2800394774","https://openalex.org/W2949966521","https://openalex.org/W2950344723","https://openalex.org/W2951596696","https://openalex.org/W2951622387","https://openalex.org/W2952230511","https://openalex.org/W3139812727","https://openalex.org/W4232280717","https://openalex.org/W4249882522","https://openalex.org/W4300773275","https://openalex.org/W6630820455","https://openalex.org/W6743198006"],"topics":[{"id":"https://openalex.org/T10320","display_name":"Neural
         Networks and Applications","score":0.7842000126838684,"subfield":{"id":"https://openalex.org/subfields/1702","display_name":"Artificial
         Intelligence"},"field":{"id":"https://openalex.org/fields/17","display_name":"Computer
         Science"},"domain":{"id":"https://openalex.org/domains/3","display_name":"Physical
@@ -78,7 +80,7 @@ interactions:
         and Few-Shot Learning","score":0.012400000356137753,"subfield":{"id":"https://openalex.org/subfields/1702","display_name":"Artificial
         Intelligence"},"field":{"id":"https://openalex.org/fields/17","display_name":"Computer
         Science"},"domain":{"id":"https://openalex.org/domains/3","display_name":"Physical
-        Sciences"}}]}
+        Sciences"}}],"counts_by_year":[{"year":2026,"cited_by_count":10426},{"year":2025,"cited_by_count":12195},{"year":2024,"cited_by_count":10567},{"year":2023,"cited_by_count":9495},{"year":2022,"cited_by_count":9511},{"year":2021,"cited_by_count":10046},{"year":2020,"cited_by_count":9291},{"year":2019,"cited_by_count":8135},{"year":2018,"cited_by_count":5518},{"year":2017,"cited_by_count":2986},{"year":2016,"cited_by_count":1140},{"year":2015,"cited_by_count":168},{"year":2014,"cited_by_count":12},{"year":2013,"cited_by_count":5},{"year":2012,"cited_by_count":7}]}
 
         '
     headers:
@@ -98,21 +100,21 @@ interactions:
       cf-cache-status:
       - DYNAMIC
       cf-ray:
-      - a5473c530befc904-KHI
+      - a5755b0b9adc9095-KHI
       connection:
       - keep-alive
       content-length:
-      - '12889'
+      - '14513'
       content-type:
       - application/json
       date:
-      - Tue, 03 Nov 2026 00:24:22 GMT
+      - Sun, 08 Nov 2026 14:44:26 GMT
       nel:
       - '{"report_to":"heroku-nel","response_headers":["Via"],"max_age":3600,"success_fraction":0.01,"failure_fraction":0.1}'
       report-to:
-      - '{"group":"heroku-nel","endpoints":[{"url":"https://nel.heroku.com/reports?s=awYawb3R3mo9%2BIK3Vf2PPdtOIFjwCdsFKe87Lxr9c74%3D\u0026sid=c46efe9b-d3d2-4a0c-8c76-bfafa16c5add\u0026ts=1793665462"}],"max_age":3600}'
+      - '{"group":"heroku-nel","endpoints":[{"url":"https://nel.heroku.com/reports?s=3Mz1Eexe2LVzwpWeTAovHZGQ8FtWHdO5sip%2BejrVeCM%3D\u0026sid=c46efe9b-d3d2-4a0c-8c76-bfafa16c5add\u0026ts=1794149066"}],"max_age":3600}'
       reporting-endpoints:
-      - heroku-nel="https://nel.heroku.com/reports?s=awYawb3R3mo9%2BIK3Vf2PPdtOIFjwCdsFKe87Lxr9c74%3D&sid=c46efe9b-d3d2-4a0c-8c76-bfafa16c5add&ts=1793665462"
+      - heroku-nel="https://nel.heroku.com/reports?s=3Mz1Eexe2LVzwpWeTAovHZGQ8FtWHdO5sip%2BejrVeCM%3D&sid=c46efe9b-d3d2-4a0c-8c76-bfafa16c5add&ts=1794149066"
       server:
       - cloudflare
       transfer-encoding:
@@ -132,11 +134,11 @@ interactions:
       x-ratelimit-prepaid-remaining-usd:
       - '0'
       x-ratelimit-remaining:
-      - '1000'
+      - '990'
       x-ratelimit-remaining-usd:
-      - '0.1'
+      - '0.099'
       x-ratelimit-reset:
-      - '84938'
+      - '33334'
     status:
       code: 200
       message: OK
