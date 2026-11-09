@@ -181,6 +181,8 @@ async def test_pause_and_resume_continue_from_the_last_checkpoint(sm):
     await entered.wait()
     with pytest.raises(RunStateError):
         await m.branch(run.id, "any")  # a live run cannot be branched
+    with pytest.raises(RunStateError):
+        await m.resume(run.id, [{"type": "reject"}])  # decisions are for a paused or waiting run
     await m.pause(run.id)
     assert (await row(sm, run.id)).status == "paused"
     gate.set()

@@ -94,6 +94,8 @@ class RunManager:
             raise RunStateError("a newer branch owns this run's checkpoints; resume the branch instead")
         payload: Command | None = None
         if decisions:  # a run paused while awaiting the user still has its interrupt pending
+            if run.status not in ("paused", "awaiting_user"):
+                raise RunStateError(f"run {run_id} is {run.status}; decisions are for a paused or waiting run")
             if any(d.get("type") == "reject" for d in decisions):
                 await self._cancel(run_id)
                 return
