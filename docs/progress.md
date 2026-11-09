@@ -137,7 +137,7 @@ Newest entries at the bottom. Each session appends: date, plan + task, what chan
   - **Run manager:** start, pause, resume, cancel, branch, resume on startup; `LiveRuntime`; the app's pool, checkpointer and store.
   - ADR 0011; spec §6.2–6.6, §16 and §24 amended.
 - Tests: backend 726 passed, 2 skipped; `-m db` 88 passed; CLI (`-k "not docker"`) 95 passed; pyright 0 errors.
-- CI: pending (PR).
+- CI: run 42722425473 green on every job (PR #9).
 - Rulings: see the plan (rulings 12–32); pre-flight rulings: Quick Lead tool cap uses `exit_behavior="continue"` and the run ends `partial`; `evidence.gather` releases its DB connection before the parallel model calls; `gather_evidence` takes a per-paper advisory lock before ingesting; tool-cache expiry uses the DB clock; a branch resumed before its first checkpoint restarts from its fork.
 - Final review (opus) fixes:
   - `gather_evidence` held a DB connection through the full-text fetch, so parallel readers could exhaust the pool. The fetch now runs with no session open (`store_fulltext` split out of `ingest_paper`), under a per-paper lock.
