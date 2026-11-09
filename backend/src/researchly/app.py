@@ -9,10 +9,19 @@ from importlib.metadata import version
 
 from fastapi import FastAPI
 from fastapi.responses import PlainTextResponse
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from langgraph.store.postgres.aio import AsyncPostgresStore
+from psycopg import AsyncConnection
+from psycopg.rows import DictRow, dict_row
+from psycopg_pool import AsyncConnectionPool
 
 from researchly.api import system
 from researchly.config import Settings
 from researchly.connectors.sidecar import SidecarClient
+from researchly.db import provision
+from researchly.db.engine import make_engine, make_sessionmaker
+from researchly.runs.live import LiveRuntime
+from researchly.runs.manager import RunManager
 from researchly.security.keychain import ensure_local_token
 from researchly.security.localhost_guard import LocalhostGuard
 from researchly.security.redact import RedactingArgsFilter, RedactingFilter, register_secret
@@ -40,6 +49,33 @@ def require_selector_loop(loop: asyncio.AbstractEventLoop) -> None:
 
 
 @asynccontextmanager
+async def run_manager(settings: Settings, searxng: SidecarClient | None) -> AsyncIterator[RunManager]:
+    """The run manager on one psycopg pool shared by LangGraph's checkpointer and store (ADR 0011)."""
+    engine = make_engine(settings.database_url)
+    sessions = make_sessionmaker(engine)
+    pool = AsyncConnectionPool(
+        provision.conninfo(settings.database_url),
+        connection_class=AsyncConnection[DictRow],
+        max_size=10,
+        open=False,
+        kwargs={"autocommit": True, "prepare_threshold": 0, "row_factory": dict_row},  # what LangGraph's savers need
+    )
+    await pool.open()
+    runtime = LiveRuntime(
+        settings, sessions, checkpointer=AsyncPostgresSaver(pool), store=AsyncPostgresStore(pool), searxng=searxng
+    )
+    manager = RunManager(sessions, runtime.build)
+    try:
+        await manager.resume_running()
+        yield manager
+    finally:
+        await manager.shutdown()
+        await runtime.aclose()
+        await pool.close()
+        await engine.dispose()
+
+
+@asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings: Settings = app.state.settings
     if settings.env != "test":  # TestClient apps run on the default loop and have no database
@@ -57,9 +93,14 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     if settings.env != "test":  # unit-test apps have no database
         probe = asyncio.create_task(record_web_search(settings.database_url, searxng))
     app.state.capability_probe = probe
+    app.state.runs = None
+    stack = contextlib.AsyncExitStack()
     try:
+        if settings.env != "test":  # unit-test apps have no database
+            app.state.runs = await stack.enter_async_context(run_manager(settings, searxng))
         yield
     finally:
+        await stack.aclose()
         if probe is not None:
             probe.cancel()
             with contextlib.suppress(asyncio.CancelledError):
