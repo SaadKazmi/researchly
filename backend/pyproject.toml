@@ -23,6 +23,8 @@ dependencies = [
   "langgraph-checkpoint-postgres==3.2.0",
   "psycopg-pool>=3.2",
   "langchain-litellm==0.11.1",
+  "ag-ui-langgraph==0.0.47",  # AG-UI events from LangGraph (ADR 0012)
+  "ag-ui-protocol==1.0.0",
   "deno==2.9.8",  # Deno runtime as a wheel: light code cells (ADR 0006)
   "fastembed==0.9.1",  # ONNX embedder + reranker on CPU, no torch (ADR 0007)
   "semchunk==4.1.1",  # sentence-aware chunking with any token counter (MIT)

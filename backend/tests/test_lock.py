@@ -24,8 +24,11 @@ def test_native_locks_have_no_torch(lock: str) -> None:
     assert forbidden((ROOT / lock).read_text("utf-8")) == []
 
 
-# ADR 0011: the agent runtime is pinned exactly; an upgrade is an ADR plus the full suite (spec §6.6, §19.7)
+# ADR 0011 and 0012: the agent runtime and the AG-UI adapter are pinned exactly; an upgrade is an ADR plus the full
+# suite (spec §6.6, §19.7)
 PINS = {
+    "ag-ui-langgraph": "0.0.47",  # ADR 0012: the AG-UI adapter
+    "ag-ui-protocol": "1.0.0",
     "deepagents": "0.7.32",
     "langchain": "1.4.7",
     "langchain-core": "1.7.3",

@@ -16,6 +16,44 @@ exclude-newer-span = "P7D"
 litellm = { timestamp = "0001-01-01T00:00:00Z", span = "P14D" }
 
 [[package]]
+name = "ag-ui-a2ui-toolkit"
+version = "0.0.6"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/7b/fd/31d73e2b31dd82c3c8104a3699023b9be06af580cffcc8ce7ae28bb56362/ag_ui_a2ui_toolkit-0.0.6.tar.gz", hash = "sha256:063576165d92149957e1b9cf17626b6feff0b9d758d4cf9fdebc81fa3f5be746", size = 19329, upload-time = "2026-11-02T19:58:59.686Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6e/22/5ee5d58ae73bd25963c28e59e577186ae0be5dc540451d1280ecce6016ab/ag_ui_a2ui_toolkit-0.0.6-py3-none-any.whl", hash = "sha256:c4730b485f322b50cae40861cb2cf2ed617258917ffcb1c0d2a1d5f434c8d371", size = 21670, upload-time = "2026-11-02T19:58:58.829Z" },
+]
+
+[[package]]
+name = "ag-ui-langgraph"
+version = "0.0.47"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "ag-ui-a2ui-toolkit" },
+    { name = "ag-ui-protocol" },
+    { name = "langchain" },
+    { name = "langchain-core" },
+    { name = "langgraph" },
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d5/df/c21e7c4757c7092a2a5ab97a3c512ba36b6c9034731ffc7a7b927b631b6e/ag_ui_langgraph-0.0.47.tar.gz", hash = "sha256:e19c1b13c909d1fbbf46968c65cb3ab6c681d97a0f6f2b980bb94ee000ca8079", size = 380811, upload-time = "2026-10-08T07:54:45.871Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f8/15/25e40bc240c9b92e1cfc1d2a416642b0d7928be24fbaba59e0357e117227/ag_ui_langgraph-0.0.47-py3-none-any.whl", hash = "sha256:481956ec2313987c041feb13cd593fa346b825be62bd0ba248738af48ef7717c", size = 111110, upload-time = "2026-10-08T07:54:44.813Z" },
+]
+
+[[package]]
+name = "ag-ui-protocol"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/57/92/d88fdc7f4648dc38d3d54c595066bb3e63a4c091884ffb2f98272c33eef8/ag_ui_protocol-1.0.0.tar.gz", hash = "sha256:cfebecef2e7bc942cc8a52d908a4ea86a98f631d2ffdc6ec5812bb843eac74fb", size = 30759, upload-time = "2026-09-17T18:31:19.448Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/82/b0/850be4576e6443dc575daa54188d8136ae2b2eca3f19e098e7a088fc9ebc/ag_ui_protocol-1.0.0-py3-none-any.whl", hash = "sha256:0058eaf0522201089d444e430fc35180bc8ad0222cae39e8568b313e8105d9e6", size = 36842, upload-time = "2026-09-17T18:31:18.471Z" },
+]
+
+[[package]]
 name = "aiohappyeyeballs"
 version = "2.7.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2117,6 +2155,8 @@ name = "researchly"
 version = "0.0.0"
 source = { editable = "../backend" }
 dependencies = [
+    { name = "ag-ui-langgraph" },
+    { name = "ag-ui-protocol" },
     { name = "alembic" },
     { name = "cryptography" },
     { name = "deepagents" },
@@ -2150,6 +2190,8 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "ag-ui-langgraph", specifier = "==0.0.47" },
+    { name = "ag-ui-protocol", specifier = "==1.0.0" },
     { name = "alembic", specifier = ">=1.16" },
     { name = "cryptography", specifier = ">=46" },
     { name = "deepagents", specifier = "==0.7.32" },
