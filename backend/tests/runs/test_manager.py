@@ -4,24 +4,20 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 
-import anyio
 import pytest
-from langchain.agents import create_agent
 from langchain.agents.middleware import HumanInTheLoopMiddleware, ToolCallLimitMiddleware
 from langchain_core.messages import ToolMessage
 from langchain_core.tools import tool
-from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from sqlalchemy import select, update
 
-from researchly.agents.context import RunContext
 from researchly.agents.middleware import BUDGET_SPENT, BudgetGuard
 from researchly.db import migrate, provision
 from researchly.db.engine import make_engine, make_sessionmaker
 from researchly.db.models import Message, Run, RunEvent
 from researchly.runs.manager import INTERRUPT, RUN_ERROR, RunManager, RunStateError
 
-from ..agents.fakes import call, script, seed_run
+from ..agents.fakes import agent, blocking_tool, call, script, seed_run, until
 
 pytestmark = [pytest.mark.anyio, pytest.mark.db]
 QUESTION = "What makes Transformers fast to train?"
@@ -42,16 +38,6 @@ def manager(sm, graph: Any) -> RunManager:
     return RunManager(sm, build)
 
 
-def agent(model, tools=(), middleware=(), checkpointer=None) -> Any:
-    return create_agent(
-        model,
-        list(tools),
-        middleware=list(middleware),
-        checkpointer=checkpointer or InMemorySaver(),
-        context_schema=RunContext,
-    )
-
-
 async def row(sm, run_id: uuid.UUID) -> Run:
     async with sm() as session:
         return await session.get_one(Run, run_id)
@@ -67,27 +53,6 @@ async def events(sm, run_id: uuid.UUID, kind: str) -> list[dict]:
     async with sm() as session:
         stmt = select(RunEvent.payload).where(RunEvent.run_id == run_id, RunEvent.type == kind).order_by(RunEvent.seq)
         return list(await session.scalars(stmt))
-
-
-async def until(check) -> None:
-    with anyio.fail_after(5):
-        while not await check():  # noqa: ASYNC110 - polls a DB-backed condition
-            await anyio.sleep(0.01)
-
-
-def blocking_tool():
-    """A tool that blocks until released; records every call."""
-    entered, gate, calls = asyncio.Event(), asyncio.Event(), []
-
-    @tool
-    async def fetch(x: str) -> str:
-        """Fetch."""
-        calls.append(x)
-        entered.set()
-        await gate.wait()
-        return "fetched"
-
-    return fetch, entered, gate, calls
 
 
 async def test_create_takes_the_tier_budget_and_stores_the_question(sm):

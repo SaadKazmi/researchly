@@ -1,18 +1,28 @@
 """Test doubles for agent, tool and evidence tests: scripted chat models, local-model stand-ins and stubs."""
 
+import asyncio
 import hashlib
 import itertools
+import json
 import uuid
+from collections.abc import Awaitable, Callable, Iterator, Sequence
 from decimal import Decimal
 from types import SimpleNamespace
 from typing import Any, Literal
 
+import anyio
 import numpy as np
+from langchain.agents import create_agent
 from langchain_core.language_models.fake_chat_models import GenericFakeChatModel
-from langchain_core.messages import AIMessage, BaseMessage
+from langchain_core.messages import AIMessage, AIMessageChunk, BaseMessage
+from langchain_core.messages.tool import tool_call_chunk
+from langchain_core.outputs import ChatGenerationChunk
+from langchain_core.tools import tool
+from langgraph.checkpoint.memory import InMemorySaver
 from pydantic import Field
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from researchly.agents.context import RunContext
 from researchly.connectors.base import ConnectorCaps, ExternalId, PaperRecord, SearchQuery, SourceUnavailable
 from researchly.db.models import EMBED_DIM, Message, Project, Run, Thread
 
@@ -41,6 +51,30 @@ class ToolFake(GenericFakeChatModel):
     def _generate(self, messages: list[BaseMessage], stop: Any = None, run_manager: Any = None, **kwargs: Any) -> Any:
         self.seen.append(list(messages))
         return super()._generate(messages, stop=stop, run_manager=run_manager, **kwargs)
+
+    def _stream(
+        self, messages: list[BaseMessage], stop: Any = None, run_manager: Any = None, **kwargs: Any
+    ) -> Iterator[ChatGenerationChunk]:
+        """astream_events (the AG-UI adapter) streams, and the parent yields nothing for a tool-call-only turn."""
+        self.seen.append(list(messages))
+        reply = next(self.messages)
+        message = AIMessage(reply) if isinstance(reply, str) else reply
+        mid = f"lc_run--{uuid.uuid4()}"
+        words = message.text.split(" ") if message.text else []
+        for i, word in enumerate(words):
+            text = word if i == len(words) - 1 else word + " "
+            yield ChatGenerationChunk(message=AIMessageChunk(content=text, id=mid))
+        for i, tc in enumerate(message.tool_calls):
+            raw = json.dumps(tc["args"])
+            half = len(raw) // 2
+            parts = (
+                tool_call_chunk(name=tc["name"], args="", id=tc["id"], index=i),
+                tool_call_chunk(args=raw[:half], index=i),
+                tool_call_chunk(args=raw[half:], index=i),
+            )
+            for part in parts:
+                yield ChatGenerationChunk(message=AIMessageChunk(content="", id=mid, tool_call_chunks=[part]))
+        yield ChatGenerationChunk(message=AIMessageChunk(content="", id=mid, chunk_position="last"))
 
 
 def call(name: str, args: dict[str, Any]) -> AIMessage:
@@ -159,3 +193,38 @@ async def seed_run(
             await session.flush()
         session.add(Message(thread_id=thread.id, role="user", content={"text": question}, run_id=run.id))
     return run
+
+
+def agent(
+    model: Any, tools: Sequence[Any] = (), middleware: Sequence[Any] = (), checkpointer: Any = None, store: Any = None
+) -> Any:
+    """A checkpointed `create_agent` graph with our run context, as the run manager drives it."""
+    return create_agent(
+        model,
+        list(tools),
+        middleware=list(middleware),
+        checkpointer=checkpointer or InMemorySaver(),
+        store=store,
+        context_schema=RunContext,
+    )
+
+
+def blocking_tool():
+    """A tool that blocks until released; records every call."""
+    entered, gate, calls = asyncio.Event(), asyncio.Event(), []
+
+    @tool
+    async def fetch(x: str) -> str:
+        """Fetch."""
+        calls.append(x)
+        entered.set()
+        await gate.wait()
+        return "fetched"
+
+    return fetch, entered, gate, calls
+
+
+async def until(check: Callable[[], Awaitable[bool]]) -> None:
+    with anyio.fail_after(5):
+        while not await check():  # noqa: ASYNC110 - polls a DB-backed condition
+            await anyio.sleep(0.01)
