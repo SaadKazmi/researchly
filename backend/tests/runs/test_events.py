@@ -1,0 +1,165 @@
+import asyncio
+
+import anyio
+import pytest
+from ag_ui.core import (
+    CustomEvent,
+    MessagesSnapshotEvent,
+    RawEvent,
+    RunErrorEvent,
+    RunFinishedEvent,
+    RunStartedEvent,
+    StepStartedEvent,
+    SubagentStartedEvent,
+    TextMessageContentEvent,
+    ToolCallArgsEvent,
+)
+
+from researchly.db import migrate
+from researchly.db.engine import make_engine, make_sessionmaker
+from researchly.runs.events import RunEventLog, RunHub, follow, replay
+
+from ..agents.fakes import seed_run, until
+
+pytestmark = [pytest.mark.anyio, pytest.mark.db]
+
+
+def frozen() -> float:
+    return 0.0
+
+
+def text(delta: str, mid: str = "m1") -> TextMessageContentEvent:
+    return TextMessageContentEvent(message_id=mid, delta=delta)
+
+
+def step(name: str) -> StepStartedEvent:
+    return StepStartedEvent(step_name=name)
+
+
+@pytest.fixture
+async def sm(db_url):
+    migrate.upgrade(db_url)
+    engine = make_engine(db_url)
+    yield make_sessionmaker(engine)
+    await engine.dispose()
+
+
+async def test_adjacent_deltas_coalesce_until_a_non_delta_event(sm):
+    run = await seed_run(sm)
+    log = RunEventLog(sm, RunHub(), run.id, clock=frozen)
+    for event in (
+        text("The "),
+        text("answer"),
+        ToolCallArgsEvent(tool_call_id="c1", delta='{"x":'),
+        ToolCallArgsEvent(tool_call_id="c1", delta='"a"}'),
+        text(".", "m2"),
+    ):
+        await log.append(event)
+    assert await replay(sm, run.id, 0) == []  # deltas wait for the next non-delta event
+    await log.append(step("model"))
+    got = [(e.seq, e.type, e.payload.get("delta")) for e in await replay(sm, run.id, 0)]
+    assert got == [
+        (1, "TEXT_MESSAGE_CONTENT", "The answer"),
+        (2, "TOOL_CALL_ARGS", '{"x":"a"}'),
+        (3, "TEXT_MESSAGE_CONTENT", "."),
+        (4, "STEP_STARTED", None),
+    ]
+
+
+async def test_deltas_flush_at_2_kb_and_after_250_ms(sm):
+    run = await seed_run(sm)
+    now = [0.0]
+    log = RunEventLog(sm, RunHub(), run.id, clock=lambda: now[0])
+    await log.append(text("a" * 2047))
+    assert await replay(sm, run.id, 0) == []
+    await log.append(text("b"))  # 2048 bytes
+    await log.append(text("c"))
+    now[0] = 0.3
+    await log.append(text("d"))  # the batch is 300 ms old
+    assert [len(e.payload["delta"]) for e in await replay(sm, run.id, 0)] == [2048, 2]
+
+
+async def test_raw_events_and_message_snapshots_are_skipped_and_errors_scrubbed(sm):
+    run = await seed_run(sm)
+    log = RunEventLog(sm, RunHub(), run.id)
+    await log.append(RawEvent(event={"provider": "secret"}))
+    await log.append(MessagesSnapshotEvent(messages=[]))
+    await log.append(RunErrorEvent(message="provider said sk-secret", code="APIError"))
+    got = [(e.type, e.payload) for e in await replay(sm, run.id, 0)]
+    assert got == [("RUN_ERROR", {"type": "RUN_ERROR", "message": "The run failed.", "code": "APIError"})]
+
+
+async def test_subagent_events_are_attributed_by_name(sm):
+    run = await seed_run(sm)
+    log = RunEventLog(sm, RunHub(), run.id)
+    await log.append(SubagentStartedEvent(subagent_run_id="tools:1", name="scout"))
+    await log.append(CustomEvent(name="cost", value={}, subagent_run_id="tools:1"))
+    await log.append(CustomEvent(name="cost", value={}, subagent_run_id="tools:2"))
+    await log.append(step("model"))
+    assert [e.agent for e in await replay(sm, run.id, 0)] == ["scout", "scout", "subagent", "lead"]
+
+
+async def test_subscribers_get_exactly_the_persisted_rows(sm):
+    run = await seed_run(sm)
+    hub = RunHub()
+    log = RunEventLog(sm, hub, run.id, clock=frozen)
+    with hub.subscribe(run.id) as queue:
+        for event in (text("a"), text("b"), step("x")):
+            await log.append(event)
+        live = [queue.get_nowait() for _ in range(queue.qsize())]
+    assert live == await replay(sm, run.id, 0) and [e.seq for e in live] == [1, 2]
+    assert run.id not in hub._subscribers
+
+
+async def test_seq_continues_across_logs(sm):
+    run = await seed_run(sm)
+    await RunEventLog(sm, RunHub(), run.id).append(step("a"))
+    await RunEventLog(sm, RunHub(), run.id).append(step("b"))
+    assert [e.seq for e in await replay(sm, run.id, 0)] == [1, 2]
+
+
+async def test_a_failed_run_update_persists_nothing(sm):
+    run = await seed_run(sm)
+
+    async def boom(session) -> None:
+        raise RuntimeError("no")
+
+    log = RunEventLog(sm, RunHub(), run.id, clock=frozen)
+    await log.append(text("a"))
+    with pytest.raises(RuntimeError):
+        await log.append(RunStartedEvent(thread_id="t", run_id="r"), run_update=boom)
+    assert await replay(sm, run.id, 0) == [] and not log.open
+
+
+async def test_follow_replays_then_tails_until_the_ag_ui_run_ends(sm):
+    run = await seed_run(sm, status="running")
+    hub = RunHub()
+    log = RunEventLog(sm, hub, run.id)
+    await log.append(RunStartedEvent(thread_id="t", run_id="r"))
+    await log.append(step("model"))
+    assert log.open
+    got: list[str] = []
+
+    async def consume() -> None:
+        async for event in follow(sm, hub, run.id, 1):
+            got.append(event.type)
+
+    task = asyncio.create_task(consume())
+
+    async def subscribed() -> bool:
+        return run.id in hub._subscribers
+
+    await until(subscribed)
+    await log.append(RunFinishedEvent(thread_id="t", run_id="r"))
+    with anyio.fail_after(5):
+        await task
+    assert got == ["STEP_STARTED", "RUN_FINISHED"] and not log.open
+
+
+async def test_follow_ends_after_the_replay_when_the_run_is_at_rest(sm):
+    run = await seed_run(sm, status="completed")
+    log = RunEventLog(sm, RunHub(), run.id)
+    await log.append(RunStartedEvent(thread_id="t", run_id="r"))
+    await log.append(RunFinishedEvent(thread_id="t", run_id="r"))
+    with anyio.fail_after(5):
+        assert [e.seq async for e in follow(sm, RunHub(), run.id, 0)] == [1, 2]
