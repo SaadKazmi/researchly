@@ -73,7 +73,7 @@
 - **Pyright:**
   - `ag_ui_langgraph` ships loose types. Where pyright flags an override of a `LangGraphAgent` method or an `ag_ui.core` union, prefer a narrow `# pyright: ignore[<rule>]` on that line over widening our own signatures.
   - Never silence a whole file.
-- **Commits:** Conventional Commits, each ending with the trailer `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` (every commit command below carries it).
+- **Commits:** Conventional Commits, each ending with the trailer `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>` (every commit command below carries it).
 
 ## Rulings made while planning
 
@@ -377,7 +377,7 @@ Run: `uv run --directory cli pytest -q -k "not docker"`. Expected: PASS.
 uv run --directory backend ruff check --fix; uv run --directory backend ruff format
 uv run --directory backend ruff check; uv run --directory backend ruff format --check; uv run --directory backend pyright
 git add backend/pyproject.toml backend/uv.lock cli/uv.lock backend/tests/test_lock.py docs/adr/0012-ag-ui-streaming.md
-git commit -m "build: pin ag-ui-langgraph 0.0.47 and ag-ui-protocol 1.0.0 (ADR 0012)" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git commit -m "build: pin ag-ui-langgraph 0.0.47 and ag-ui-protocol 1.0.0 (ADR 0012)" -m "Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -556,7 +556,7 @@ Run: `uv run --directory backend pytest -q`. Expected: 727 passed, 2 skipped.
 uv run --directory backend ruff check --fix; uv run --directory backend ruff format
 uv run --directory backend ruff check; uv run --directory backend ruff format --check; uv run --directory backend pyright
 git add backend/tests/agents/fakes.py backend/tests/agents/test_fakes.py backend/tests/runs/test_manager.py
-git commit -m "test: stream text and tool calls from ToolFake and share the agent test helpers" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git commit -m "test: stream text and tool calls from ToolFake and share the agent test helpers" -m "Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -853,10 +853,12 @@ class RunEventLog:
         if kind in ERRORS:
             payload["message"] = ERROR_TEXT
         sub = payload.get("subagentRunId")
-        if kind == "SUBAGENT_STARTED":
+        if kind == "SUBAGENT_STARTED" and sub is not None:
             self._agents[sub] = payload["name"]
         agent = LEAD if sub is None else self._agents.get(sub, "subagent")
         key = DELTAS.get(kind)
+        if run_update is not None and key is not None:
+            raise ValueError("run_update needs a non-delta event: deltas may be held back")
         if key is None:
             self._pending.append((kind, agent, payload))
             await self.flush(run_update)
@@ -948,7 +950,7 @@ Run: `uv run --directory backend pytest -q`. Expected: 736 passed, 2 skipped.
 uv run --directory backend ruff check --fix; uv run --directory backend ruff format
 uv run --directory backend ruff check; uv run --directory backend ruff format --check; uv run --directory backend pyright
 git add backend/src/researchly/runs/events.py backend/tests/runs/test_events.py
-git commit -m "feat: persist AG-UI run events and fan them out in process" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git commit -m "feat: persist AG-UI run events and fan them out in process" -m "Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -1190,7 +1192,7 @@ Run: `uv run --directory backend pytest -q`. Expected: 741 passed, 2 skipped.
 uv run --directory backend ruff check --fix; uv run --directory backend ruff format
 uv run --directory backend ruff check; uv run --directory backend ruff format --check; uv run --directory backend pyright
 git add backend/src/researchly/runs/agui.py backend/tests/runs/test_agui.py
-git commit -m "feat: subclass the AG-UI LangGraph adapter for our context, continue and plan reviews" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git commit -m "feat: subclass the AG-UI LangGraph adapter for our context, continue and plan reviews" -m "Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -1682,7 +1684,7 @@ Run: `uv run --directory backend pytest -m db -q`. Expected: 100 passed.
 uv run --directory backend ruff check --fix; uv run --directory backend ruff format
 uv run --directory backend ruff check; uv run --directory backend ruff format --check; uv run --directory backend pyright
 git add backend/src/researchly/runs/manager.py backend/src/researchly/app.py backend/tests/runs/test_manager.py backend/tests/test_app.py
-git commit -m "feat: drive runs through the AG-UI adapter and log their events" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git commit -m "feat: drive runs through the AG-UI adapter and log their events" -m "Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -1740,7 +1742,7 @@ async def test_coverage_is_chao2_over_sub_question_and_source_lists():
         {"title": "BERT", "source": "openalex", "extra": {"found_by": ["openalex"]}},
         {"title": "GPT", "source": "arxiv", "extra": {}},  # written before found_by: its source counts
     )
-    await store.aput(ns, "/candidates/q1.jsonl", {"content": q1})
+    await store.aput(ns, "/candidates/q1.jsonl", {"content": "not json\n" + q1})  # a bad line is skipped
     legacy = [json.dumps({"title": "attention is all you need!", "source": "crossref", "extra": {}})]
     await store.aput(ns, "/candidates/q2.jsonl", {"content": legacy})  # deepagents' older list-of-lines format
     await store.aput(ns, "/evidence/p1.json", {"content": "{}"})
@@ -1831,9 +1833,14 @@ async def coverage(store: BaseStore | None, project_id: uuid.UUID) -> dict[str, 
         for line in text.splitlines():
             if not line.strip():
                 continue
-            record = json.loads(line)
-            for source in record.get("extra", {}).get("found_by") or [record["source"]]:
-                lists.setdefault((item.key, source), set()).add(normalize_title(record["title"]))
+            try:
+                record = json.loads(line)
+                sources = record.get("extra", {}).get("found_by") or [record["source"]]
+                title = normalize_title(record["title"])
+            except (ValueError, KeyError, TypeError):  # one bad line must not fail the run's summary
+                continue
+            for source in sources:
+                lists.setdefault((item.key, source), set()).add(title)
     observed, estimated = chao2(list(lists.values()))
     return {"observed": observed, "estimated": round(estimated, 1), "lists": len(lists)}
 ```
@@ -1879,7 +1886,7 @@ Run: `uv run --directory backend pytest -q`. Expected: 750 passed, 2 skipped. Id
 uv run --directory backend ruff check --fix; uv run --directory backend ruff format
 uv run --directory backend ruff check; uv run --directory backend ruff format --check; uv run --directory backend pyright
 git add backend/src/researchly/services/identity.py backend/src/researchly/runs/summary.py backend/src/researchly/agents/middleware.py backend/src/researchly/runs/manager.py backend/tests/services/test_identity.py backend/tests/runs/test_summary.py backend/tests/agents/test_middleware.py backend/tests/runs/test_manager.py
-git commit -m "feat: end each run with a cost and Chao2 coverage summary and stream cost before model calls" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git commit -m "feat: end each run with a cost and Chao2 coverage summary and stream cost before model calls" -m "Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -2120,7 +2127,7 @@ async def create_project(body: ProjectIn, runs: Manager) -> ProjectOut:
 @router.get("/projects", operation_id="listProjects")
 async def list_projects(runs: Manager) -> list[ProjectOut]:
     async with runs.sessions() as session:
-        rows = await session.scalars(select(Project).order_by(Project.created_at.desc()))
+        rows = await session.scalars(select(Project).order_by(Project.created_at.desc(), Project.id.desc()))
         return [ProjectOut.model_validate(p) for p in rows]
 
 
@@ -2195,7 +2202,7 @@ async def create_thread(project_id: uuid.UUID, body: ThreadIn, runs: Manager) ->
 @router.get("/projects/{project_id}/threads", operation_id="listThreads")
 async def list_threads(project_id: uuid.UUID, runs: Manager) -> list[ThreadOut]:
     await get_or_404(runs, Project, project_id)
-    stmt = select(Thread).where(Thread.project_id == project_id).order_by(Thread.created_at.desc())
+    stmt = select(Thread).where(Thread.project_id == project_id).order_by(Thread.created_at.desc(), Thread.id.desc())
     async with runs.sessions() as session:
         return [ThreadOut.model_validate(t) for t in await session.scalars(stmt)]
 
@@ -2230,7 +2237,7 @@ Run: `uv run --directory backend pytest -q`. Expected: 753 passed, 2 skipped.
 uv run --directory backend ruff check --fix; uv run --directory backend ruff format
 uv run --directory backend ruff check; uv run --directory backend ruff format --check; uv run --directory backend pyright
 git add backend/src/researchly/api/deps.py backend/src/researchly/api/projects.py backend/src/researchly/api/threads.py backend/src/researchly/app.py backend/tests/api/__init__.py backend/tests/api/conftest.py backend/tests/api/test_projects.py
-git commit -m "feat: projects and threads REST API" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git commit -m "feat: projects and threads REST API" -m "Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -2526,7 +2533,7 @@ Run: `uv run --directory backend pytest -q`. Expected: 758 passed, 2 skipped.
 uv run --directory backend ruff check --fix; uv run --directory backend ruff format
 uv run --directory backend ruff check; uv run --directory backend ruff format --check; uv run --directory backend pyright
 git add backend/src/researchly/api/runs.py backend/src/researchly/app.py backend/tests/api/test_runs.py
-git commit -m "feat: runs REST API with plan decisions, pause, resume, cancel and branch" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git commit -m "feat: runs REST API with plan decisions, pause, resume, cancel and branch" -m "Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -2719,7 +2726,7 @@ Run: `uv run --directory backend pytest -m db -q`. Expected: 113 passed.
 uv run --directory backend ruff check --fix; uv run --directory backend ruff format
 uv run --directory backend ruff check; uv run --directory backend ruff format --check; uv run --directory backend pyright
 git add backend/src/researchly/api/runs.py backend/tests/api/test_stream.py
-git commit -m "feat: stream a run's AG-UI events over SSE with Last-Event-ID replay" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git commit -m "feat: stream a run's AG-UI events over SSE with Last-Event-ID replay" -m "Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -2825,7 +2832,7 @@ Then set the path under `## Latest plan` to `docs/superpowers/plans/2026-11-10-s
 
 ```bash
 git add frontend/src/api/openapi.json frontend/src/api/schema.d.ts docs/superpowers/specs/2026-10-28-researchly-design.md AGENTS.md backend/AGENTS.md docs/progress.md
-git commit -m "docs: step 3b spec deltas, AGENTS gotchas and progress; regenerate the API client" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git commit -m "docs: step 3b spec deltas, AGENTS gotchas and progress; regenerate the API client" -m "Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
 
 ## Deferred
