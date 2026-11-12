@@ -134,6 +134,26 @@ async def test_ask_user_waits_for_the_answer(sm):
     assert [t.text for t in model.seen[1] if isinstance(t, ToolMessage)] == ["2020 onwards"]
 
 
+async def test_a_run_waiting_at_a_plan_review_has_no_summary_until_it_completes(sm):
+    run = await seed_run(sm)
+
+    @tool
+    def submit_plan(plan: str) -> str:
+        """Submit the plan."""
+        return "approved"
+
+    hitl = HumanInTheLoopMiddleware(interrupt_on={"submit_plan": {"allowed_decisions": ["approve", "edit", "reject"]}})
+    m = manager(sm, agent(script(call("submit_plan", {"plan": "p"}), "Done."), [submit_plan], [hitl]))
+    await m.start(run.id)
+    await m.wait(run.id)
+    assert (await row(sm, run.id)).status == "awaiting_user"
+    assert await events(sm, run.id, "CUSTOM") == []
+    await m.resume(run.id, [{"type": "approve"}])
+    await m.wait(run.id)
+    [summary] = await events(sm, run.id, "CUSTOM")
+    assert summary["name"] == "run_summary" and summary["value"]["status"] == "completed"
+
+
 async def test_a_rejected_plan_cancels_the_run(sm):
     run = await seed_run(sm)
 

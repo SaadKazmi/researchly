@@ -297,13 +297,14 @@ class RunManager:
             limited = any(isinstance(m, ToolMessage) and m.text == LIMIT_HIT for m in messages)
             status = "partial" if text in STOPPED or limited or spent >= run.budget_usd else "completed"
 
-        summary = {
-            "status": status,
-            "spent_usd": float(spent),
-            "budget_usd": float(run.budget_usd),
-            "coverage": await coverage(getattr(graph, "store", None), run.project_id),
-        }
-        await log.append(CustomEvent(name="run_summary", value=summary))
+        if status != "awaiting_user":  # a paused-for-the-user run has not ended: it summarises when it does
+            summary = {
+                "status": status,
+                "spent_usd": float(spent),
+                "budget_usd": float(run.budget_usd),
+                "coverage": await coverage(getattr(graph, "store", None), run.project_id),
+            }
+            await log.append(CustomEvent(name="run_summary", value=summary))
 
         async def settle(session: AsyncSession) -> None:
             ended = {} if status == "awaiting_user" else {"ended_at": _now()}
