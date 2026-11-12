@@ -109,6 +109,19 @@ async def test_a_spent_budget_ends_the_run_partial(sm):
     assert await answers(sm, run.id) == [BUDGET_SPENT] and model.seen == []
 
 
+async def test_a_model_call_logs_the_cost_so_far(sm):
+    run = await seed_run(sm)
+
+    async def spent(run_id: uuid.UUID) -> Decimal:
+        return Decimal("0.25")
+
+    m = manager(sm, agent(script("The answer."), middleware=[BudgetGuard(spent)]))
+    await m.start(run.id)
+    await m.wait(run.id)
+    costs = [e["value"] for e in await events(sm, run.id, "CUSTOM") if e["name"] == "cost"]
+    assert costs == [{"spent_usd": 0.25, "budget_usd": 1.0}]
+
+
 async def test_ask_user_waits_for_the_answer(sm):
     run = await seed_run(sm)
 
