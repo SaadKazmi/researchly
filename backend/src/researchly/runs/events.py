@@ -88,6 +88,8 @@ class RunEventLog:
         if kind in SKIPPED:
             return
         payload = event.model_dump(mode="json", by_alias=True, exclude_none=True)
+        # the log is the persistence boundary: even if a caller enables emit_raw_events, no raw payload is stored
+        payload.pop("rawEvent", None)
         if kind in ERRORS:
             payload["message"] = ERROR_TEXT
         sub = payload.get("subagentRunId")

@@ -90,6 +90,14 @@ async def test_raw_events_and_message_snapshots_are_skipped_and_errors_scrubbed(
     assert got == [("RUN_ERROR", {"type": "RUN_ERROR", "message": "The run failed.", "code": "APIError"})]
 
 
+async def test_a_raw_event_piggy_backed_on_another_event_is_not_persisted(sm):
+    run = await seed_run(sm)
+    log = RunEventLog(sm, RunHub(), run.id)
+    await log.append(StepStartedEvent(step_name="plan", raw_event={"provider": "secret"}))
+    [row] = await replay(sm, run.id, 0)
+    assert row.payload == {"type": "STEP_STARTED", "stepName": "plan"}
+
+
 async def test_subagent_events_are_attributed_by_name(sm):
     run = await seed_run(sm)
     log = RunEventLog(sm, RunHub(), run.id)
