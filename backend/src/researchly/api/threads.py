@@ -7,10 +7,10 @@ from fastapi import APIRouter
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 
-from researchly.api.deps import Manager, get_or_404
+from researchly.api.deps import ERRORS, Manager, get_or_404
 from researchly.db.models import Message, Project, Thread
 
-router = APIRouter(prefix="/api/v1", tags=["threads"])
+router = APIRouter(prefix="/api/v1", tags=["threads"], responses=ERRORS)
 
 
 class ThreadIn(BaseModel):

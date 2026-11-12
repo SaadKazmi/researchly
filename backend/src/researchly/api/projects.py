@@ -7,10 +7,10 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 
-from researchly.api.deps import Manager, get_or_404
+from researchly.api.deps import ERRORS, Manager, get_or_404
 from researchly.db.models import Project
 
-router = APIRouter(prefix="/api/v1", tags=["projects"])
+router = APIRouter(prefix="/api/v1", tags=["projects"], responses=ERRORS)
 
 
 class ProjectIn(BaseModel):

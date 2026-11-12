@@ -1,12 +1,22 @@
 """Shared dependencies of the /api/v1 routers: the run manager (and through it, the database) and 404 lookups."""
 
 import uuid
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import Depends, HTTPException, Request
+from pydantic import BaseModel
 
 from researchly.db.base import Base
 from researchly.runs.manager import RunManager
+
+
+class ErrorOut(BaseModel):
+    detail: str
+
+
+# Declared on the routers so the OpenAPI schema (and the generated client) types the error bodies.
+ERRORS: dict[int | str, dict[str, Any]] = {404: {"model": ErrorOut}, 503: {"model": ErrorOut}}
+CONFLICT: dict[int | str, dict[str, Any]] = {409: {"model": ErrorOut}}  # RunStateError, see app.py
 
 
 def run_manager(request: Request) -> RunManager:
