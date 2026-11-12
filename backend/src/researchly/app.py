@@ -15,7 +15,7 @@ from psycopg import AsyncConnection
 from psycopg.rows import DictRow, dict_row
 from psycopg_pool import AsyncConnectionPool
 
-from researchly.api import system
+from researchly.api import projects, system, threads
 from researchly.config import Settings
 from researchly.connectors.sidecar import SidecarClient
 from researchly.db import provision
@@ -134,7 +134,8 @@ def create_app(settings: Settings | None = None, *, token: str | None = None) ->
     async def health() -> dict[str, str]:
         return {"status": "ok"}
 
-    app.include_router(system.router)
+    for router in (system.router, projects.router, threads.router):
+        app.include_router(router)
     if WEB_DIR.is_dir():
         app.mount("/", SPAStaticFiles(directory=WEB_DIR, html=True), name="spa")  # last: the routes above win
     else:
