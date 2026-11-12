@@ -61,6 +61,11 @@ async def kinds(sm, run_id: uuid.UUID) -> list[str]:
         return list(await session.scalars(stmt))
 
 
+async def seqs(sm, run_id: uuid.UUID) -> list[int]:
+    async with sm() as session:
+        return list(await session.scalars(select(RunEvent.seq).where(RunEvent.run_id == run_id).order_by(RunEvent.seq)))
+
+
 async def test_create_takes_the_tier_budget_and_stores_the_question(sm):
     seeded = await seed_run(sm)
     run = await manager(sm, None).create(seeded.project_id, seeded.thread_id, "Why?", effort="quick")
@@ -342,13 +347,16 @@ async def test_a_pause_closes_the_open_ag_ui_run(sm):
     run = await seed_run(sm)
     fetch, entered, gate, calls = blocking_tool()
     m = manager(sm, agent(script(call("fetch", {"x": "a"}), "done"), [fetch]))
-    await m.start(run.id)
-    await entered.wait()
-    await m.pause(run.id)
-    assert [e.get("outcome") for e in await events(sm, run.id, "RUN_FINISHED")] == [{"type": "cancelled"}]
-    gate.set()
-    await m.resume(run.id)
-    await m.wait(run.id)
+    with m.hub.subscribe(run.id) as live:
+        await m.start(run.id)
+        await entered.wait()
+        await m.pause(run.id)
+        assert [e.get("outcome") for e in await events(sm, run.id, "RUN_FINISHED")] == [{"type": "cancelled"}]
+        gate.set()
+        await m.resume(run.id)
+        await m.wait(run.id)
+        published = [live.get_nowait().seq for _ in range(live.qsize())]
+    assert published == await seqs(sm, run.id)  # a cancel that lands mid-commit must not hide rows from subscribers
     assert (await kinds(sm, run.id)).count("RUN_STARTED") == 2
     assert [e.get("outcome") for e in await events(sm, run.id, "RUN_FINISHED")] == [{"type": "cancelled"}, None]
 

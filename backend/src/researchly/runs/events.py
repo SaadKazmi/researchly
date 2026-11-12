@@ -121,12 +121,15 @@ class RunEventLog:
         rows, self._pending, self._since = self._pending, [], None  # a failed write drops them; the run then fails
         if not rows and run_update is None:
             return
+        stored: list[StoredEvent] = []
+        base = 0
         try:
             async with self.sessions.begin() as session:
-                base = self._seq
-                if base is None:
+                start = self._seq
+                if start is None:
                     last = select(func.max(RunEvent.seq)).where(RunEvent.run_id == self.run_id)
-                    base = await session.scalar(last) or 0
+                    start = await session.scalar(last) or 0
+                base = start
                 stored = [
                     StoredEvent(base + i, kind, agent, payload) for i, (kind, agent, payload) in enumerate(rows, 1)
                 ]
@@ -137,8 +140,26 @@ class RunEventLog:
                 if run_update is not None:
                     await run_update(session)
         except BaseException:
-            self._seq = None  # a commit that a cancel interrupted may still have landed: re-read the max
+            # a cancel that interrupts the commit does not undo it: if the rows landed, settle them as a success
+            # would, so subscribers see every persisted row and `open` matches the log
+            landed = await self._landed()
+            if stored and landed >= stored[-1].seq:
+                self._settle(stored, base)
+            else:
+                self._seq = None
             raise
+        self._settle(stored, base)
+
+    async def _landed(self) -> int:
+        try:
+            async with self.sessions() as session:
+                last = select(func.max(RunEvent.seq)).where(RunEvent.run_id == self.run_id)
+                return await session.scalar(last) or 0
+        except Exception:  # the database is down: assume nothing landed
+            return 0
+
+    def _settle(self, stored: list[StoredEvent], base: int) -> None:
+        """The tail of a committed flush: advance the seq, track the open AG-UI run, publish."""
         self._seq = base + len(stored)
         for event in stored:
             if event.type == "RUN_STARTED":
