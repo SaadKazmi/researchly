@@ -118,3 +118,11 @@ async def test_effort_guard_caps_tasks_per_subagent_and_times_them_out():
     assert results[1][0] == "error" and "1 scout" in results[1][1]
     assert results[2][0] == "error" and "timed out" in results[2][1]
     assert calls == ["a", "slow"]  # the refused task never ran
+
+
+async def test_budget_guard_reports_the_cost_before_each_model_call():
+    box = {"v": Decimal("0.25")}
+    graph = create_agent(script("fine"), [], middleware=[BudgetGuard(spend(box))], context_schema=RunContext)
+    stream = graph.astream_events(GO, context=CTX, version="v2")
+    got = [(e["name"], e["data"]) async for e in stream if e["event"] == "on_custom_event"]
+    assert got == [("cost", {"spent_usd": 0.25, "budget_usd": 1.0})]

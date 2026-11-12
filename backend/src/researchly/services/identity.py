@@ -111,6 +111,8 @@ def merge(records: list[PaperRecord]) -> PaperRecord:
                 merged.ids.append(i)
         merged.references += [r for r in record.references if r not in merged.references]
         merged.extra = {**record.extra, **merged.extra}  # the higher-priority source wins on clashes
+    # Chao2 incidence (spec §6.3 step 9): the summary counts every source that found the paper, not just the winner
+    merged.extra["found_by"] = sorted({s for r in records for s in r.extra.get("found_by", [r.source])})
     merged.source = ordered[0].source
     return merged
 

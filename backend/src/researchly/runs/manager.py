@@ -16,6 +16,7 @@ from decimal import Decimal
 from typing import Any, cast
 
 from ag_ui.core import (
+    CustomEvent,
     ResumeEntry,
     RunAgentInput,
     RunErrorEvent,
@@ -35,6 +36,7 @@ from researchly.db.models import Message, Project, Run, RunEvent
 from researchly.llm.ledger import spent_usd
 from researchly.runs.agui import ResearchlyAgent, allowed_decisions
 from researchly.runs.events import RunEventLog, RunHub, RunUpdate
+from researchly.runs.summary import coverage
 
 logger = logging.getLogger(__name__)
 
@@ -294,6 +296,14 @@ class RunManager:
             text = messages[-1].text
             limited = any(isinstance(m, ToolMessage) and m.text == LIMIT_HIT for m in messages)
             status = "partial" if text in STOPPED or limited or spent >= run.budget_usd else "completed"
+
+        summary = {
+            "status": status,
+            "spent_usd": float(spent),
+            "budget_usd": float(run.budget_usd),
+            "coverage": await coverage(getattr(graph, "store", None), run.project_id),
+        }
+        await log.append(CustomEvent(name="run_summary", value=summary))
 
         async def settle(session: AsyncSession) -> None:
             ended = {} if status == "awaiting_user" else {"ended_at": _now()}

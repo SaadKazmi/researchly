@@ -1,4 +1,5 @@
 import asyncio
+import json
 import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -9,6 +10,7 @@ from langchain.agents.middleware import HumanInTheLoopMiddleware, ToolCallLimitM
 from langchain_core.messages import ToolMessage
 from langchain_core.tools import tool
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from langgraph.store.memory import InMemoryStore
 from sqlalchemy import func, select, update
 
 from researchly.agents.middleware import BUDGET_SPENT, BudgetGuard
@@ -424,3 +426,18 @@ async def test_decisions_must_match_the_open_review(sm):
     await m.resume(run.id, [{"type": "approve"}])
     await m.wait(run.id)
     assert (await row(sm, run.id)).status == "completed" and await answers(sm, run.id) == ["Done."]
+
+
+async def test_a_summary_precedes_the_end_of_the_run(sm):
+    run = await seed_run(sm)
+    store = InMemoryStore()
+    line = json.dumps({"title": "Attention", "source": "openalex", "extra": {"found_by": ["arxiv", "openalex"]}})
+    await store.aput(("project", str(run.project_id)), "/candidates/sq1.jsonl", {"content": line + "\n"})
+    m = manager(sm, agent(script("The answer."), store=store))
+    await m.start(run.id)
+    await m.wait(run.id)
+    assert (await kinds(sm, run.id))[-2:] == ["CUSTOM", "RUN_FINISHED"]
+    [summary] = await events(sm, run.id, "CUSTOM")
+    assert summary["name"] == "run_summary"
+    coverage = {"observed": 1, "estimated": 1.0, "lists": 2}
+    assert summary["value"] == {"status": "completed", "spent_usd": 0.0, "budget_usd": 1.0, "coverage": coverage}
