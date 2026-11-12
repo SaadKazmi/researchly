@@ -43,6 +43,7 @@ async def test_threads_list_newest_first_and_show_their_messages(api):
         assert detail["title"] == "one"
         assert [(x["role"], x["text"], x["run_id"]) for x in detail["messages"]] == [("user", "Why?", str(run.id))]
         assert (await client.post(f"/api/v1/projects/{uuid.uuid4()}/threads", json={})).status_code == 404
+        assert (await client.get(f"/api/v1/projects/{uuid.uuid4()}/threads")).status_code == 404
         assert (await client.get(f"/api/v1/threads/{uuid.uuid4()}")).status_code == 404
 
 
