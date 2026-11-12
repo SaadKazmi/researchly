@@ -17,6 +17,7 @@ from ag_ui.core import (
 
 from researchly.db import migrate
 from researchly.db.engine import make_engine, make_sessionmaker
+from researchly.runs import events
 from researchly.runs.events import RunEventLog, RunHub, follow, replay
 
 from ..agents.fakes import seed_run, until
@@ -163,3 +164,45 @@ async def test_follow_ends_after_the_replay_when_the_run_is_at_rest(sm):
     await log.append(RunFinishedEvent(thread_id="t", run_id="r"))
     with anyio.fail_after(5):
         assert [e.seq async for e in follow(sm, RunHub(), run.id, 0)] == [1, 2]
+
+
+async def test_a_delta_event_cannot_carry_a_run_update(sm):
+    run = await seed_run(sm)
+
+    async def noop(session) -> None:
+        return None
+
+    log = RunEventLog(sm, RunHub(), run.id)
+    with pytest.raises(ValueError):
+        await log.append(text("a"), run_update=noop)
+    assert await replay(sm, run.id, 0) == []
+
+
+async def test_follow_skips_a_row_that_arrives_through_both_the_replay_and_the_queue(sm, monkeypatch):
+    run = await seed_run(sm, status="running")
+    hub = RunHub()
+    log = RunEventLog(sm, hub, run.id)
+    await log.append(RunStartedEvent(thread_id="t", run_id="r"))
+    real_replay = events.replay
+
+    async def racing_replay(sessions, run_id, after):
+        await log.append(step("late"))  # committed and published after the subscription, before the SELECT
+        return await real_replay(sessions, run_id, after)
+
+    monkeypatch.setattr(events, "replay", racing_replay)
+    got: list[int] = []
+
+    async def consume() -> None:
+        async for event in follow(sm, hub, run.id, 0):
+            got.append(event.seq)
+
+    task = asyncio.create_task(consume())
+
+    async def replayed() -> bool:
+        return len(got) >= 2
+
+    await until(replayed)
+    await log.append(RunFinishedEvent(thread_id="t", run_id="r"))
+    with anyio.fail_after(5):
+        await task
+    assert got == [1, 2, 3]
