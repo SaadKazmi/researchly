@@ -7,10 +7,10 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 
-from researchly.api.deps import ERRORS, Manager, get_or_404
+from researchly.api.deps import NOT_FOUND, UNAVAILABLE, Manager, get_or_404
 from researchly.db.models import Project
 
-router = APIRouter(prefix="/api/v1", tags=["projects"], responses=ERRORS)
+router = APIRouter(prefix="/api/v1", tags=["projects"], responses=UNAVAILABLE)
 
 
 class ProjectIn(BaseModel):
@@ -47,12 +47,12 @@ async def list_projects(runs: Manager) -> list[ProjectOut]:
         return [ProjectOut.model_validate(p) for p in rows]
 
 
-@router.get("/projects/{project_id}", operation_id="getProject")
+@router.get("/projects/{project_id}", operation_id="getProject", responses=NOT_FOUND)
 async def get_project(project_id: uuid.UUID, runs: Manager) -> ProjectOut:
     return ProjectOut.model_validate(await get_or_404(runs, Project, project_id))
 
 
-@router.patch("/projects/{project_id}", operation_id="renameProject")
+@router.patch("/projects/{project_id}", operation_id="renameProject", responses=NOT_FOUND)
 async def rename_project(project_id: uuid.UUID, body: ProjectRename, runs: Manager) -> ProjectOut:
     async with runs.sessions.begin() as session:
         project = await session.get(Project, project_id)

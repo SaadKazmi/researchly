@@ -9,10 +9,10 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, ConfigDict, Field
 
 from researchly.agents.context import EffortName
-from researchly.api.deps import CONFLICT, ERRORS, Manager, get_or_404
+from researchly.api.deps import CONFLICT, NOT_FOUND, UNAVAILABLE, Manager, get_or_404
 from researchly.db.models import Run, Thread
 
-router = APIRouter(prefix="/api/v1", tags=["runs"], responses=ERRORS)
+router = APIRouter(prefix="/api/v1", tags=["runs"], responses=UNAVAILABLE)
 
 
 class RunIn(BaseModel):
@@ -36,26 +36,30 @@ class RunOut(BaseModel):
     ended_at: datetime | None
 
 
-class EditedAction(BaseModel):
+class _Strict(BaseModel):
+    model_config = ConfigDict(extra="forbid")  # a typo such as `mesage` is a 422, not a silently empty decision
+
+
+class EditedAction(_Strict):
     name: str
     args: dict[str, Any]
 
 
-class Approve(BaseModel):
+class Approve(_Strict):
     type: Literal["approve"]
 
 
-class Edit(BaseModel):
+class Edit(_Strict):
     type: Literal["edit"]
     edited_action: EditedAction
 
 
-class Reject(BaseModel):
+class Reject(_Strict):
     type: Literal["reject"]
     message: str | None = None
 
 
-class Respond(BaseModel):
+class Respond(_Strict):
     type: Literal["respond"]
     message: str
 
@@ -82,7 +86,7 @@ async def _out(runs: Manager, run_id: uuid.UUID) -> RunOut:
     return RunOut.model_validate(await get_or_404(runs, Run, run_id))
 
 
-@router.post("/threads/{thread_id}/runs", status_code=201, operation_id="createRun")
+@router.post("/threads/{thread_id}/runs", status_code=201, operation_id="createRun", responses=NOT_FOUND)
 async def create_run(thread_id: uuid.UUID, body: RunIn, runs: Manager) -> RunOut:
     thread = await get_or_404(runs, Thread, thread_id)
     # ponytail: no cap on concurrent runs; one local user. Add an app-wide cap when runs contend (spec §16)
@@ -91,31 +95,31 @@ async def create_run(thread_id: uuid.UUID, body: RunIn, runs: Manager) -> RunOut
     return await _out(runs, run.id)
 
 
-@router.get("/runs/{run_id}", operation_id="getRun")
+@router.get("/runs/{run_id}", operation_id="getRun", responses=NOT_FOUND)
 async def get_run(run: ExistingRun) -> RunOut:
     return RunOut.model_validate(run)
 
 
-@router.post("/runs/{run_id}/pause", operation_id="pauseRun", responses=CONFLICT)
+@router.post("/runs/{run_id}/pause", operation_id="pauseRun", responses=NOT_FOUND | CONFLICT)
 async def pause_run(run: ExistingRun, runs: Manager) -> RunOut:
     await runs.pause(run.id)
     return await _out(runs, run.id)
 
 
-@router.post("/runs/{run_id}/resume", operation_id="resumeRun", responses=CONFLICT)
+@router.post("/runs/{run_id}/resume", operation_id="resumeRun", responses=NOT_FOUND | CONFLICT)
 async def resume_run(run: ExistingRun, runs: Manager, body: ResumeIn | None = None) -> RunOut:
     decisions = [d.model_dump(exclude_none=True) for d in body.decisions] if body and body.decisions else None
     await runs.resume(run.id, decisions)
     return await _out(runs, run.id)
 
 
-@router.post("/runs/{run_id}/cancel", operation_id="cancelRun", responses=CONFLICT)
+@router.post("/runs/{run_id}/cancel", operation_id="cancelRun", responses=NOT_FOUND | CONFLICT)
 async def cancel_run(run: ExistingRun, runs: Manager) -> RunOut:
     await runs.cancel(run.id)
     return await _out(runs, run.id)
 
 
-@router.post("/runs/{run_id}/branch", status_code=201, operation_id="branchRun", responses=CONFLICT)
+@router.post("/runs/{run_id}/branch", status_code=201, operation_id="branchRun", responses=NOT_FOUND | CONFLICT)
 async def branch_run(run: ExistingRun, body: BranchIn, runs: Manager) -> RunOut:
     child = await runs.branch(run.id, body.checkpoint_id)
     return await _out(runs, child.id)

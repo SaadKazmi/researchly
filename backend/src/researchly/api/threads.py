@@ -7,10 +7,10 @@ from fastapi import APIRouter
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 
-from researchly.api.deps import ERRORS, Manager, get_or_404
+from researchly.api.deps import NOT_FOUND, UNAVAILABLE, Manager, get_or_404
 from researchly.db.models import Message, Project, Thread
 
-router = APIRouter(prefix="/api/v1", tags=["threads"], responses=ERRORS)
+router = APIRouter(prefix="/api/v1", tags=["threads"], responses=UNAVAILABLE)
 
 
 class ThreadIn(BaseModel):
@@ -37,7 +37,7 @@ class ThreadDetail(ThreadOut):
     messages: list[MessageOut]
 
 
-@router.post("/projects/{project_id}/threads", status_code=201, operation_id="createThread")
+@router.post("/projects/{project_id}/threads", status_code=201, operation_id="createThread", responses=NOT_FOUND)
 async def create_thread(project_id: uuid.UUID, body: ThreadIn, runs: Manager) -> ThreadOut:
     await get_or_404(runs, Project, project_id)
     async with runs.sessions.begin() as session:
@@ -48,7 +48,7 @@ async def create_thread(project_id: uuid.UUID, body: ThreadIn, runs: Manager) ->
         return ThreadOut.model_validate(thread)
 
 
-@router.get("/projects/{project_id}/threads", operation_id="listThreads")
+@router.get("/projects/{project_id}/threads", operation_id="listThreads", responses=NOT_FOUND)
 async def list_threads(project_id: uuid.UUID, runs: Manager) -> list[ThreadOut]:
     await get_or_404(runs, Project, project_id)
     stmt = select(Thread).where(Thread.project_id == project_id).order_by(Thread.created_at.desc(), Thread.id.desc())
@@ -56,7 +56,7 @@ async def list_threads(project_id: uuid.UUID, runs: Manager) -> list[ThreadOut]:
         return [ThreadOut.model_validate(t) for t in await session.scalars(stmt)]
 
 
-@router.get("/threads/{thread_id}", operation_id="getThread")
+@router.get("/threads/{thread_id}", operation_id="getThread", responses=NOT_FOUND)
 async def get_thread(thread_id: uuid.UUID, runs: Manager) -> ThreadDetail:
     thread = await get_or_404(runs, Thread, thread_id)
     stmt = select(Message).where(Message.thread_id == thread_id).order_by(Message.created_at, Message.id)

@@ -15,7 +15,9 @@ class ErrorOut(BaseModel):
 
 
 # Declared on the routers so the OpenAPI schema (and the generated client) types the error bodies.
-ERRORS: dict[int | str, dict[str, Any]] = {404: {"model": ErrorOut}, 503: {"model": ErrorOut}}
+# UNAVAILABLE goes on each router (every route needs the run manager); NOT_FOUND only on routes that look a row up.
+UNAVAILABLE: dict[int | str, dict[str, Any]] = {503: {"model": ErrorOut}}
+NOT_FOUND: dict[int | str, dict[str, Any]] = {404: {"model": ErrorOut}}
 CONFLICT: dict[int | str, dict[str, Any]] = {409: {"model": ErrorOut}}  # RunStateError, see app.py
 
 
