@@ -9,12 +9,13 @@ from langchain.agents.middleware import HumanInTheLoopMiddleware, ToolCallLimitM
 from langchain_core.messages import ToolMessage
 from langchain_core.tools import tool
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 
 from researchly.agents.middleware import BUDGET_SPENT, BudgetGuard
 from researchly.db import migrate, provision
 from researchly.db.engine import make_engine, make_sessionmaker
 from researchly.db.models import Message, Run, RunEvent
+from researchly.runs.events import RunEventLog
 from researchly.runs.manager import RUN_ERROR, RunManager, RunStateError
 
 from ..agents.fakes import agent, blocking_tool, call, script, seed_run, until
@@ -359,6 +360,49 @@ async def test_a_pause_closes_the_open_ag_ui_run(sm):
     assert published == await seqs(sm, run.id)  # a cancel that lands mid-commit must not hide rows from subscribers
     assert (await kinds(sm, run.id)).count("RUN_STARTED") == 2
     assert [e.get("outcome") for e in await events(sm, run.id, "RUN_FINISHED")] == [{"type": "cancelled"}, None]
+
+
+async def test_a_failing_close_does_not_strand_a_pause(sm, monkeypatch):
+    run = await seed_run(sm)
+    fetch, entered, gate, calls = blocking_tool()
+    m = manager(sm, agent(script(call("fetch", {"x": "a"}), "done"), [fetch]))
+    real = RunEventLog.append
+
+    async def failing(self, event, **kwargs):
+        if event.type.value == "RUN_FINISHED":
+            raise RuntimeError("database gone")
+        await real(self, event, **kwargs)
+
+    monkeypatch.setattr(RunEventLog, "append", failing)
+    await m.start(run.id)
+    await entered.wait()
+    await m.pause(run.id)  # the best-effort closing event fails; the status update must still run
+    assert (await row(sm, run.id)).status == "paused" and run.id not in m._tasks
+    await m.shutdown()
+
+
+async def test_decisions_without_a_pending_interrupt_are_refused_not_dropped(sm):
+    run = await seed_run(sm)
+    fetch, entered, gate, calls = blocking_tool()
+    m = manager(sm, agent(script(call("fetch", {"x": "a"}), "done"), [fetch]))
+    await m.start(run.id)
+    await entered.wait()
+    await m.pause(run.id)
+    review = {
+        "responseSchema": {
+            "properties": {"decisions": {"prefixItems": [{"properties": {"type": {"enum": ["approve"]}}}]}}
+        }
+    }
+    outcome = {"type": "interrupt", "interrupts": [review]}
+    async with sm.begin() as session:  # the log claims a review is open, but the graph has no pending interrupt
+        last = await session.scalar(select(func.max(RunEvent.seq)).where(RunEvent.run_id == run.id))
+        payload = {"type": "RUN_FINISHED", "outcome": outcome}
+        session.add(RunEvent(run_id=run.id, seq=last + 1, type="RUN_FINISHED", agent="lead", payload=payload))
+    gate.set()
+    await m.resume(run.id, [{"type": "approve"}])
+    await m.wait(run.id)
+    assert (await row(sm, run.id)).status == "failed" and calls == ["a"]  # the checkpoint was not silently re-run
+    assert [e["code"] for e in await events(sm, run.id, RUN_ERROR)] == ["RunStateError"]
 
 
 async def test_decisions_must_match_the_open_review(sm):

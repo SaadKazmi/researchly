@@ -247,6 +247,8 @@ class RunManager:
             if decisions and state.interrupts:
                 payload = {"decisions": decisions}
                 resume = [ResumeEntry(interrupt_id=state.interrupts[0].id, status="resolved", payload=payload)]
+            elif decisions:  # the review was answered but the graph is not waiting on it: never drop the answer
+                raise RunStateError(f"run {run_id} has no pending interrupt for these decisions")
             elif not state.values:  # a new run, or one stopped before its first checkpoint
                 question = await self._question(run_id)
                 messages = [UserMessage(id=str(question.id), content=str(question.content["text"]))]
@@ -265,9 +267,12 @@ class RunManager:
                 raise RuntimeError("the AG-UI run ended without a terminal event")
             await self._finish(run, graph, log, end)
         except asyncio.CancelledError:  # pause, cancel or app stop: close the open AG-UI run for subscribers
-            if log.open:
+            if log.open:  # best effort: a failed write must not strand the run or abort shutdown
                 cancelled = RunFinishedEvent(thread_id=thread, run_id=agui_run, outcome=RunFinishedCancelledOutcome())
-                await log.append(cancelled)
+                try:
+                    await log.append(cancelled)
+                except Exception as exc:
+                    logger.warning("run %s: could not close its AG-UI run: %s", run_id, type(exc).__name__)
             raise
         except Exception as exc:  # the type only: messages can carry provider responses
             name = type(exc).__name__
