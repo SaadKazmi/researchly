@@ -33,7 +33,11 @@ logger = logging.getLogger(__name__)
 
 def _redact_server_logs() -> None:
     """uvicorn logs request paths with their query string, so a `?token=` login link would reach the access log."""
-    for name, kind in (("uvicorn.access", RedactingArgsFilter), ("uvicorn.error", RedactingFilter)):
+    for name, kind in (
+        ("uvicorn.access", RedactingArgsFilter),
+        ("uvicorn.error", RedactingFilter),
+        ("ag_ui_langgraph.agent", RedactingFilter),  # logs a failed run's traceback, exception text included
+    ):
         target = logging.getLogger(name)
         if not any(isinstance(f, kind) for f in target.filters):
             target.addFilter(kind())

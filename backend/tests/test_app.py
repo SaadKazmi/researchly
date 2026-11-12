@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from pathlib import Path
 
 import httpx
@@ -7,7 +8,7 @@ import pytest
 from researchly.app import create_app, require_selector_loop
 from researchly.config import Settings
 from researchly.security.localhost_guard import TOKEN_HEADER
-from researchly.security.redact import redact
+from researchly.security.redact import RedactingFilter, redact
 
 
 @pytest.mark.anyio
@@ -78,3 +79,8 @@ def test_a_selector_loop_is_accepted():
 def test_the_docker_image_runs_uvicorn_on_a_selector_loop():
     dockerfile = Path(__file__).resolve().parents[2] / "infra" / "app.Dockerfile"
     assert '"--loop", "asyncio:SelectorEventLoop"' in dockerfile.read_text("utf-8")
+
+
+def test_the_adapter_logger_is_redacted():
+    create_app(Settings(env="test"), token="t" * 43)
+    assert any(isinstance(f, RedactingFilter) for f in logging.getLogger("ag_ui_langgraph.agent").filters)

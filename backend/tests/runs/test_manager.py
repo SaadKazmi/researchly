@@ -15,7 +15,7 @@ from researchly.agents.middleware import BUDGET_SPENT, BudgetGuard
 from researchly.db import migrate, provision
 from researchly.db.engine import make_engine, make_sessionmaker
 from researchly.db.models import Message, Run, RunEvent
-from researchly.runs.manager import INTERRUPT, RUN_ERROR, RunManager, RunStateError
+from researchly.runs.manager import RUN_ERROR, RunManager, RunStateError
 
 from ..agents.fakes import agent, blocking_tool, call, script, seed_run, until
 
@@ -52,6 +52,12 @@ async def answers(sm, run_id: uuid.UUID) -> list[str]:
 async def events(sm, run_id: uuid.UUID, kind: str) -> list[dict]:
     async with sm() as session:
         stmt = select(RunEvent.payload).where(RunEvent.run_id == run_id, RunEvent.type == kind).order_by(RunEvent.seq)
+        return list(await session.scalars(stmt))
+
+
+async def kinds(sm, run_id: uuid.UUID) -> list[str]:
+    async with sm() as session:
+        stmt = select(RunEvent.type).where(RunEvent.run_id == run_id).order_by(RunEvent.seq)
         return list(await session.scalars(stmt))
 
 
@@ -109,8 +115,9 @@ async def test_ask_user_waits_for_the_answer(sm):
     await m.start(run.id)
     await m.wait(run.id)
     assert (await row(sm, run.id)).status == "awaiting_user"
-    [event] = await events(sm, run.id, INTERRUPT)
-    assert event["interrupts"][0]["action_requests"][0]["name"] == "ask_user"
+    [finished] = await events(sm, run.id, "RUN_FINISHED")
+    [interrupt] = finished["outcome"]["interrupts"]
+    assert (interrupt["reason"], interrupt["message"]) == ("researchly:ask_user", "Which years?")
     with pytest.raises(RunStateError):
         await m.resume(run.id)  # decisions are required
     await m.resume(run.id, [{"type": "respond", "message": "2020 onwards"}])
@@ -264,7 +271,9 @@ async def test_a_failing_build_fails_the_run_with_an_event(sm):
     await m.start(run.id)
     await m.wait(run.id)
     assert (await row(sm, run.id)).status == "failed"
-    assert await events(sm, run.id, RUN_ERROR) == [{"error": "ValueError"}]
+    assert await events(sm, run.id, RUN_ERROR) == [
+        {"type": "RUN_ERROR", "message": "The run failed.", "code": "ValueError"}
+    ]
 
 
 async def test_illegal_transitions_are_refused(sm):
@@ -314,3 +323,52 @@ async def test_cancel_cannot_race_resume(sm, attempt):
         gate.set()
         await m.wait(run.id)
     assert await answers(sm, run.id) == []
+
+
+async def test_a_run_logs_its_ag_ui_events(sm):
+    run = await seed_run(sm)
+    m = manager(sm, agent(script("The answer.")))
+    await m.start(run.id)
+    await m.wait(run.id)
+    logged = await kinds(sm, run.id)
+    assert logged[0] == "RUN_STARTED" and logged[-1] == "RUN_FINISHED"
+    assert "TEXT_MESSAGE_CONTENT" in logged and not {"RAW", "MESSAGES_SNAPSHOT"} & set(logged)
+    async with sm() as session:
+        seqs = list(await session.scalars(select(RunEvent.seq).where(RunEvent.run_id == run.id).order_by(RunEvent.seq)))
+    assert seqs == list(range(1, len(seqs) + 1))
+
+
+async def test_a_pause_closes_the_open_ag_ui_run(sm):
+    run = await seed_run(sm)
+    fetch, entered, gate, calls = blocking_tool()
+    m = manager(sm, agent(script(call("fetch", {"x": "a"}), "done"), [fetch]))
+    await m.start(run.id)
+    await entered.wait()
+    await m.pause(run.id)
+    assert [e.get("outcome") for e in await events(sm, run.id, "RUN_FINISHED")] == [{"type": "cancelled"}]
+    gate.set()
+    await m.resume(run.id)
+    await m.wait(run.id)
+    assert (await kinds(sm, run.id)).count("RUN_STARTED") == 2
+    assert [e.get("outcome") for e in await events(sm, run.id, "RUN_FINISHED")] == [{"type": "cancelled"}, None]
+
+
+async def test_decisions_must_match_the_open_review(sm):
+    run = await seed_run(sm)
+
+    @tool
+    def submit_plan(plan: str) -> str:
+        """Submit the plan."""
+        return "approved"
+
+    hitl = HumanInTheLoopMiddleware(interrupt_on={"submit_plan": {"allowed_decisions": ["approve", "edit", "reject"]}})
+    m = manager(sm, agent(script(call("submit_plan", {"plan": "p"}), "Done."), [submit_plan], [hitl]))
+    await m.start(run.id)
+    await m.wait(run.id)
+    for wrong in ([{"type": "respond", "message": "x"}], [{"type": "approve"}, {"type": "approve"}]):
+        with pytest.raises(RunStateError, match="open review"):
+            await m.resume(run.id, wrong)
+    assert (await row(sm, run.id)).status == "awaiting_user"
+    await m.resume(run.id, [{"type": "approve"}])
+    await m.wait(run.id)
+    assert (await row(sm, run.id)).status == "completed" and await answers(sm, run.id) == ["Done."]

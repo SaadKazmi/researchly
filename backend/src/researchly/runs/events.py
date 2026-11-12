@@ -121,17 +121,24 @@ class RunEventLog:
         rows, self._pending, self._since = self._pending, [], None  # a failed write drops them; the run then fails
         if not rows and run_update is None:
             return
-        async with self.sessions.begin() as session:
-            base = self._seq
-            if base is None:
-                last = select(func.max(RunEvent.seq)).where(RunEvent.run_id == self.run_id)
-                base = await session.scalar(last) or 0
-            stored = [StoredEvent(base + i, kind, agent, payload) for i, (kind, agent, payload) in enumerate(rows, 1)]
-            session.add_all(
-                RunEvent(run_id=self.run_id, seq=e.seq, type=e.type, agent=e.agent, payload=e.payload) for e in stored
-            )
-            if run_update is not None:
-                await run_update(session)
+        try:
+            async with self.sessions.begin() as session:
+                base = self._seq
+                if base is None:
+                    last = select(func.max(RunEvent.seq)).where(RunEvent.run_id == self.run_id)
+                    base = await session.scalar(last) or 0
+                stored = [
+                    StoredEvent(base + i, kind, agent, payload) for i, (kind, agent, payload) in enumerate(rows, 1)
+                ]
+                session.add_all(
+                    RunEvent(run_id=self.run_id, seq=e.seq, type=e.type, agent=e.agent, payload=e.payload)
+                    for e in stored
+                )
+                if run_update is not None:
+                    await run_update(session)
+        except BaseException:
+            self._seq = None  # a commit that a cancel interrupted may still have landed: re-read the max
+            raise
         self._seq = base + len(stored)
         for event in stored:
             if event.type == "RUN_STARTED":
