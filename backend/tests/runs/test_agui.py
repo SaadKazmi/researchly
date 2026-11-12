@@ -106,3 +106,16 @@ async def test_a_branch_runs_from_its_fork_and_the_snapshot_shows_the_new_head()
     [snapshot] = [e for e in events if e.type == EventType.MESSAGES_SNAPSHOT]
     assert snapshot.messages[-1].content == "second answer"
     assert [m.text for m in (await graph.aget_state(CFG)).values["messages"]] == ["Q?", "second answer"]
+
+
+async def test_continue_never_overwrites_a_resume_with_decisions():
+    hitl = HumanInTheLoopMiddleware(interrupt_on={"submit_plan": {"allowed_decisions": ["approve", "edit", "reject"]}})
+    graph = agent(script(call("submit_plan", {"plan": "1. search"}), "Done."), [submit_plan], [hitl])
+    await drive(ResearchlyAgent(graph, CTX), ask())
+    state = await graph.aget_state(CFG)
+    decisions = {"decisions": [{"type": "approve"}]}
+    resume = [ResumeEntry(interrupt_id=state.interrupts[0].id, status="resolved", payload=decisions)]
+    events = await drive(ResearchlyAgent(graph, CTX, continue_pending=True), resume=resume)
+    # a dropped decision would re-run the checkpoint and pause on the same review again
+    assert events[-1].type == EventType.RUN_FINISHED and events[-1].outcome is None
+    assert (await graph.aget_state(CFG)).values["messages"][-1].text == "Done."

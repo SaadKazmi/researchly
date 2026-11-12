@@ -9,6 +9,7 @@ from typing import Any, Literal
 
 from ag_ui_langgraph import LangGraphAgent
 from langchain_core.runnables import RunnableConfig
+from langgraph.types import Command
 
 from researchly.agents.context import RunContext
 
@@ -71,8 +72,8 @@ class ResearchlyAgent(LangGraphAgent):
             input, subgraphs=subgraphs, version=version, config=config, context=context, fork=fork
         )
         kwargs["context"] = self.context  # the adapter builds a dict, which RunContext(**...) rejects (Spike §3)
-        if self.continue_pending:
-            kwargs["input"] = None  # run the checkpoint's pending tasks, not a new step (Spike §4)
+        if self.continue_pending and not isinstance(input, Command):
+            kwargs["input"] = None  # run the checkpoint's pending tasks, not a new step (Spike §4); never drop a resume
         configurable = config.get("configurable", {}) if config else {}
         if config and "checkpoint_id" in configurable:
             kwargs["config"] = {**config, "configurable": dict(configurable)}  # the fork point, for the stream only
