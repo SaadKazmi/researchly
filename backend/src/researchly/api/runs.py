@@ -1,18 +1,27 @@
-"""Runs (spec §17): create in a thread, read, pause, resume with decisions, cancel, branch."""
+"""Runs (spec §17): create in a thread, read, pause, resume with decisions, cancel, branch, and the AG-UI stream."""
 
+import json
 import uuid
+from collections.abc import AsyncIterator
 from datetime import datetime
 from decimal import Decimal
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header, Query
+from fastapi.sse import EventSourceResponse, ServerSentEvent
 from pydantic import BaseModel, ConfigDict, Field
 
 from researchly.agents.context import EffortName
-from researchly.api.deps import CONFLICT, NOT_FOUND, UNAVAILABLE, Manager, get_or_404
+from researchly.api.deps import CONFLICT, NOT_FOUND, UNAVAILABLE, ErrorOut, Manager, get_or_404
 from researchly.db.models import Run, Thread
+from researchly.runs.events import follow
 
 router = APIRouter(prefix="/api/v1", tags=["runs"], responses=UNAVAILABLE)
+
+# FastAPI files an additional response's `model` under the route's own media type, so the SSE route below would
+# declare its errors as `text/event-stream`. Its error bodies are the same JSON as everywhere else: say so.
+_JSON = {"content": {"application/json": {"schema": {"$ref": f"#/components/schemas/{ErrorOut.__name__}"}}}}
+SSE_ERRORS: dict[int | str, dict[str, Any]] = {code: body | _JSON for code, body in (UNAVAILABLE | NOT_FOUND).items()}
 
 
 class RunIn(BaseModel):
@@ -123,3 +132,21 @@ async def cancel_run(run: ExistingRun, runs: Manager) -> RunOut:
 async def branch_run(run: ExistingRun, body: BranchIn, runs: Manager) -> RunOut:
     child = await runs.branch(run.id, body.checkpoint_id)
     return await _out(runs, child.id)
+
+
+@router.post(
+    "/runs/{run_id}/stream", operation_id="streamRun", responses=SSE_ERRORS, response_class=EventSourceResponse
+)
+async def stream_run(
+    run: ExistingRun,
+    runs: Manager,
+    after: Annotated[int, Query(ge=0)] = 0,
+    last_event_id: Annotated[int | None, Header(ge=0)] = None,
+) -> AsyncIterator[ServerSentEvent]:
+    """The run's AG-UI events as SSE (ADR 0012), from `Last-Event-ID` (or `?after=`) on. Any request body is ignored.
+
+    A disconnect ends only this generator: the run goes on, and a reconnect replays from its last `seq`.
+    """
+    start = after if last_event_id is None else last_event_id
+    async for event in follow(runs.sessions, runs.hub, run.id, start):
+        yield ServerSentEvent(raw_data=json.dumps(event.payload), id=str(event.seq))

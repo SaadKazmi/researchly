@@ -250,6 +250,7 @@ OPERATION_IDS = {
     "resumeRun",
     "cancelRun",
     "branchRun",
+    "streamRun",
 }
 
 
