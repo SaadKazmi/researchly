@@ -163,6 +163,29 @@ def test_uvicorn_access_log_redacts_the_login_token():
     assert "/?token=[REDACTED]" in stream.getvalue()
 
 
+def test_the_login_token_never_reaches_the_access_log_as_the_app_runs():
+    """The test above clears litellm's filters to pin our own output; this one keeps them.
+
+    The app imports litellm, whose own `uvicorn.access` filter runs before ours and replaces the whole
+    query string, so the shipped line reads `/?REDACTED`. Only the two composed are a security property.
+    """
+    import researchly.llm.registry  # noqa: F401  (importing litellm is what installs its filter)
+
+    create_app(Settings(env="test"), token=TOKEN)
+    logger = logging.getLogger("uvicorn.access")
+    stream = io.StringIO()
+    handler = logging.StreamHandler(stream)
+    handler.setFormatter(AccessFormatter(use_colors=False))
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+    try:
+        logger.info('%s - "%s %s HTTP/%s" %d', "127.0.0.1:5000", "GET", f"/?token={TOKEN}", "1.1", 303)
+    finally:
+        logger.removeHandler(handler)
+    assert TOKEN not in stream.getvalue()
+    assert "REDACTED" in stream.getvalue()  # the line was logged and scrubbed, not dropped
+
+
 @pytest.mark.anyio
 @pytest.mark.parametrize("path", ["//api/v1/system", "///mcp"])
 async def test_extra_leading_slashes_do_not_escape_the_private_prefixes(path):
