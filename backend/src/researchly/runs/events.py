@@ -187,16 +187,16 @@ async def follow(
     """Replay the rows after `after`, then tail live rows until the current AG-UI run ends.
 
     Subscribing first means no row falls between the replay and the tail; rows already replayed are skipped by
-    `seq`. A run at rest ends the stream after its replay.
+    `seq`. A run at rest, or one whose replay ends on a terminal row, ends the stream after its replay.
     """
     with hub.subscribe(run_id) as queue:
         async with sessions() as session:
             status = await session.scalar(select(Run.status).where(Run.id == run_id))
-        last = after
+        last, ended = after, False
         for event in await replay(sessions, run_id, after):
             yield event
-            last = event.seq
-        if status not in LIVE:
+            last, ended = event.seq, event.type in ENDS  # the LAST row: a resume replays an older end first
+        if status not in LIVE or ended:  # `ended` covers pause's window: the end commits before the status
             return
         while True:
             event = await queue.get()

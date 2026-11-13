@@ -186,6 +186,56 @@ async def test_a_delta_event_cannot_carry_a_run_update(sm):
     assert await replay(sm, run.id, 0) == []
 
 
+async def test_a_stream_opened_in_the_pause_window_ends_on_the_replayed_terminal(sm):
+    """`pause` commits the cancelled RUN_FINISHED before it commits status="paused" (manager.py:275, :138).
+
+    A stream opened between those two commits reads `running`, replays the terminal row, and would otherwise
+    block on the queue forever: the run is untouched, but the connection is held open on pings for good.
+    The last replayed row being a terminal ends the stream whatever the status row still says.
+    """
+    run = await seed_run(sm, status="running")
+    hub = RunHub()
+    log = RunEventLog(sm, hub, run.id)
+    await log.append(RunStartedEvent(thread_id="t", run_id="r"))
+    await log.append(RunFinishedEvent(thread_id="t", run_id="r"))
+    got: list[int] = []
+    with anyio.fail_after(5):
+        async for event in follow(sm, hub, run.id, 0):
+            got.append(event.seq)
+    assert got == [1, 2]
+
+
+async def test_a_resumed_run_keeps_tailing_past_the_terminal_its_replay_starts_with(sm):
+    """The mirror of the pause window: only the LAST replayed row may end the stream.
+
+    A resumed run's log holds the paused segment's RUN_FINISHED followed by the resume's RUN_STARTED, so a
+    client reconnecting from seq 0 replays a terminal that is not the end. Ending on any replayed terminal
+    would cut the stream off at the resume, and the client would watch a live run in silence.
+    """
+    run = await seed_run(sm, status="running")
+    hub = RunHub()
+    log = RunEventLog(sm, hub, run.id)
+    await log.append(RunFinishedEvent(thread_id="t", run_id="r"))  # the segment that was paused
+    await log.append(RunStartedEvent(thread_id="t", run_id="r2"))  # the resume: the run is live again
+    got: list[int] = []
+
+    async def consume() -> None:
+        async for event in follow(sm, hub, run.id, 0):
+            got.append(event.seq)
+
+    task = asyncio.create_task(consume())
+
+    async def replayed() -> bool:
+        return len(got) >= 2
+
+    await until(replayed)
+    await log.append(step("still working"))
+    await log.append(RunFinishedEvent(thread_id="t", run_id="r2"))
+    with anyio.fail_after(5):
+        await task
+    assert got == [1, 2, 3, 4]  # the replayed terminal at seq 1 did not end the stream
+
+
 async def test_follow_subscribes_before_it_replays_so_no_row_falls_in_the_gap(sm, monkeypatch):
     """The other race: a row committed and published AFTER the SELECT reaches a subscriber that already exists.
 
