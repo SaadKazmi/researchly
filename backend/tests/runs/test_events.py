@@ -186,6 +186,42 @@ async def test_a_delta_event_cannot_carry_a_run_update(sm):
     assert await replay(sm, run.id, 0) == []
 
 
+async def test_follow_subscribes_before_it_replays_so_no_row_falls_in_the_gap(sm, monkeypatch):
+    """The other race: a row committed and published AFTER the SELECT reaches a subscriber that already exists.
+
+    Replaying first and subscribing second would lose it in both places - the SELECT has already run, and the
+    queue does not exist yet - so the client would never see it and, dedupe being by seq, would never ask again.
+    """
+    run = await seed_run(sm, status="running")
+    hub = RunHub()
+    log = RunEventLog(sm, hub, run.id)
+    await log.append(RunStartedEvent(thread_id="t", run_id="r"))
+    real_replay = events.replay
+
+    async def late_publishing_replay(sessions, run_id, after):
+        rows = await real_replay(sessions, run_id, after)
+        await log.append(step("after the select"))  # only a subscription that already exists can catch this
+        return rows
+
+    monkeypatch.setattr(events, "replay", late_publishing_replay)
+    got: list[int] = []
+
+    async def consume() -> None:
+        async for event in follow(sm, hub, run.id, 0):
+            got.append(event.seq)
+
+    task = asyncio.create_task(consume())
+
+    async def replayed() -> bool:
+        return len(got) >= 2
+
+    await until(replayed)
+    await log.append(RunFinishedEvent(thread_id="t", run_id="r"))
+    with anyio.fail_after(5):
+        await task
+    assert got == [1, 2, 3]  # gapless: seq 2 was published between the SELECT and the first tail read
+
+
 async def test_follow_skips_a_row_that_arrives_through_both_the_replay_and_the_queue(sm, monkeypatch):
     run = await seed_run(sm, status="running")
     hub = RunHub()
