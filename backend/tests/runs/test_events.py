@@ -205,6 +205,21 @@ async def test_a_stream_opened_in_the_pause_window_ends_on_the_replayed_terminal
     assert got == [1, 2]
 
 
+async def test_a_reconnect_already_past_the_terminal_ends_in_the_pause_window_too(sm):
+    """The same window, with nothing left to replay: a client that already has the terminal reconnects.
+
+    `Last-Event-ID: 2` makes the replay empty, so no replayed row can say the run ended, and the status row
+    still reads `running` between pause's two commits. The newest row at or before `after` answers instead.
+    """
+    run = await seed_run(sm, status="running")
+    hub = RunHub()
+    log = RunEventLog(sm, hub, run.id)
+    await log.append(RunStartedEvent(thread_id="t", run_id="r"))
+    await log.append(RunFinishedEvent(thread_id="t", run_id="r"))
+    with anyio.fail_after(5):
+        assert [e.seq async for e in follow(sm, hub, run.id, 2)] == []
+
+
 async def test_a_resumed_run_keeps_tailing_past_the_terminal_its_replay_starts_with(sm):
     """The mirror of the pause window: only the LAST replayed row may end the stream.
 

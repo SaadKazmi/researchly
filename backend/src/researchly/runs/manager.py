@@ -269,12 +269,13 @@ class RunManager:
                 raise RuntimeError("the AG-UI run ended without a terminal event")
             await self._finish(run, graph, log, end)
         except asyncio.CancelledError:  # pause, cancel or app stop: close the open AG-UI run for subscribers
-            if log.open:  # best effort: a failed write must not strand the run or abort shutdown
+            try:  # best effort: a failed write must not strand the run or abort shutdown
+                if not log.open:  # cancelled before the adapter's first event: open the run so it can be closed
+                    await log.append(RunStartedEvent(thread_id=thread, run_id=agui_run))
                 cancelled = RunFinishedEvent(thread_id=thread, run_id=agui_run, outcome=RunFinishedCancelledOutcome())
-                try:
-                    await log.append(cancelled)
-                except Exception as exc:
-                    logger.warning("run %s: could not close its AG-UI run: %s", run_id, type(exc).__name__)
+                await log.append(cancelled)
+            except Exception as exc:
+                logger.warning("run %s: could not close its AG-UI run: %s", run_id, type(exc).__name__)
             raise
         except Exception as exc:  # the type only: messages can carry provider responses
             name = type(exc).__name__

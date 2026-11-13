@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 
+import anyio
 import pytest
 from langchain.agents.middleware import HumanInTheLoopMiddleware, ToolCallLimitMiddleware
 from langchain_core.messages import ToolMessage
@@ -17,7 +18,7 @@ from researchly.agents.middleware import BUDGET_SPENT, BudgetGuard
 from researchly.db import migrate, provision
 from researchly.db.engine import make_engine, make_sessionmaker
 from researchly.db.models import Message, Run, RunEvent
-from researchly.runs.events import RunEventLog
+from researchly.runs.events import RunEventLog, follow
 from researchly.runs.manager import RUN_ERROR, RunManager, RunStateError
 
 from ..agents.fakes import agent, blocking_tool, call, script, seed_run, until
@@ -395,6 +396,43 @@ async def test_a_pause_closes_the_open_ag_ui_run(sm):
     assert published == await seqs(sm, run.id)  # a cancel that lands mid-commit must not hide rows from subscribers
     assert (await kinds(sm, run.id)).count("RUN_STARTED") == 2
     assert [e.get("outcome") for e in await events(sm, run.id, "RUN_FINISHED")] == [{"type": "cancelled"}, None]
+
+
+async def test_a_pause_before_the_adapter_starts_closes_the_ag_ui_run_too(sm):
+    """The cancel window is the whole of `build()`, not an instant: the first build of a process loads the
+    embedder (`runs/live.py:72`), seconds to minutes. Cancelled there, the log has no RUN_STARTED to close,
+    and a stream that attached while the status was `running` would wait on the queue for good. The close
+    synthesizes the start the adapter never emitted, exactly as the failure path does.
+    """
+    run = await seed_run(sm)
+    building, release = asyncio.Event(), asyncio.Event()
+
+    async def build(run: Run) -> Any:
+        building.set()
+        await release.wait()
+        return agent(script("done"))
+
+    m = RunManager(sm, build)
+    await m.start(run.id)
+    await building.wait()
+    got: list[str] = []
+
+    async def consume() -> None:
+        async for event in follow(sm, m.hub, run.id, 0):
+            got.append(event.type)
+
+    task = asyncio.create_task(consume())
+
+    async def subscribed() -> bool:
+        return run.id in m.hub._subscribers
+
+    await until(subscribed)
+    await m.pause(run.id)
+    with anyio.fail_after(5):
+        await task  # without the synthesized start there is no terminal, and this tails until the test times out
+    assert got == ["RUN_STARTED", "RUN_FINISHED"]
+    assert [e.get("outcome") for e in await events(sm, run.id, "RUN_FINISHED")] == [{"type": "cancelled"}]
+    assert (await row(sm, run.id)).status == "paused"
 
 
 async def test_a_failing_close_does_not_strand_a_pause(sm, monkeypatch):

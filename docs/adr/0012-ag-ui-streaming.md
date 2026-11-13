@@ -21,7 +21,9 @@ works with one mandatory override and two recommended ones. Runs are asyncio tas
     - passes our `RunContext` instance (the adapter's dict fails `RunContext(**...)` on `thread_id`);
     - sets `input=None` to continue a checkpoint's pending tasks (resume after a pause, startup resume, branch);
     - gives a branch's `checkpoint_id` to the stream only, so the adapter's later reads see the new head.
-  - `get_state_snapshot` keeps only `todos`.
+  - `get_state_snapshot` keeps only `todos`. That is spec §19.1, not a payload-size trim: the rest of the agent
+    state holds the deep-agents virtual filesystem — `/projects/candidates/**` and `/projects/evidence/**`, i.e.
+    fetched web and PDF text — and a `STATE_SNAPSHOT` carrying it would put untrusted text straight on the wire.
   - `_interrupts_to_agui`: an HITL review gets `reason` `researchly:<tool>`, `message` (the plan or question) and a
     `responseSchema` listing the allowed decisions per action.
 - **Event log** (`runs/events.py`):
