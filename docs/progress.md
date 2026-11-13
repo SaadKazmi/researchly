@@ -149,3 +149,17 @@ Newest entries at the bottom. Each session appends: date, plan + task, what chan
 - Deferred: see the plan's Deferred list (3b API and streaming, 3c UI and E2E, step 4 calibration, and the evidence `chunk_id` migration before any re-ingest path).
 - No features.json flips: F1 and F2 flip with the 3c E2E specs.
 - Next: plan 3b (projects, threads and runs API; AG-UI streaming).
+
+## 2026-11-10 — Step 3b projects, threads and runs API with AG-UI streaming (plan docs/superpowers/plans/2026-11-10-step3b-runs-api.md)
+- Done (feat/step3b-runs-api):
+  - **Pins:** ag-ui-langgraph 0.0.47 and ag-ui-protocol 1.0.0 (ADR 0012).
+  - **Adapter subclass** `runs/agui.py`: our `RunContext`, continue with `input=None`, branch through the stream's config, todos-only snapshots, typed plan and question reviews.
+  - **Event log** `runs/events.py`: persist, then publish to the in-process hub. No RAW or message snapshots; deltas coalesced; errors scrubbed; the terminal event commits with the status.
+  - **Run manager** drives runs through the adapter: decisions are checked against the open review; a pause closes the AG-UI run as cancelled; every run ends with a `run_summary` (Chao2 coverage from `found_by`); `BudgetGuard` streams `cost`.
+  - **API:** projects, threads and runs REST under `/api/v1`, and `POST /api/v1/runs/{id}/stream` on FastAPI's native SSE. The TS client is regenerated.
+  - ADR 0012; spec §4.2 and §17 amended.
+- Tests: backend 783 passed, 2 skipped; `-m db` 132 passed; CLI (`-k "not docker"`) 95 passed; pyright 0 errors.
+- Rulings: see the plan (rulings 11–34).
+- Deferred: see the plan's Deferred list (3c UI, E2E and flips; thread search; citation events; cost estimate; checkpoint listing; multi-turn context).
+- No features.json flips: F1 and F2 flip with the 3c E2E specs.
+- Next: plan 3c (chat UI, run tree, plan review, E2E).

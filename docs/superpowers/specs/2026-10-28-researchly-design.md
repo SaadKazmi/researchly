@@ -231,7 +231,7 @@ When Docker Desktop is the engine, a one-time informational note mentions its co
 - A single app process runs the API plus async workers. Research runs execute as asyncio tasks that report progress through the DB and stream AG-UI events.
 - Scheduled and background jobs (alerts, ingestion batches, embedding backfills, exports) run on **procrastinate** (Postgres-backed).
 - On startup, any run in state `running` is resumed from its LangGraph checkpoint (`thread_id`).
-- Live progress fan-out uses Postgres `LISTEN/NOTIFY`.
+- Live progress fan-out is in process: a run's drive task persists each AG-UI event to `run_event`, then publishes it to the run's subscribers (`RunHub`, ADR 0012). One app process holds every run, so Postgres `LISTEN/NOTIFY` is not needed.
 - **Native supervision:** the `researchly` CLI is the supervisor. It spawns Postgres, SearXNG and the app as child processes: inside a Job Object with KILL_ON_JOB_CLOSE on Windows, and a process group with SIGTERM then SIGKILL on POSIX.
   - Ports are free `127.0.0.1` ports recorded in `state.json`.
   - Health checks use `/health` and `pg_isready`, with restart-with-backoff.
@@ -761,8 +761,14 @@ Migrations use Alembic. Every migration has an upgrade → downgrade → upgrade
 
 ## 17. API & streaming
 - **REST** (`/api/v1`): projects, threads, runs (create / pause / resume / cancel / branch), papers, collections, search, graph, documents, exports, memory, settings, providers, usage, system.
-- **AG-UI endpoint:** `POST /api/v1/runs/{id}/stream` (SSE). Events: `RUN_STARTED/FINISHED/ERROR`, `STEP_STARTED/FINISHED` (per agent), `TEXT_MESSAGE_*`, `TOOL_CALL_*`, `STATE_SNAPSHOT/DELTA` (plan, budget, todos), plus custom `CITATION`, `COST`, `INTERRUPT`.
-- All events are persisted to `run_event`, so reconnecting replays from the last sequence number.
+- **AG-UI endpoint:** `POST /api/v1/runs/{id}/stream` (SSE; `Last-Event-ID` or `?after=` sets the resume point; the request body is ignored). Events:
+  - `RUN_STARTED/FINISHED/ERROR` (one AG-UI run per drive: start, resume or restart);
+  - `STEP_STARTED/FINISHED`, `TEXT_MESSAGE_*`, `TOOL_CALL_*`, and `SUBAGENT_*` attributed to the scout or reader;
+  - `STATE_SNAPSHOT` (todos);
+  - custom `cost` (before each model call) and `run_summary` (status, cost, Chao2 coverage).
+  - Plan approval and questions arrive as `RUN_FINISHED` with an interrupt outcome (`reason` `researchly:submit_plan` or `researchly:ask_user`, `message`, `responseSchema`); `POST /runs/{id}/resume` answers them.
+  - Citation chips come from `[cite:...]` in the answer (3c).
+- Every event except `RAW` and `MESSAGES_SNAPSHOT` is persisted to `run_event` before it is sent, so reconnecting replays from the last sequence number. Text, tool-argument and reasoning deltas are coalesced, and error messages are replaced with "The run failed.".
 - The `ag-ui-langgraph` adapter is pinned.
 - **OpenAPI** is generated from FastAPI. The TypeScript client is generated with `openapi-typescript`, and a CI check fails if it is stale.
 - **MCP server:** mounted at `/mcp` (Streamable HTTP) plus a `researchly mcp` stdio command. Read-only tools: `search_library`, `get_paper`, `search_evidence`, `list_projects`.

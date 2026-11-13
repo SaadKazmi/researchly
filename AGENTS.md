@@ -86,6 +86,12 @@ The default `python` on dev machines may be old; always go through `uv`.
   - LangGraph's checkpoint and store tables come from `provision.setup_agent_tables` (their own `setup()`), not Alembic; `test_models_match_migrations` skips them.
   - Agents read candidates and evidence only through tools: a `FilesystemPermission` deny rule covers `/projects/candidates/**` and `/projects/evidence/**`.
   - Tools must be idempotent: a paused run re-runs its last tool step on resume (candidate files dedupe; `gather_evidence` is cached in `tool_cache`).
+- AG-UI streaming (ADR 0012):
+  - `runs/agui.py` is the only importer of `ag_ui_langgraph`. Build one `ResearchlyAgent` per run drive (the adapter keeps run state on `self`). It passes our `RunContext` instance, continues a pending checkpoint with `input=None`, and keeps only `todos` in `STATE_SNAPSHOT`.
+  - `RunEventLog` is the only writer of `run_event`: it persists, then publishes to the in-process `RunHub`. It never stores `RAW` or `MESSAGES_SNAPSHOT`, coalesces deltas, and scrubs error text. A run's terminal event commits with its status.
+  - `follow` ends the stream on a run at rest, or on a replay whose last row is terminal; only the last row counts, because a resumed run replays the paused segment's `RUN_FINISHED` before the resume's `RUN_STARTED`.
+  - Test chat models must stream: `ToolFake` implements `_stream`, because the adapter drives `astream_events`.
+  - `httpx.ASGITransport` buffers a whole SSE response and runs no lifespan: API tests set `app.state.runs`, and the stream tests start the request as a task.
 
 ## Compact instructions
 When compacting, keep: current plan path and task number, failing test names and errors, files changed this session, decisions made and why. Drop: full file dumps, passing test output, exploration dead ends.
