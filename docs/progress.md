@@ -162,4 +162,7 @@ Newest entries at the bottom. Each session appends: date, plan + task, what chan
 - Rulings: see the plan (rulings 11–34).
 - Deferred: see the plan's Deferred list (3c UI, E2E and flips; thread search; citation events; cost estimate; checkpoint listing; multi-turn context).
 - No features.json flips: F1 and F2 flip with the 3c E2E specs.
+- Post-PR fixes (found by the `@smoke` job on PR #10):
+  - `app.log` lagged a running app by up to 8 KB: uvicorn's access log goes to stdout, which Python block-buffers into a file, so `doctor`, a support log and the smoke check could all miss a request already served. `supervise.spawn` now sets `PYTHONUNBUFFERED`, and the app inherits it.
+  - litellm installs its own `uvicorn.access` filter when imported, ahead of ours, and replaces the whole query string instead of the token's value, so the shipped login line reads `/?REDACTED`. The smoke spec asserted `token=[REDACTED]` - our filter's output alone - and had been stale since the app began importing litellm at startup. The token never reached the log, so only the proof-of-redaction assertion was wrong. The backend test clears litellm's filters to pin our own output, which is why nothing caught the composition; a second test now keeps them in place.
 - Next: plan 3c (chat UI, run tree, plan review, E2E).
