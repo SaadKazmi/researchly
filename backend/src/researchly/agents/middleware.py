@@ -18,6 +18,7 @@ from langchain.agents.middleware import (
     ToolCallRequest,
     hook_config,
 )
+from langchain_core.callbacks.manager import adispatch_custom_event
 from langchain_core.messages import AIMessage, AnyMessage, HumanMessage, ToolCall, ToolMessage
 from langgraph.runtime import Runtime
 from langgraph.types import Command
@@ -89,7 +90,10 @@ class BudgetGuard(AgentMiddleware[AgentState[Any], RunContext]):
     @hook_config(can_jump_to=["end"])
     async def abefore_model(self, state: AgentState, runtime: Runtime[RunContext]) -> dict[str, Any] | None:
         ctx = runtime.context
-        if await self.spent(ctx.run_id) >= ctx.budget_usd:
+        spent = await self.spent(ctx.run_id)
+        # the run tree shows cost as it grows (AG-UI CUSTOM "cost", spec §17)
+        await adispatch_custom_event("cost", {"spent_usd": float(spent), "budget_usd": float(ctx.budget_usd)})
+        if spent >= ctx.budget_usd:
             return {"messages": [AIMessage(BUDGET_SPENT)], "jump_to": "end"}
         return None
 

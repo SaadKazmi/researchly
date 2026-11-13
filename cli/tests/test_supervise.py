@@ -157,3 +157,19 @@ def test_rotate_is_best_effort_when_the_log_is_held_open(tmp_path, monkeypatch):
     log.write_bytes(b"x" * 11)
     rotate(log, max_bytes=10)  # must not raise: a failed rotation would kill the supervisor and end restarts
     assert log.read_bytes() == b"x" * 11
+
+
+def test_a_running_child_s_stdout_reaches_the_log(tmp_path):
+    """uvicorn's access log goes to stdout, which Python block-buffers into a file.
+
+    Unbuffered, a request shows up in `app.log` as it is served. Buffered, it waits for 8 KB or for the app to
+    exit - so `researchly doctor`, a support log and the E2E smoke check can all miss a request that happened.
+    """
+    log = tmp_path / "app.log"
+    printer = [sys.executable, "-c", "import time; print('SERVED'); time.sleep(120)"]
+    child = spawn(printer, log)
+    try:
+        wait_until(lambda: "SERVED" in log.read_text(), timeout=10)
+    finally:
+        terminate_tree(child.pid)
+    assert "SERVED" in log.read_text()  # while it was running, not flushed by its exit

@@ -100,3 +100,10 @@ def test_a_shared_dblp_key_in_extra_does_not_merge_a_preprint_with_its_published
     a = rec("dblp", "Deep Residual Learning", year=2015, author="Kaiming He", extra={"dblp_key": "conf/cvpr/HeZRS16"})
     b = rec("dblp", "Other title entirely", year=2016, author="Someone Else", extra={"dblp_key": "conf/cvpr/HeZRS16"})
     assert not same_paper(a, b)
+
+
+def test_merge_records_every_source_that_found_the_paper():
+    first = merge([rec("arxiv", "Attention Is All You Need"), rec("openalex", "Attention is All you Need")])
+    assert first.extra["found_by"] == ["arxiv", "openalex"]
+    again = merge([first, rec("crossref", "Attention Is All You Need")])  # a repeated search merges into the file
+    assert again.extra["found_by"] == ["arxiv", "crossref", "openalex"]

@@ -35,8 +35,12 @@ def detached() -> dict[str, Any]:
 
 
 def spawn(cmd: Sequence[str], log: Path, env: dict[str, str] | None = None) -> psutil.Process:
-    """Start `cmd` detached, appending its output to `log`."""
+    """Start `cmd` detached, appending its output to `log`, unbuffered so the log keeps up with the app."""
     log.parent.mkdir(parents=True, exist_ok=True)
+    # uvicorn writes its access log to stdout, which Python block-buffers when it is a file: without this a
+    # request can be missing from `app.log` long after it was served, and the log is what we point users at.
+    # The app inherits this from the supervisor, so one place covers both.
+    env = {**(os.environ if env is None else env), "PYTHONUNBUFFERED": "1"}
     with log.open("ab") as out:
         child = popen_detached(cmd, stdin=subprocess.DEVNULL, stdout=out, stderr=out, env=env)
     return psutil.Process(child.pid)

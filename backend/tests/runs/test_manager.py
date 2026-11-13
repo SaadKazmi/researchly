@@ -1,4 +1,5 @@
 import asyncio
+import json
 import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -6,22 +7,21 @@ from typing import Any
 
 import anyio
 import pytest
-from langchain.agents import create_agent
 from langchain.agents.middleware import HumanInTheLoopMiddleware, ToolCallLimitMiddleware
 from langchain_core.messages import ToolMessage
 from langchain_core.tools import tool
-from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-from sqlalchemy import select, update
+from langgraph.store.memory import InMemoryStore
+from sqlalchemy import func, select, update
 
-from researchly.agents.context import RunContext
 from researchly.agents.middleware import BUDGET_SPENT, BudgetGuard
 from researchly.db import migrate, provision
 from researchly.db.engine import make_engine, make_sessionmaker
 from researchly.db.models import Message, Run, RunEvent
-from researchly.runs.manager import INTERRUPT, RUN_ERROR, RunManager, RunStateError
+from researchly.runs.events import RunEventLog, follow
+from researchly.runs.manager import RUN_ERROR, RunManager, RunStateError
 
-from ..agents.fakes import call, script, seed_run
+from ..agents.fakes import agent, blocking_tool, call, script, seed_run, until
 
 pytestmark = [pytest.mark.anyio, pytest.mark.db]
 QUESTION = "What makes Transformers fast to train?"
@@ -42,16 +42,6 @@ def manager(sm, graph: Any) -> RunManager:
     return RunManager(sm, build)
 
 
-def agent(model, tools=(), middleware=(), checkpointer=None) -> Any:
-    return create_agent(
-        model,
-        list(tools),
-        middleware=list(middleware),
-        checkpointer=checkpointer or InMemorySaver(),
-        context_schema=RunContext,
-    )
-
-
 async def row(sm, run_id: uuid.UUID) -> Run:
     async with sm() as session:
         return await session.get_one(Run, run_id)
@@ -69,25 +59,15 @@ async def events(sm, run_id: uuid.UUID, kind: str) -> list[dict]:
         return list(await session.scalars(stmt))
 
 
-async def until(check) -> None:
-    with anyio.fail_after(5):
-        while not await check():  # noqa: ASYNC110 - polls a DB-backed condition
-            await anyio.sleep(0.01)
+async def kinds(sm, run_id: uuid.UUID) -> list[str]:
+    async with sm() as session:
+        stmt = select(RunEvent.type).where(RunEvent.run_id == run_id).order_by(RunEvent.seq)
+        return list(await session.scalars(stmt))
 
 
-def blocking_tool():
-    """A tool that blocks until released; records every call."""
-    entered, gate, calls = asyncio.Event(), asyncio.Event(), []
-
-    @tool
-    async def fetch(x: str) -> str:
-        """Fetch."""
-        calls.append(x)
-        entered.set()
-        await gate.wait()
-        return "fetched"
-
-    return fetch, entered, gate, calls
+async def seqs(sm, run_id: uuid.UUID) -> list[int]:
+    async with sm() as session:
+        return list(await session.scalars(select(RunEvent.seq).where(RunEvent.run_id == run_id).order_by(RunEvent.seq)))
 
 
 async def test_create_takes_the_tier_budget_and_stores_the_question(sm):
@@ -130,6 +110,19 @@ async def test_a_spent_budget_ends_the_run_partial(sm):
     assert await answers(sm, run.id) == [BUDGET_SPENT] and model.seen == []
 
 
+async def test_a_model_call_logs_the_cost_so_far(sm):
+    run = await seed_run(sm)
+
+    async def spent(run_id: uuid.UUID) -> Decimal:
+        return Decimal("0.25")
+
+    m = manager(sm, agent(script("The answer."), middleware=[BudgetGuard(spent)]))
+    await m.start(run.id)
+    await m.wait(run.id)
+    costs = [e["value"] for e in await events(sm, run.id, "CUSTOM") if e["name"] == "cost"]
+    assert costs == [{"spent_usd": 0.25, "budget_usd": 1.0}]
+
+
 async def test_ask_user_waits_for_the_answer(sm):
     run = await seed_run(sm)
 
@@ -144,14 +137,35 @@ async def test_ask_user_waits_for_the_answer(sm):
     await m.start(run.id)
     await m.wait(run.id)
     assert (await row(sm, run.id)).status == "awaiting_user"
-    [event] = await events(sm, run.id, INTERRUPT)
-    assert event["interrupts"][0]["action_requests"][0]["name"] == "ask_user"
+    [finished] = await events(sm, run.id, "RUN_FINISHED")
+    [interrupt] = finished["outcome"]["interrupts"]
+    assert (interrupt["reason"], interrupt["message"]) == ("researchly:ask_user", "Which years?")
     with pytest.raises(RunStateError):
         await m.resume(run.id)  # decisions are required
     await m.resume(run.id, [{"type": "respond", "message": "2020 onwards"}])
     await m.wait(run.id)
     assert (await row(sm, run.id)).status == "completed"
     assert [t.text for t in model.seen[1] if isinstance(t, ToolMessage)] == ["2020 onwards"]
+
+
+async def test_a_run_waiting_at_a_plan_review_has_no_summary_until_it_completes(sm):
+    run = await seed_run(sm)
+
+    @tool
+    def submit_plan(plan: str) -> str:
+        """Submit the plan."""
+        return "approved"
+
+    hitl = HumanInTheLoopMiddleware(interrupt_on={"submit_plan": {"allowed_decisions": ["approve", "edit", "reject"]}})
+    m = manager(sm, agent(script(call("submit_plan", {"plan": "p"}), "Done."), [submit_plan], [hitl]))
+    await m.start(run.id)
+    await m.wait(run.id)
+    assert (await row(sm, run.id)).status == "awaiting_user"
+    assert await events(sm, run.id, "CUSTOM") == []
+    await m.resume(run.id, [{"type": "approve"}])
+    await m.wait(run.id)
+    [summary] = await events(sm, run.id, "CUSTOM")
+    assert summary["name"] == "run_summary" and summary["value"]["status"] == "completed"
 
 
 async def test_a_rejected_plan_cancels_the_run(sm):
@@ -299,7 +313,9 @@ async def test_a_failing_build_fails_the_run_with_an_event(sm):
     await m.start(run.id)
     await m.wait(run.id)
     assert (await row(sm, run.id)).status == "failed"
-    assert await events(sm, run.id, RUN_ERROR) == [{"error": "ValueError"}]
+    assert await events(sm, run.id, RUN_ERROR) == [
+        {"type": "RUN_ERROR", "message": "The run failed.", "code": "ValueError"}
+    ]
 
 
 async def test_illegal_transitions_are_refused(sm):
@@ -349,3 +365,150 @@ async def test_cancel_cannot_race_resume(sm, attempt):
         gate.set()
         await m.wait(run.id)
     assert await answers(sm, run.id) == []
+
+
+async def test_a_run_logs_its_ag_ui_events(sm):
+    run = await seed_run(sm)
+    m = manager(sm, agent(script("The answer.")))
+    await m.start(run.id)
+    await m.wait(run.id)
+    logged = await kinds(sm, run.id)
+    assert logged[0] == "RUN_STARTED" and logged[-1] == "RUN_FINISHED"
+    assert "TEXT_MESSAGE_CONTENT" in logged and not {"RAW", "MESSAGES_SNAPSHOT"} & set(logged)
+    async with sm() as session:
+        seqs = list(await session.scalars(select(RunEvent.seq).where(RunEvent.run_id == run.id).order_by(RunEvent.seq)))
+    assert seqs == list(range(1, len(seqs) + 1))
+
+
+async def test_a_pause_closes_the_open_ag_ui_run(sm):
+    run = await seed_run(sm)
+    fetch, entered, gate, calls = blocking_tool()
+    m = manager(sm, agent(script(call("fetch", {"x": "a"}), "done"), [fetch]))
+    with m.hub.subscribe(run.id) as live:
+        await m.start(run.id)
+        await entered.wait()
+        await m.pause(run.id)
+        assert [e.get("outcome") for e in await events(sm, run.id, "RUN_FINISHED")] == [{"type": "cancelled"}]
+        gate.set()
+        await m.resume(run.id)
+        await m.wait(run.id)
+        published = [live.get_nowait().seq for _ in range(live.qsize())]
+    assert published == await seqs(sm, run.id)  # a cancel that lands mid-commit must not hide rows from subscribers
+    assert (await kinds(sm, run.id)).count("RUN_STARTED") == 2
+    assert [e.get("outcome") for e in await events(sm, run.id, "RUN_FINISHED")] == [{"type": "cancelled"}, None]
+
+
+async def test_a_pause_before_the_adapter_starts_closes_the_ag_ui_run_too(sm):
+    """The cancel window is the whole of `build()`, not an instant: the first build of a process loads the
+    embedder (`runs/live.py:72`), seconds to minutes. Cancelled there, the log has no RUN_STARTED to close,
+    and a stream that attached while the status was `running` would wait on the queue for good. The close
+    synthesizes the start the adapter never emitted, exactly as the failure path does.
+    """
+    run = await seed_run(sm)
+    building, release = asyncio.Event(), asyncio.Event()
+
+    async def build(run: Run) -> Any:
+        building.set()
+        await release.wait()
+        return agent(script("done"))
+
+    m = RunManager(sm, build)
+    await m.start(run.id)
+    await building.wait()
+    got: list[str] = []
+
+    async def consume() -> None:
+        async for event in follow(sm, m.hub, run.id, 0):
+            got.append(event.type)
+
+    task = asyncio.create_task(consume())
+
+    async def subscribed() -> bool:
+        return run.id in m.hub._subscribers
+
+    await until(subscribed)
+    await m.pause(run.id)
+    with anyio.fail_after(5):
+        await task  # without the synthesized start there is no terminal, and this tails until the test times out
+    assert got == ["RUN_STARTED", "RUN_FINISHED"]
+    assert [e.get("outcome") for e in await events(sm, run.id, "RUN_FINISHED")] == [{"type": "cancelled"}]
+    assert (await row(sm, run.id)).status == "paused"
+
+
+async def test_a_failing_close_does_not_strand_a_pause(sm, monkeypatch):
+    run = await seed_run(sm)
+    fetch, entered, gate, calls = blocking_tool()
+    m = manager(sm, agent(script(call("fetch", {"x": "a"}), "done"), [fetch]))
+    real = RunEventLog.append
+
+    async def failing(self, event, **kwargs):
+        if event.type.value == "RUN_FINISHED":
+            raise RuntimeError("database gone")
+        await real(self, event, **kwargs)
+
+    monkeypatch.setattr(RunEventLog, "append", failing)
+    await m.start(run.id)
+    await entered.wait()
+    await m.pause(run.id)  # the best-effort closing event fails; the status update must still run
+    assert (await row(sm, run.id)).status == "paused" and run.id not in m._tasks
+    await m.shutdown()
+
+
+async def test_decisions_without_a_pending_interrupt_are_refused_not_dropped(sm):
+    run = await seed_run(sm)
+    fetch, entered, gate, calls = blocking_tool()
+    m = manager(sm, agent(script(call("fetch", {"x": "a"}), "done"), [fetch]))
+    await m.start(run.id)
+    await entered.wait()
+    await m.pause(run.id)
+    review = {
+        "responseSchema": {
+            "properties": {"decisions": {"prefixItems": [{"properties": {"type": {"enum": ["approve"]}}}]}}
+        }
+    }
+    outcome = {"type": "interrupt", "interrupts": [review]}
+    async with sm.begin() as session:  # the log claims a review is open, but the graph has no pending interrupt
+        last = await session.scalar(select(func.max(RunEvent.seq)).where(RunEvent.run_id == run.id))
+        payload = {"type": "RUN_FINISHED", "outcome": outcome}
+        session.add(RunEvent(run_id=run.id, seq=last + 1, type="RUN_FINISHED", agent="lead", payload=payload))
+    gate.set()
+    await m.resume(run.id, [{"type": "approve"}])
+    await m.wait(run.id)
+    assert (await row(sm, run.id)).status == "failed" and calls == ["a"]  # the checkpoint was not silently re-run
+    assert [e["code"] for e in await events(sm, run.id, RUN_ERROR)] == ["RunStateError"]
+
+
+async def test_decisions_must_match_the_open_review(sm):
+    run = await seed_run(sm)
+
+    @tool
+    def submit_plan(plan: str) -> str:
+        """Submit the plan."""
+        return "approved"
+
+    hitl = HumanInTheLoopMiddleware(interrupt_on={"submit_plan": {"allowed_decisions": ["approve", "edit", "reject"]}})
+    m = manager(sm, agent(script(call("submit_plan", {"plan": "p"}), "Done."), [submit_plan], [hitl]))
+    await m.start(run.id)
+    await m.wait(run.id)
+    for wrong in ([{"type": "respond", "message": "x"}], [{"type": "approve"}, {"type": "approve"}]):
+        with pytest.raises(RunStateError, match="open review"):
+            await m.resume(run.id, wrong)
+    assert (await row(sm, run.id)).status == "awaiting_user"
+    await m.resume(run.id, [{"type": "approve"}])
+    await m.wait(run.id)
+    assert (await row(sm, run.id)).status == "completed" and await answers(sm, run.id) == ["Done."]
+
+
+async def test_a_summary_precedes_the_end_of_the_run(sm):
+    run = await seed_run(sm)
+    store = InMemoryStore()
+    line = json.dumps({"title": "Attention", "source": "openalex", "extra": {"found_by": ["arxiv", "openalex"]}})
+    await store.aput(("project", str(run.project_id)), "/candidates/sq1.jsonl", {"content": line + "\n"})
+    m = manager(sm, agent(script("The answer."), store=store))
+    await m.start(run.id)
+    await m.wait(run.id)
+    assert (await kinds(sm, run.id))[-2:] == ["CUSTOM", "RUN_FINISHED"]
+    [summary] = await events(sm, run.id, "CUSTOM")
+    assert summary["name"] == "run_summary"
+    coverage = {"observed": 1, "estimated": 1.0, "lists": 2}
+    assert summary["value"] == {"status": "completed", "spent_usd": 0.0, "budget_usd": 1.0, "coverage": coverage}

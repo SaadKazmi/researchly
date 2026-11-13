@@ -58,7 +58,10 @@ test.describe("shell", { tag: "@smoke" }, () => {
   test("the login token never reaches the app log", async () => {
     const token = new URL(process.env.RESEARCHLY_E2E_LOGIN_URL!).searchParams.get("token")!
     const log = readFileSync(appLog, "utf-8")
-    expect(log).toContain("token=[REDACTED]")
+    // litellm filters uvicorn.access too, ahead of ours, and drops the whole query rather than the
+    // token's value alone - so the login line reads "/?REDACTED". Assert the query was redacted, not
+    // which of the two filters shaped it.
+    expect(log).toMatch(/"GET \/\?\S*REDACTED\S* HTTP/)
     expect(log).not.toContain(token)
   })
 })
