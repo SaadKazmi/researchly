@@ -1,4 +1,6 @@
+import re
 import uuid
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -10,12 +12,14 @@ from langchain_core.messages import ToolMessage
 from langchain_core.tools import tool
 from langgraph.checkpoint.memory import InMemorySaver
 
+import researchly
 from researchly.agents.context import RunContext
 from researchly.runs.agui import ResearchlyAgent, allowed_decisions
 
 from ..agents.fakes import agent, call, script
 
 pytestmark = pytest.mark.anyio
+SRC = Path(researchly.__file__).parent
 CTX = RunContext(project_id=uuid.uuid4(), run_id=uuid.uuid4())
 CFG: Any = {"configurable": {"thread_id": "t"}}
 
@@ -119,3 +123,17 @@ async def test_continue_never_overwrites_a_resume_with_decisions():
     # a dropped decision would re-run the checkpoint and pause on the same review again
     assert events[-1].type == EventType.RUN_FINISHED and events[-1].outcome is None
     assert (await graph.aget_state(CFG)).values["messages"][-1].text == "Done."
+
+
+def test_only_the_adapter_imports_ag_ui_langgraph():
+    """The adapter is pinned (ADR 0012), so an upgrade has exactly one file to re-check."""
+    importer = re.compile(r"^\s*(from|import) ag_ui_langgraph\b", re.MULTILINE)
+    found = sorted(p.relative_to(SRC).as_posix() for p in SRC.rglob("*.py") if importer.search(p.read_text("utf-8")))
+    assert found == ["runs/agui.py"]
+
+
+def test_only_the_event_log_writes_run_event():
+    """A row written anywhere else would skip the seq, the coalescing and the publish to the hub."""
+    writer = re.compile(r"(?<!class )\bRunEvent\(")
+    found = sorted(p.relative_to(SRC).as_posix() for p in SRC.rglob("*.py") if writer.search(p.read_text("utf-8")))
+    assert found == ["runs/events.py"]

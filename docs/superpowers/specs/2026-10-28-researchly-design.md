@@ -766,7 +766,7 @@ Migrations use Alembic. Every migration has an upgrade → downgrade → upgrade
   - `STEP_STARTED/FINISHED`, `TEXT_MESSAGE_*`, `TOOL_CALL_*`, and `SUBAGENT_*` attributed to the scout or reader;
   - `STATE_SNAPSHOT` (todos);
   - custom `cost` (before each model call) and `run_summary` (status, cost, Chao2 coverage).
-  - Plan approval and questions arrive as `RUN_FINISHED` with an interrupt outcome (`reason` `researchly:submit_plan` or `researchly:ask_user`, `message`, `responseSchema`); `POST /runs/{id}/resume` answers them.
+  - Plan approval and questions arrive as `RUN_FINISHED` with an interrupt outcome (`reason`, `message`, `responseSchema`); `POST /runs/{id}/resume` answers them. The `reason` is `researchly:` followed by the review's action names joined with `+`, so one interrupt carrying both reads `researchly:ask_user+submit_plan`. A client splits on `+` rather than comparing the whole string.
   - Citation chips come from `[cite:...]` in the answer (3c).
 - Every event except `RAW` and `MESSAGES_SNAPSHOT` is persisted to `run_event` before it is sent, so reconnecting replays from the last sequence number. Text, tool-argument and reasoning deltas are coalesced, and error messages are replaced with "The run failed.".
 - The `ag-ui-langgraph` adapter is pinned.
