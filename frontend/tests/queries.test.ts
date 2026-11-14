@@ -49,6 +49,12 @@ test("the run query is disabled without a run and polls while the run is live", 
   }) => number | false
   expect(live({ state: { data: { status: "running" } } })).toBe(2000)
   expect(live({ state: { data: { status: "completed" } } })).toBe(false)
+  // the predicate must read LIVE_STATUSES itself: a lone `!== "completed"` passes the two lines above
+  expect(live({ state: { data: { status: "awaiting_user" } } })).toBe(2000)
+  expect(live({ state: { data: { status: "planning" } } })).toBe(2000)
+  for (const terminal of ["partial", "cancelled", "failed"]) {
+    expect(live({ state: { data: { status: terminal } } })).toBe(false)
+  }
   expect(LIVE_STATUSES).toContain("awaiting_user")
 })
 

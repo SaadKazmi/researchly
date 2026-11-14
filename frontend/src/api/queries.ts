@@ -13,7 +13,9 @@ export type EffortName = components["schemas"]["RunIn"]["effort"]
 export type Checkpoint = components["schemas"]["CheckpointOut"]
 
 /** A run that has not reached rest: the UI keeps streaming and polling while it is in one of these. */
-export const LIVE_STATUSES = ["pending", "running", "paused", "awaiting_user"]
+// the complement of the backend's TERMINAL set (runs/manager.py): a status missing here stops the poll,
+// the stream attach and the run controls, and the run just freezes in the UI
+export const LIVE_STATUSES = ["pending", "planning", "running", "paused", "awaiting_user"]
 
 export function unwrap<T>({
   data,
