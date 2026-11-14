@@ -4,14 +4,14 @@ import json
 import uuid
 from collections.abc import AsyncIterator
 from datetime import datetime
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Header, Query
 from fastapi.sse import EventSourceResponse, ServerSentEvent
 from pydantic import BaseModel, ConfigDict, Field
 
-from researchly.agents.context import EffortName
+from researchly.agents.context import EFFORTS, EffortName
 from researchly.api.deps import CONFLICT, NOT_FOUND, UNAVAILABLE, ErrorOut, Manager, get_or_404
 from researchly.db.models import Run, Thread
 from researchly.runs.events import follow
@@ -27,6 +27,38 @@ SSE_ERRORS: dict[int | str, dict[str, Any]] = {code: body | _JSON for code, body
 class RunIn(BaseModel):
     message: str = Field(min_length=1, max_length=20_000)
     effort: EffortName = "standard"
+
+
+CENT = Decimal("0.01")  # money rounds half-up, not Decimal's default half-even: 0.025 is 3 cents, not 2
+LOW = Decimal("0.25")  # ponytail: the estimate is a flat share of the tier budget; use the ledger once runs exist
+
+
+class EffortOut(BaseModel):
+    """A tier as the UI offers it (spec §6.4): its limits, its budget and the pre-run estimate range (F1.7)."""
+
+    name: EffortName
+    scouts: int
+    readers: int
+    tool_calls: int
+    budget_usd: Decimal
+    estimate_low_usd: Decimal
+    estimate_high_usd: Decimal
+
+
+@router.get("/efforts", operation_id="listEfforts")
+async def list_efforts() -> list[EffortOut]:
+    return [
+        EffortOut(
+            name=effort.name,
+            scouts=effort.scouts,
+            readers=effort.readers,
+            tool_calls=effort.tool_calls,
+            budget_usd=effort.budget_usd.quantize(CENT, ROUND_HALF_UP),
+            estimate_low_usd=(effort.budget_usd * LOW).quantize(CENT, ROUND_HALF_UP),
+            estimate_high_usd=effort.budget_usd.quantize(CENT, ROUND_HALF_UP),
+        )
+        for effort in EFFORTS.values()
+    ]
 
 
 class RunOut(BaseModel):

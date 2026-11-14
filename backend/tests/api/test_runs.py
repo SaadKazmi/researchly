@@ -236,6 +236,19 @@ async def test_branching_an_unknown_run_is_404(api):
         assert r.status_code == 404 and "run" in r.json()["detail"]
 
 
+async def test_the_effort_catalogue_carries_limits_and_an_estimate_range(api):
+    async with api() as (client, _):
+        tiers = (await client.get("/api/v1/efforts")).json()
+        assert [t["name"] for t in tiers] == ["quick", "standard", "deep"]
+        quick, standard, deep = tiers
+        assert (quick["scouts"], quick["readers"], quick["tool_calls"]) == (0, 0, 10)
+        assert (standard["scouts"], standard["readers"]) == (4, 4)
+        assert (deep["scouts"], deep["readers"]) == (8, 12)
+        assert standard["budget_usd"] == "1.00" and standard["estimate_high_usd"] == "1.00"
+        assert standard["estimate_low_usd"] == "0.25"
+        assert quick["budget_usd"] == "0.10" and quick["estimate_low_usd"] == "0.03"
+
+
 OPERATION_IDS = {
     "createProject",
     "listProjects",
@@ -251,6 +264,7 @@ OPERATION_IDS = {
     "cancelRun",
     "branchRun",
     "streamRun",
+    "listEfforts",
 }
 
 
@@ -266,7 +280,7 @@ async def test_error_responses_and_operation_ids_are_pinned_in_the_schema(api):
     }
     assert ops.keys() == OPERATION_IDS
     error_ref = {"$ref": "#/components/schemas/ErrorOut"}
-    lookups = OPERATION_IDS - {"createProject", "listProjects"}
+    lookups = OPERATION_IDS - {"createProject", "listProjects", "listEfforts"}
     conflicts = {"pauseRun", "resumeRun", "cancelRun", "branchRun"}
     for op_id, (_path, _, op) in ops.items():
         responses = op["responses"]
