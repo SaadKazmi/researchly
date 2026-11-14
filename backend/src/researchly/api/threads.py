@@ -38,6 +38,12 @@ class ThreadDetail(ThreadOut):
     messages: list[MessageOut]
 
 
+def _like(q: str) -> str:
+    """`q` as a contains-pattern. Its own `\\`, `%` and `_` are literal text, not LIKE wildcards."""
+    escaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"%{escaped}%"
+
+
 @router.post("/projects/{project_id}/threads", status_code=201, operation_id="createThread", responses=NOT_FOUND)
 async def create_thread(project_id: uuid.UUID, body: ThreadIn, runs: Manager) -> ThreadOut:
     await get_or_404(runs, Project, project_id)
@@ -58,11 +64,11 @@ async def list_threads(
     stmt = select(Thread).where(Thread.project_id == project_id)
     if q:
         # ponytail: ILIKE over the message text; add a trigram index when a project holds thousands of threads
-        like = f"%{q}%"
+        like = _like(q)
         text_matches = select(Message.id).where(
-            Message.thread_id == Thread.id, Message.content["text"].astext.ilike(like)
+            Message.thread_id == Thread.id, Message.content["text"].astext.ilike(like, escape="\\")
         )
-        stmt = stmt.where(or_(Thread.title.ilike(like), text_matches.exists()))
+        stmt = stmt.where(or_(Thread.title.ilike(like, escape="\\"), text_matches.exists()))
     stmt = stmt.order_by(Thread.created_at.desc(), Thread.id.desc())
     async with runs.sessions() as session:
         return [ThreadOut.model_validate(t) for t in await session.scalars(stmt)]
