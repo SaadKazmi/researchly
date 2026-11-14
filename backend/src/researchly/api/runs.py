@@ -206,7 +206,10 @@ async def list_checkpoints(run: ExistingRun, runs: Manager) -> list[CheckpointOu
     saver = runs.checkpointer
     if saver is None:  # no lifespan ran, as in a unit-test app
         raise HTTPException(503, "the run manager is not running")
-    config: RunnableConfig = {"configurable": {"thread_id": run.checkpoint_thread_id}}
+    # `checkpoint_ns` is pinned to the root graph. The saver filters on it only when the key is present, so
+    # leaving it out lists every subagent subgraph's checkpoints as well - ids the branch endpoint, which
+    # passes them back as root config, cannot resume from.
+    config: RunnableConfig = {"configurable": {"thread_id": run.checkpoint_thread_id, "checkpoint_ns": ""}}
     out: list[CheckpointOut] = []
     # `limit` stops at one page in the saver, so the iterator is always drained and never left open mid-stream
     async for saved in saver.alist(config, limit=CHECKPOINT_PAGE):

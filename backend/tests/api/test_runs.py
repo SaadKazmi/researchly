@@ -272,7 +272,7 @@ class _Saver(BaseCheckpointSaver):
     def __init__(self, saved: list[CheckpointTuple]) -> None:
         super().__init__()
         self.saved = saved
-        self.threads: list[Any] = []  # the thread_id of every listing, so a test can prove which thread was read
+        self.listed: list[Any] = []  # the configurable of every listing, so a test can prove what was asked for
 
     async def alist(
         self,
@@ -282,7 +282,7 @@ class _Saver(BaseCheckpointSaver):
         before: RunnableConfig | None = None,
         limit: int | None = None,
     ) -> AsyncIterator[CheckpointTuple]:
-        self.threads.append((config or {}).get("configurable", {}).get("thread_id"))
+        self.listed.append((config or {}).get("configurable", {}))
         for tup in self.saved[:limit]:
             yield tup
 
@@ -300,7 +300,9 @@ async def test_a_runs_checkpoints_are_listed_newest_first(api):
         assert [c["checkpoint_id"] for c in listed] == ["c3", "c2", "c1"]
         assert [c["step"] for c in listed] == [3, 2, 1]
         assert listed[0]["created_at"].startswith("2026-11-13T10:03")
-        assert saver.threads == [str(run.id)]
+        # the namespace is pinned to the root graph: without it the saver lists every subagent's
+        # checkpoints too, and those ids cannot be branched from
+        assert saver.listed == [{"thread_id": str(run.id), "checkpoint_ns": ""}]
         assert (await client.get(f"/api/v1/runs/{uuid.uuid4()}/checkpoints")).status_code == 404
 
 
