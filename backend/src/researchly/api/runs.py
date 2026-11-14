@@ -182,3 +182,26 @@ async def stream_run(
     start = after if last_event_id is None else last_event_id
     async for event in follow(runs.sessions, runs.hub, run.id, start):
         yield ServerSentEvent(raw_data=json.dumps(event.payload), id=str(event.seq))
+
+
+class CheckpointOut(BaseModel):
+    """A point a run can be branched from (F1.6): LangGraph's checkpoint id plus what it was about to do."""
+
+    checkpoint_id: str
+    created_at: str | None
+    next: list[str]
+
+
+@router.get("/runs/{run_id}/checkpoints", operation_id="listCheckpoints", responses=NOT_FOUND)
+async def list_checkpoints(run: ExistingRun, runs: Manager) -> list[CheckpointOut]:
+    graph = await runs.build(run)
+    config = {"configurable": {"thread_id": run.checkpoint_thread_id}}
+    out: list[CheckpointOut] = []
+    async for state in graph.aget_state_history(config):
+        checkpoint_id = state.config.get("configurable", {}).get("checkpoint_id")
+        if checkpoint_id is None:
+            continue
+        out.append(CheckpointOut(checkpoint_id=checkpoint_id, created_at=state.created_at, next=list(state.next)))
+        if len(out) == 20:  # ponytail: the newest 20; paginate when a run outgrows one menu
+            break
+    return out

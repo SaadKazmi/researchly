@@ -1,5 +1,6 @@
 import uuid
 from decimal import Decimal
+from types import SimpleNamespace
 
 import pytest
 from langchain.agents.middleware import HumanInTheLoopMiddleware
@@ -249,6 +250,53 @@ async def test_the_effort_catalogue_carries_limits_and_an_estimate_range(api):
         assert quick["budget_usd"] == "0.10" and quick["estimate_low_usd"] == "0.03"
 
 
+class _HistoryGraph:
+    """A graph whose state history is three checkpoints, newest first, as LangGraph yields them."""
+
+    def __init__(self) -> None:
+        self.configs: list[dict] = []
+
+    async def aget_state_history(self, config, **kwargs):
+        self.configs.append(config)
+        for n in (3, 2, 1):
+            yield SimpleNamespace(
+                config={"configurable": {"thread_id": config["configurable"]["thread_id"], "checkpoint_id": f"c{n}"}},
+                created_at=f"2026-11-13T10:0{n}:00+00:00",
+                next=("lead",) if n == 3 else (),
+            )
+
+
+async def test_a_runs_checkpoints_are_listed_newest_first(api):
+    graph = _HistoryGraph()
+    async with api(graph) as (client, m):
+        thread = await new_thread(client)
+        run = await m.create(uuid.UUID(thread["project_id"]), uuid.UUID(thread["id"]), "Why?")
+        listed = (await client.get(f"/api/v1/runs/{run.id}/checkpoints")).json()
+        assert [c["checkpoint_id"] for c in listed] == ["c3", "c2", "c1"]
+        assert listed[0]["next"] == ["lead"] and listed[1]["next"] == []
+        assert listed[0]["created_at"].startswith("2026-11-13T10:03")
+        assert graph.configs[0]["configurable"]["thread_id"] == str(run.id)
+        assert (await client.get(f"/api/v1/runs/{uuid.uuid4()}/checkpoints")).status_code == 404
+
+
+class _LongHistoryGraph:
+    """A history longer than one menu, headed by the id-less root config LangGraph yields for an empty thread."""
+
+    async def aget_state_history(self, config, **kwargs):
+        yield SimpleNamespace(config={"configurable": {"thread_id": "t"}}, created_at=None, next=())
+        for n in range(25, 0, -1):
+            yield SimpleNamespace(config={"configurable": {"checkpoint_id": f"c{n}"}}, created_at=None, next=())
+
+
+async def test_only_the_newest_twenty_checkpoints_are_listed(api):
+    async with api(_LongHistoryGraph()) as (client, m):
+        thread = await new_thread(client)
+        run = await m.create(uuid.UUID(thread["project_id"]), uuid.UUID(thread["id"]), "Why?")
+        listed = (await client.get(f"/api/v1/runs/{run.id}/checkpoints")).json()
+        # the newest 20, and the root config, which carries no checkpoint id, is not one of them
+        assert [c["checkpoint_id"] for c in listed] == [f"c{n}" for n in range(25, 5, -1)]
+
+
 OPERATION_IDS = {
     "createProject",
     "listProjects",
@@ -265,6 +313,7 @@ OPERATION_IDS = {
     "branchRun",
     "streamRun",
     "listEfforts",
+    "listCheckpoints",
 }
 
 
