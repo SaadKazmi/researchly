@@ -7,8 +7,9 @@ from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, Header, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from fastapi.sse import EventSourceResponse, ServerSentEvent
+from langchain_core.runnables import RunnableConfig
 from pydantic import BaseModel, ConfigDict, Field
 
 from researchly.agents.context import EFFORTS, EffortName
@@ -184,24 +185,39 @@ async def stream_run(
         yield ServerSentEvent(raw_data=json.dumps(event.payload), id=str(event.seq))
 
 
+CHECKPOINT_PAGE = 20  # ponytail: the newest 20; paginate when a run outgrows one menu
+
+
 class CheckpointOut(BaseModel):
-    """A point a run can be branched from (F1.6): LangGraph's checkpoint id plus what it was about to do."""
+    """A point a run can be branched from (F1.6): LangGraph's checkpoint id, when it was written and its step."""
 
     checkpoint_id: str
     created_at: str | None
-    next: list[str]
+    step: int | None
 
 
 @router.get("/runs/{run_id}/checkpoints", operation_id="listCheckpoints", responses=NOT_FOUND)
 async def list_checkpoints(run: ExistingRun, runs: Manager) -> list[CheckpointOut]:
-    graph = await runs.build(run)
-    config = {"configurable": {"thread_id": run.checkpoint_thread_id}}
+    """The run's newest checkpoints, newest first.
+
+    Read straight from the checkpoint saver, never through `runs.build`: building a run's graph needs a configured
+    LLM provider and loads the local embedding models, and branching must stay readable without either.
+    """
+    saver = runs.checkpointer
+    if saver is None:  # no lifespan ran, as in a unit-test app
+        raise HTTPException(503, "the run manager is not running")
+    config: RunnableConfig = {"configurable": {"thread_id": run.checkpoint_thread_id}}
     out: list[CheckpointOut] = []
-    async for state in graph.aget_state_history(config):
-        checkpoint_id = state.config.get("configurable", {}).get("checkpoint_id")
+    # `limit` stops at one page in the saver, so the iterator is always drained and never left open mid-stream
+    async for saved in saver.alist(config, limit=CHECKPOINT_PAGE):
+        checkpoint_id = saved.config.get("configurable", {}).get("checkpoint_id")
         if checkpoint_id is None:
             continue
-        out.append(CheckpointOut(checkpoint_id=checkpoint_id, created_at=state.created_at, next=list(state.next)))
-        if len(out) == 20:  # ponytail: the newest 20; paginate when a run outgrows one menu
-            break
+        out.append(
+            CheckpointOut(
+                checkpoint_id=checkpoint_id,
+                created_at=saved.checkpoint.get("ts"),
+                step=saved.metadata.get("step"),
+            )
+        )
     return out

@@ -1,11 +1,17 @@
 import uuid
+from collections.abc import AsyncIterator
 from decimal import Decimal
-from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 from langchain.agents.middleware import HumanInTheLoopMiddleware
 from langchain_core.messages import AIMessage, ToolMessage
+from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool
+from langgraph.checkpoint.base import BaseCheckpointSaver, Checkpoint, CheckpointMetadata, CheckpointTuple
+
+from researchly.db.models import Run
+from researchly.llm.registry import NoModelForRole
 
 from ..agents.fakes import agent, blocking_tool, call, script
 from .conftest import new_thread
@@ -250,51 +256,77 @@ async def test_the_effort_catalogue_carries_limits_and_an_estimate_range(api):
         assert quick["budget_usd"] == "0.10" and quick["estimate_low_usd"] == "0.03"
 
 
-class _HistoryGraph:
-    """A graph whose state history is three checkpoints, newest first, as LangGraph yields them."""
+def _saved(checkpoint_id: str | None, *, ts: str | None = None, step: int | None = None) -> CheckpointTuple:
+    """One stored checkpoint as a saver yields it: the id lives in its config, the timestamp in the checkpoint."""
+    config: RunnableConfig = {"configurable": {"thread_id": "t"}}
+    if checkpoint_id is not None:
+        config["configurable"]["checkpoint_id"] = checkpoint_id
+    return CheckpointTuple(
+        config=config, checkpoint=cast(Checkpoint, {"ts": ts}), metadata=cast(CheckpointMetadata, {"step": step})
+    )
 
-    def __init__(self) -> None:
-        self.configs: list[dict] = []
 
-    async def aget_state_history(self, config, **kwargs):
-        self.configs.append(config)
-        for n in (3, 2, 1):
-            yield SimpleNamespace(
-                config={"configurable": {"thread_id": config["configurable"]["thread_id"], "checkpoint_id": f"c{n}"}},
-                created_at=f"2026-11-13T10:0{n}:00+00:00",
-                next=("lead",) if n == 3 else (),
-            )
+class _Saver(BaseCheckpointSaver):
+    """A checkpoint saver holding a thread's checkpoints newest first. `alist` honours `limit`, as the real ones do."""
+
+    def __init__(self, saved: list[CheckpointTuple]) -> None:
+        super().__init__()
+        self.saved = saved
+        self.threads: list[Any] = []  # the thread_id of every listing, so a test can prove which thread was read
+
+    async def alist(
+        self,
+        config: RunnableConfig | None,
+        *,
+        filter: dict[str, Any] | None = None,
+        before: RunnableConfig | None = None,
+        limit: int | None = None,
+    ) -> AsyncIterator[CheckpointTuple]:
+        self.threads.append((config or {}).get("configurable", {}).get("thread_id"))
+        for tup in self.saved[:limit]:
+            yield tup
+
+
+async def _run_of(client, m) -> Run:
+    thread = await new_thread(client)
+    return await m.create(uuid.UUID(thread["project_id"]), uuid.UUID(thread["id"]), "Why?")
 
 
 async def test_a_runs_checkpoints_are_listed_newest_first(api):
-    graph = _HistoryGraph()
-    async with api(graph) as (client, m):
-        thread = await new_thread(client)
-        run = await m.create(uuid.UUID(thread["project_id"]), uuid.UUID(thread["id"]), "Why?")
+    saver = _Saver([_saved(f"c{n}", ts=f"2026-11-13T10:0{n}:00+00:00", step=n) for n in (3, 2, 1)])
+    async with api(checkpointer=saver) as (client, m):
+        run = await _run_of(client, m)
         listed = (await client.get(f"/api/v1/runs/{run.id}/checkpoints")).json()
         assert [c["checkpoint_id"] for c in listed] == ["c3", "c2", "c1"]
-        assert listed[0]["next"] == ["lead"] and listed[1]["next"] == []
+        assert [c["step"] for c in listed] == [3, 2, 1]
         assert listed[0]["created_at"].startswith("2026-11-13T10:03")
-        assert graph.configs[0]["configurable"]["thread_id"] == str(run.id)
+        assert saver.threads == [str(run.id)]
         assert (await client.get(f"/api/v1/runs/{uuid.uuid4()}/checkpoints")).status_code == 404
 
 
-class _LongHistoryGraph:
-    """A history longer than one menu, headed by the id-less root config LangGraph yields for an empty thread."""
-
-    async def aget_state_history(self, config, **kwargs):
-        yield SimpleNamespace(config={"configurable": {"thread_id": "t"}}, created_at=None, next=())
-        for n in range(25, 0, -1):
-            yield SimpleNamespace(config={"configurable": {"checkpoint_id": f"c{n}"}}, created_at=None, next=())
-
-
-async def test_only_the_newest_twenty_checkpoints_are_listed(api):
-    async with api(_LongHistoryGraph()) as (client, m):
-        thread = await new_thread(client)
-        run = await m.create(uuid.UUID(thread["project_id"]), uuid.UUID(thread["id"]), "Why?")
+async def test_only_the_newest_page_of_checkpoints_is_listed(api):
+    # a thread longer than one menu, headed by a config carrying no checkpoint id
+    saver = _Saver([_saved(None), *(_saved(f"c{n}") for n in range(25, 0, -1))])
+    async with api(checkpointer=saver) as (client, m):
+        run = await _run_of(client, m)
         listed = (await client.get(f"/api/v1/runs/{run.id}/checkpoints")).json()
-        # the newest 20, and the root config, which carries no checkpoint id, is not one of them
-        assert [c["checkpoint_id"] for c in listed] == [f"c{n}" for n in range(25, 5, -1)]
+        # the saver was asked for one page, and the id-less head of it is not a checkpoint anyone can branch from
+        assert [c["checkpoint_id"] for c in listed] == [f"c{n}" for n in range(25, 6, -1)]
+
+
+async def test_checkpoints_are_listed_without_an_llm_provider(api):
+    """The branch picker must work on a fresh install: building a run's graph would raise before it could answer."""
+
+    async def build(run: Run) -> Any:
+        raise NoModelForRole("no LLM provider configured; add one in Settings")
+
+    saver = _Saver([_saved("c1", ts="2026-11-13T10:01:00+00:00", step=0)])
+    async with api(checkpointer=saver, build=build) as (client, m):
+        run = await _run_of(client, m)
+        listed = (await client.get(f"/api/v1/runs/{run.id}/checkpoints")).json()
+        assert [c["checkpoint_id"] for c in listed] == ["c1"]
+        with pytest.raises(NoModelForRole):  # the build really is the one that would have 500ed
+            await m.build(run)
 
 
 OPERATION_IDS = {

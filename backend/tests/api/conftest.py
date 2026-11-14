@@ -1,9 +1,10 @@
 import contextlib
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Any
 
 import httpx
 import pytest
+from langgraph.checkpoint.base import BaseCheckpointSaver
 
 from researchly.app import create_app
 from researchly.config import Settings
@@ -29,11 +30,15 @@ def api(sm):
     """`async with api(graph) as (client, manager)`: the app over ASGITransport, on a manager whose runs use `graph`."""
 
     @contextlib.asynccontextmanager
-    async def open_api(graph: Any = None) -> AsyncIterator[tuple[httpx.AsyncClient, RunManager]]:
-        async def build(run: Run) -> Any:
+    async def open_api(
+        graph: Any = None,
+        checkpointer: BaseCheckpointSaver | None = None,
+        build: Callable[[Run], Awaitable[Any]] | None = None,
+    ) -> AsyncIterator[tuple[httpx.AsyncClient, RunManager]]:
+        async def build_graph(run: Run) -> Any:
             return graph
 
-        manager = RunManager(sm, build)
+        manager = RunManager(sm, build or build_graph, checkpointer)
         app = create_app(Settings(env="test"), token=TOKEN)
         app.state.runs = manager  # ASGITransport runs no lifespan
         transport = httpx.ASGITransport(app=app)
