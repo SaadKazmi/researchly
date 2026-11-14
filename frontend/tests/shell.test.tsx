@@ -1,37 +1,7 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { createMemoryHistory, RouterProvider } from "@tanstack/react-router"
-import { render, screen, within } from "@testing-library/react"
+import { screen, within } from "@testing-library/react"
 import { afterEach, expect, test, vi } from "vitest"
 
-import "@/i18n"
-import { createAppRouter } from "@/router"
-
-function serve(routes: Record<string, () => Response>) {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async (request: Request) => {
-      const handler = routes[new URL(request.url).pathname]
-      if (!handler) throw new TypeError("Failed to fetch")
-      return handler()
-    })
-  )
-}
-
-function renderAt(path: string) {
-  const router = createAppRouter(
-    createMemoryHistory({ initialEntries: [path] })
-  )
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
-  render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  )
-}
-
-const healthy = () => Response.json({ status: "ok" })
+import { healthy, renderAt, serve } from "./render"
 
 afterEach(() => {
   vi.unstubAllGlobals()
