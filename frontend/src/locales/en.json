@@ -28,5 +28,10 @@
     "settings": "Settings",
     "onboarding": "Welcome"
   },
+  "projects": {
+    "name": "Project name",
+    "create": "Create project",
+    "empty": "No projects yet. Create one to start researching."
+  },
   "placeholder": "This view arrives in a later build step."
 }
