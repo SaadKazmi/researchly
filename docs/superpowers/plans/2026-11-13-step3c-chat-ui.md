@@ -288,13 +288,21 @@ git commit -m "feat: serve the effort tiers with their pre-run cost estimate" -m
 
 ### Task 3: A run's checkpoints, for the branch picker
 
+> **Superseded in fix round 1 (2026-11-14).** The steps below read the history via
+> `build(run).aget_state_history`. That builds the whole agent - three `chat_model` lookups and the fastembed
+> download - so the endpoint returned 500 on a keyless install. It now reads `BaseCheckpointSaver.alist`
+> straight off `LiveRuntime.checkpointer`, and `CheckpointOut` is `{checkpoint_id, created_at, step}`:
+> `CheckpointTuple` carries no `next`, which is computed from graph topology and is unobtainable without the
+> build we removed. Task 12 renders `step`. The code blocks below are the record of what was briefed, not
+> instructions.
+
 **Files:**
 - Modify: `backend/src/researchly/api/runs.py`
 - Test: `backend/tests/api/test_runs.py`
 
 **Interfaces:**
 - Consumes: `RunManager.build(run)` (the compiled graph) and `Run.checkpoint_thread_id`.
-- Produces: `GET /api/v1/runs/{run_id}/checkpoints` (`operation_id="listCheckpoints"`) → `list[CheckpointOut]`, newest first, at most 20, where `CheckpointOut` is `{checkpoint_id: str, created_at: str | None, next: list[str]}`. `checkpoint_id` is what `BranchIn.checkpoint_id` takes.
+- Produces: `GET /api/v1/runs/{run_id}/checkpoints` (`operation_id="listCheckpoints"`) → `list[CheckpointOut]`, newest first, at most 20, where `CheckpointOut` is `{checkpoint_id: str, created_at: str | None, step: int}`. `checkpoint_id` is what `BranchIn.checkpoint_id` takes.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -2308,8 +2316,8 @@ const run = {
 }
 
 const checkpoints = [
-  { checkpoint_id: "ck-2", created_at: "2026-11-13T10:02:00Z", next: ["tools"] },
-  { checkpoint_id: "ck-1", created_at: "2026-11-13T10:01:00Z", next: ["model"] },
+  { checkpoint_id: "ck-2", created_at: "2026-11-13T10:02:00Z", step: 2 },
+  { checkpoint_id: "ck-1", created_at: "2026-11-13T10:01:00Z", step: 1 },
 ]
 
 /** A stand-in for the agent: the panel only ever reads what the subscriber was handed. */
@@ -2579,7 +2587,7 @@ function BranchPicker({
         >
           {checkpoints.map((entry) => (
             <option key={entry.checkpoint_id} value={entry.checkpoint_id}>
-              {new Date(entry.created_at).toLocaleTimeString()} · {entry.next.join(", ") || t("run.end")}
+              {new Date(entry.created_at).toLocaleTimeString()} · {t("run.step", { step: entry.step })}
             </option>
           ))}
         </select>
