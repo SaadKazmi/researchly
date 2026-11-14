@@ -120,7 +120,7 @@ async def test_a_model_call_logs_the_cost_so_far(sm):
     await m.start(run.id)
     await m.wait(run.id)
     costs = [e["value"] for e in await events(sm, run.id, "CUSTOM") if e["name"] == "cost"]
-    assert costs == [{"spent_usd": 0.25, "budget_usd": 1.0}]
+    assert costs == [{"spent_usd": 0.25, "budget_usd": 1.0, "tokens": 0}]
 
 
 async def test_ask_user_waits_for_the_answer(sm):

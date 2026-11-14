@@ -13,7 +13,8 @@ from langgraph.types import Command
 
 import researchly
 from researchly.agents.context import EFFORTS, RunContext
-from researchly.agents.factory import build_agent
+from researchly.agents.factory import _subagent, build_agent
+from researchly.agents.middleware import BudgetGuard
 from researchly.agents.tools import ToolDeps
 from researchly.connectors.base import ExternalId, PaperRecord
 from researchly.db import migrate
@@ -35,6 +36,14 @@ async def nothing_spent(run_id: uuid.UUID) -> Decimal:
     return Decimal(0)
 
 
+async def no_tokens(run_id: uuid.UUID) -> int:
+    return 0
+
+
+async def some_tokens(run_id: uuid.UUID) -> int:
+    return 42
+
+
 def build(effort: str, lead: ToolFake, scout: ToolFake | None = None, *, sessions: Any = None, connectors=None, **kw):
     deps = ToolDeps(
         sessions=sessions,
@@ -45,6 +54,7 @@ def build(effort: str, lead: ToolFake, scout: ToolFake | None = None, *, session
         reranker=KeywordReranker("attention"),
         extractor=script(),
     )
+    kw.setdefault("tokens", no_tokens)
     return build_agent(
         EFFORTS[effort], lead=lead, scout=scout or script(), reader=script(), deps=deps, spent=nothing_spent, **kw
     )
@@ -54,6 +64,20 @@ def test_only_the_factory_imports_deepagents():
     importer = re.compile(r"^\s*(from|import) deepagents\b", re.MULTILINE)
     found = sorted(p.relative_to(SRC).as_posix() for p in SRC.rglob("*.py") if importer.search(p.read_text("utf-8")))
     assert found == ["agents/factory.py"]
+
+
+@pytest.mark.parametrize("effort", ["quick", "standard"])
+async def test_every_tiers_budget_guard_reads_the_token_total(effort):
+    graph = build(effort, script("done"), tokens=some_tokens)
+    stream = graph.astream_events(GO, context=replace(CTX, effort=effort), version="v2")
+    costs: list[Any] = [e["data"] async for e in stream if e["event"] == "on_custom_event" and e["name"] == "cost"]
+    assert [c["tokens"] for c in costs] == [42]
+
+
+def test_a_subagents_budget_guard_reads_the_token_total():
+    sub = _subagent("scout", "d", "p", [], script(), EFFORTS["standard"], nothing_spent, some_tokens)
+    guards = [m for m in sub.get("middleware", []) if isinstance(m, BudgetGuard)]
+    assert [g.tokens for g in guards] == [some_tokens]
 
 
 async def test_the_quick_lead_searches_itself_and_has_no_subagents():

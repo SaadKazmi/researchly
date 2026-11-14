@@ -91,3 +91,10 @@ async def spent_usd(sessions: async_sessionmaker[AsyncSession], run_id: uuid.UUI
     async with sessions() as session:
         total = await session.scalar(select(func.sum(LlmCall.cost_usd)).where(LlmCall.run_id == run_id))
     return Decimal(total or 0)
+
+
+async def tokens_used(sessions: async_sessionmaker[AsyncSession], run_id: uuid.UUID) -> int:
+    """Input plus output tokens billed to a run, for the run view's header (spec §3 F1.5)."""
+    stmt = select(func.sum(LlmCall.in_tok + LlmCall.out_tok)).where(LlmCall.run_id == run_id)
+    async with sessions() as session:
+        return int(await session.scalar(stmt) or 0)
