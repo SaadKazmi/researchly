@@ -41,9 +41,9 @@ test("shows disconnected when the app is unreachable", async () => {
   expect(await screen.findByText("Disconnected")).toBeInTheDocument()
 })
 
+// the chat route is no longer a placeholder heading; thread.test.tsx covers it
 test.each([
   ["/p/42/library", "Library"],
-  ["/p/42/chat/7", "Chat"],
   ["/settings/providers", "Settings"],
   ["/onboarding", "Welcome"],
 ])("renders the %s placeholder", async (path, heading) => {

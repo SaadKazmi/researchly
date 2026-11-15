@@ -49,7 +49,18 @@
     "noThreads": "No threads yet. Choose New thread to start one.",
     "loading": "Loading threads...",
     "error": "Could not load your threads. Check that Researchly is still running.",
-    "noMatches": "No threads match your search."
+    "noMatches": "No threads match your search.",
+    "conversation": "Conversation",
+    "loadingThread": "Loading the thread…",
+    "ask": "Ask a research question",
+    "send": "Send",
+    "effort": "Effort",
+    "efforts": { "quick": "Quick", "standard": "Standard", "deep": "Deep" },
+    "estimate": "Estimated {{low}}–{{high}} · budget {{budget}}",
+    "confirmTitle": "Confirm the budget",
+    "confirmBody": "A {{effort}} run may spend up to {{budget}}.",
+    "confirm": "Start the run",
+    "cancel": "Cancel"
   },
   "placeholder": "This view arrives in a later build step."
 }
