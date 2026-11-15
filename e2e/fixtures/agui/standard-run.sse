@@ -1,0 +1,78 @@
+data: {"type": "RUN_STARTED", "threadId": "thread-1", "runId": "agui-1"}
+id: 1
+
+data: {"type": "STEP_STARTED", "stepName": "model"}
+id: 2
+
+data: {"type": "CUSTOM", "name": "cost", "value": {"spent_usd": 0.012, "budget_usd": 1.0, "tokens": 1840}}
+id: 3
+
+data: {"type": "TEXT_MESSAGE_START", "messageId": "msg-1", "role": "assistant"}
+id: 4
+
+data: {"type": "TEXT_MESSAGE_CONTENT", "messageId": "msg-1", "delta": "Here is the plan I propose."}
+id: 5
+
+data: {"type": "TEXT_MESSAGE_END", "messageId": "msg-1"}
+id: 6
+
+data: {"type": "TOOL_CALL_START", "toolCallId": "call-plan", "toolCallName": "submit_plan", "parentMessageId": "msg-1"}
+id: 7
+
+data: {"type": "TOOL_CALL_ARGS", "toolCallId": "call-plan", "delta": "{\"plan\": \"1. How does retrieval augmentation change hallucination rates?\"}"}
+id: 8
+
+data: {"type": "TOOL_CALL_END", "toolCallId": "call-plan"}
+id: 9
+
+data: {"type": "STEP_FINISHED", "stepName": "model"}
+id: 10
+
+data: {"type": "STATE_SNAPSHOT", "snapshot": {"todos": [{"content": "Draft the plan", "status": "completed"}, {"content": "Scout sub-question 1", "status": "pending"}]}}
+id: 11
+
+data: {"type": "RUN_FINISHED", "threadId": "thread-1", "runId": "agui-1", "outcome": {"type": "interrupt", "interrupts": [{"id": "int-1", "reason": "researchly:submit_plan", "message": "1. How does retrieval augmentation change hallucination rates?", "responseSchema": {"type": "object", "required": ["decisions"], "properties": {"decisions": {"type": "array", "minItems": 1, "maxItems": 1, "prefixItems": [{"type": "object", "required": ["type"], "properties": {"type": {"enum": ["approve", "edit", "reject"]}}}]}}}, "metadata": {"langgraph": {"raw": {"action_requests": [{"name": "submit_plan", "args": {"plan": "1. How does retrieval augmentation change hallucination rates?"}, "description": "Tool execution requires approval\n\nTool: submit_plan\nArgs: {'plan': '1. How does retrieval augmentation change hallucination rates?'}"}], "review_configs": [{"action_name": "submit_plan", "allowed_decisions": ["approve", "edit", "reject"]}]}, "ns": null, "resumable": null, "when": null}}}]}, "usage": [{"provider": "anthropic", "model": "claude-sonnet-4-5", "inputTokens": 1500, "outputTokens": 340, "totalTokens": 1840}]}
+id: 12
+
+data: {"type": "RUN_STARTED", "threadId": "thread-1", "runId": "agui-2"}
+id: 13
+
+data: {"type": "SUBAGENT_STARTED", "subagentRunId": "sub-1", "name": "scout"}
+id: 14
+
+data: {"type": "TOOL_CALL_START", "subagentRunId": "sub-1", "toolCallId": "call-search", "toolCallName": "search_papers", "parentMessageId": "msg-2"}
+id: 15
+
+data: {"type": "TOOL_CALL_ARGS", "subagentRunId": "sub-1", "toolCallId": "call-search", "delta": "{\"query\": \"retrieval augmentation hallucination\", \"file\": \"sq1\"}"}
+id: 16
+
+data: {"type": "TOOL_CALL_END", "subagentRunId": "sub-1", "toolCallId": "call-search"}
+id: 17
+
+data: {"type": "TOOL_CALL_RESULT", "subagentRunId": "sub-1", "messageId": "msg-2", "toolCallId": "call-search", "content": "added 12 candidates to /projects/candidates/sq1.jsonl", "role": "tool"}
+id: 18
+
+data: {"type": "SUBAGENT_FINISHED", "subagentRunId": "sub-1", "outcome": {"type": "success"}}
+id: 19
+
+data: {"type": "CUSTOM", "name": "cost", "value": {"spent_usd": 0.84, "budget_usd": 1.0, "tokens": 42100}}
+id: 20
+
+data: {"type": "TEXT_MESSAGE_START", "messageId": "msg-3", "role": "assistant"}
+id: 21
+
+data: {"type": "TEXT_MESSAGE_CONTENT", "messageId": "msg-3", "delta": "Retrieval augmentation lowers hallucination rates "}
+id: 22
+
+data: {"type": "TEXT_MESSAGE_CONTENT", "messageId": "msg-3", "delta": "on knowledge-intensive benchmarks."}
+id: 23
+
+data: {"type": "TEXT_MESSAGE_END", "messageId": "msg-3"}
+id: 24
+
+data: {"type": "CUSTOM", "name": "run_summary", "value": {"status": "completed", "spent_usd": 0.86, "budget_usd": 1.0, "coverage": 0.73}}
+id: 25
+
+data: {"type": "RUN_FINISHED", "threadId": "thread-1", "runId": "agui-2", "outcome": {"type": "success"}, "usage": [{"provider": "anthropic", "model": "claude-sonnet-4-5", "inputTokens": 41000, "outputTokens": 1100, "totalTokens": 42100}]}
+id: 26
+
