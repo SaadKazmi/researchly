@@ -20,21 +20,46 @@ const thread = {
 afterEach(() => vi.unstubAllGlobals())
 
 test("lists the projects and creates one", async () => {
-  const created = { ...project, id: "p2", name: "Diffusion" }
+  const created = { ...project, id: "p2", name: "Diffusion UI" }
+  // the POST is what makes the new project appear, so the list has to change behind it:
+  // a stub that always returns the same array cannot tell a refresh from no refresh
+  let listed = [project]
   const calls = serve({
     "/health": healthy,
     "/api/v1/system": version,
-    "GET /api/v1/projects": () => Response.json([project]),
-    "POST /api/v1/projects": () => Response.json(created, { status: 201 }),
+    "GET /api/v1/projects": () => Response.json(listed),
+    "POST /api/v1/projects": () => {
+      listed = [project, created]
+      return Response.json(created, { status: 201 })
+    },
   })
   renderAt("/")
   expect(
     await screen.findByRole("link", { name: "Retrieval" })
   ).toBeInTheDocument()
-  await userEvent.type(screen.getByLabelText("Project name"), "Diffusion")
+  const input = screen.getByLabelText("Project name")
+  await userEvent.type(input, "  Diffusion UI  ") // padded: the name is sent trimmed
   await userEvent.click(screen.getByRole("button", { name: "Create project" }))
   const posted = calls.find((call) => call.method === "POST")
-  expect(await posted!.clone().json()).toEqual({ name: "Diffusion" })
+  expect(await posted!.clone().json()).toEqual({ name: "Diffusion UI" })
+  expect(
+    await screen.findByRole("link", { name: "Diffusion UI" })
+  ).toBeInTheDocument() // the list refreshed
+  expect(input).toHaveValue("") // and the form is ready for the next one
+})
+
+test("a failed project list does not claim there are none", async () => {
+  serve({
+    "/health": healthy,
+    "/api/v1/system": version,
+    "GET /api/v1/projects": () =>
+      Response.json({ detail: "nope" }, { status: 500 }),
+  })
+  renderAt("/")
+  expect(
+    await screen.findByText(/could not load your projects/i)
+  ).toBeInTheDocument()
+  expect(screen.queryByText(/no projects yet/i)).not.toBeInTheDocument()
 })
 
 test("opening a project without threads creates one and goes to its chat", async () => {

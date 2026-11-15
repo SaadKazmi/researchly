@@ -1,6 +1,12 @@
 {
-  "app": { "name": "Researchly", "version": "v{{version}}" },
-  "shell": { "skip": "Skip to content", "nav": "Main" },
+  "app": {
+    "name": "Researchly",
+    "version": "v{{version}}"
+  },
+  "shell": {
+    "skip": "Skip to content",
+    "nav": "Main"
+  },
   "nav": {
     "projects": "Projects",
     "memory": "Memory",
@@ -31,7 +37,9 @@
   "projects": {
     "name": "Project name",
     "create": "Create project",
-    "empty": "No projects yet. Create one to start researching."
+    "empty": "No projects yet. Create one to start researching.",
+    "loading": "Loading projects...",
+    "error": "Could not load your projects. Check that Researchly is still running."
   },
   "placeholder": "This view arrives in a later build step."
 }

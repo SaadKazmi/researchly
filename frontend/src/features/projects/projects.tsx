@@ -11,7 +11,7 @@ export function Projects() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { data: projects = [] } = useQuery(projectsQuery)
+  const { data: projects, isPending, isError } = useQuery(projectsQuery)
   const [name, setName] = useState("")
 
   const create = useMutation({
@@ -67,8 +67,19 @@ export function Projects() {
           {t("projects.create")}
         </Button>
       </form>
-      {projects.length === 0 ? (
-        <p className="text-muted-foreground">{t("projects.empty")}</p>
+      {isPending || isError || projects.length === 0 ? (
+        // an empty list and a failed fetch look the same in `data`, so never say "no projects yet"
+        // until the fetch has actually succeeded. Neither message takes `role="status"` or
+        // `role="alert"`: the shell already owns one of each, and a second breaks their lookups.
+        <p className="text-muted-foreground">
+          {t(
+            isPending
+              ? "projects.loading"
+              : isError
+                ? "projects.error"
+                : "projects.empty"
+          )}
+        </p>
       ) : (
         <ul className="flex flex-col gap-1">
           {projects.map((project) => (
@@ -78,7 +89,8 @@ export function Projects() {
                 className="block rounded-md px-2 py-1 hover:bg-muted"
                 onClick={(event) => {
                   event.preventDefault() // the destination thread is only known after the lookup
-                  open.mutate(project.id)
+                  // a second click before the first lookup returns would create a second thread
+                  if (!open.isPending) open.mutate(project.id)
                 }}
               >
                 {project.name}
