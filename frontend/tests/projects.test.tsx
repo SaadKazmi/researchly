@@ -70,8 +70,6 @@ test("opening a project without threads creates one and goes to its chat", async
     "GET /api/v1/projects/p1/threads": () => Response.json([]),
     "POST /api/v1/projects/p1/threads": () =>
       Response.json(thread, { status: 201 }),
-    "GET /api/v1/threads/t1": () => Response.json({ ...thread, messages: [] }),
-    "GET /api/v1/efforts": () => Response.json([]),
   })
   const { router } = renderAt("/")
   await userEvent.click(await screen.findByRole("link", { name: "Retrieval" }))
@@ -97,8 +95,6 @@ test("opening a project with threads reuses the newest one", async () => {
     "/api/v1/system": version,
     "GET /api/v1/projects": () => Response.json([project]),
     "GET /api/v1/projects/p1/threads": () => Response.json([newest, thread]),
-    "GET /api/v1/threads/t2": () => Response.json({ ...newest, messages: [] }),
-    "GET /api/v1/efforts": () => Response.json([]),
   })
   const { router } = renderAt("/")
   await userEvent.click(await screen.findByRole("link", { name: "Retrieval" }))
