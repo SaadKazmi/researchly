@@ -2372,7 +2372,9 @@ test("the meter tracks the spend and warns at 80% of the budget", async () => {
   await play(untilInterrupt())
   expect(screen.getByRole("progressbar", { name: "Budget" })).toHaveValue(0.012)
   expect(screen.queryByRole("status")).toBeNull()
-  await play(frames().filter((frame) => frame.seq === 19))
+  // found by what it carries, not by its position: the transcript gains frames as the run
+  // grows, and a sequence number that silently points at a different frame still passes
+  await play(frames().filter((frame) => frame.data.includes('"spent_usd": 0.84')))
   expect(screen.getByRole("status")).toHaveTextContent("wrapping up")
   expect(screen.getByText("$0.84 of $1.00")).toBeInTheDocument()
 })
@@ -2709,7 +2711,9 @@ const question = {
       {
         id: "int-2",
         reason: "researchly:ask_user",
-        toolCallId: "call-ask",
+        // no `toolCallId`: the adapter never puts one on an interrupt (grep `runs/agui.py`, and
+        // the committed transcript's plan interrupt has none). A fixture that invents one lets a
+        // component key off a field that is always undefined in the real app.
         message: "Which years should I cover?",
         responseSchema: {
           type: "object",
