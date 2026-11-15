@@ -66,7 +66,12 @@ export function ThreadList({ projectId }: { projectId: string }) {
               ? "chat.loading"
               : isError
                 ? "chat.error"
-                : "chat.noThreads"
+                : // an empty list means two different things: a project with nothing in it yet,
+                  // and a search that matched nothing. The same trimmed text the query used
+                  // decides which, so the message always matches the list it is explaining.
+                  search.trim()
+                  ? "chat.noMatches"
+                  : "chat.noThreads"
           )}
         </p>
       ) : (

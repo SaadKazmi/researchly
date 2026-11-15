@@ -111,13 +111,56 @@ test("creates a thread and opens that one, not the one already open", async () =
   ).toBeInTheDocument() // the list refreshed
 })
 
-test("an empty list says so", async () => {
+test("opening a thread from the list goes to that thread", async () => {
+  const calls = serve(routes())
+  const { router } = renderAt("/p/p1/chat/t1")
+  const nav = await screen.findByRole("navigation", { name: "Threads" })
+  await userEvent.click(
+    await within(nav).findByRole("link", { name: "Diffusion" })
+  )
+  // the link text alone proves nothing: every link rendering the first thread's id would
+  // still read correctly. Only the destination shows the row and its target line up.
+  await waitFor(() =>
+    expect(router.state.location.pathname).toBe("/p/p1/chat/t2")
+  )
+  expect(calls.some((call) => call.method === "POST")).toBe(false)
+})
+
+test("double-clicking New thread creates only one", async () => {
+  let posts = 0
+  const calls = serve({
+    ...routes(),
+    "POST /api/v1/projects/p1/threads": async () => {
+      posts += 1
+      await new Promise((resolve) => setTimeout(resolve, 50)) // slow enough to click again
+      return Response.json({ ...base, id: "t3", title: null }, { status: 201 })
+    },
+  })
+  renderAt("/p/p1/chat/t1")
+  await userEvent.dblClick(
+    await screen.findByRole("button", { name: "New thread" })
+  )
+  await waitFor(() => expect(posts).toBe(1))
+  expect(calls.filter((call) => call.method === "POST")).toHaveLength(1)
+})
+
+test("a project with no threads yet is told how to start one", async () => {
   serve({
     ...routes(),
     "GET /api/v1/projects/p1/threads": () => Response.json([]),
   })
   renderAt("/p/p1/chat/t1")
-  expect(await screen.findByText("No threads match.")).toBeInTheDocument()
+  expect(await screen.findByText(/no threads yet/i)).toBeInTheDocument()
+  expect(screen.queryByText(/match your search/i)).not.toBeInTheDocument()
+})
+
+test("a search that matches nothing says so, not that there are no threads", async () => {
+  serve(routes())
+  renderAt("/p/p1/chat/t1")
+  await screen.findByRole("navigation", { name: "Threads" })
+  await userEvent.type(screen.getByRole("searchbox"), "zzz")
+  expect(await screen.findByText(/match your search/i)).toBeInTheDocument()
+  expect(screen.queryByText(/no threads yet/i)).not.toBeInTheDocument()
 })
 
 test("a failed thread list does not claim there are none", async () => {
@@ -130,7 +173,7 @@ test("a failed thread list does not claim there are none", async () => {
   expect(
     await screen.findByText(/could not load your threads/i)
   ).toBeInTheDocument()
-  expect(screen.queryByText("No threads match.")).not.toBeInTheDocument()
+  expect(screen.queryByText(/no threads yet/i)).not.toBeInTheDocument()
 })
 
 test("a pending thread list does not claim there are none", async () => {
@@ -140,5 +183,5 @@ test("a pending thread list does not claim there are none", async () => {
   })
   renderAt("/p/p1/chat/t1")
   expect(await screen.findByText(/loading threads/i)).toBeInTheDocument()
-  expect(screen.queryByText("No threads match.")).not.toBeInTheDocument()
+  expect(screen.queryByText(/no threads yet/i)).not.toBeInTheDocument()
 })

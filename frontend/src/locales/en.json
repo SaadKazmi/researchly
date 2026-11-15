@@ -46,9 +46,10 @@
     "search": "Search chat history",
     "newThread": "New thread",
     "untitled": "Untitled thread",
-    "noThreads": "No threads match.",
+    "noThreads": "No threads yet. Choose New thread to start one.",
     "loading": "Loading threads...",
-    "error": "Could not load your threads. Check that Researchly is still running."
+    "error": "Could not load your threads. Check that Researchly is still running.",
+    "noMatches": "No threads match your search."
   },
   "placeholder": "This view arrives in a later build step."
 }
