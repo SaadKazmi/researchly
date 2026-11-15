@@ -1,0 +1,83 @@
+import { expect, test } from "vitest"
+
+import { EMPTY, reduce, type RunState } from "@/features/chat/run-state"
+
+import { frames, untilInterrupt } from "./sse"
+
+function play(list = frames()): RunState {
+  return list.reduce(
+    (state, frame) => reduce(state, JSON.parse(frame.data)),
+    EMPTY
+  )
+}
+
+test("the plan interrupt becomes a review with its allowed decisions", () => {
+  const state = play(untilInterrupt())
+  expect(state.review?.actions).toEqual([
+    {
+      name: "submit_plan",
+      text: expect.stringContaining("1. How does retrieval augmentation"),
+      decisions: ["approve", "edit", "reject"],
+    },
+  ])
+  expect(state.todos.map((todo) => todo.status)).toEqual([
+    "completed",
+    "pending",
+  ])
+  expect(state.cost).toEqual({ spentUsd: 0.012, budgetUsd: 1, tokens: 1840 })
+  expect(state.summary).toBeNull()
+})
+
+test("the whole run builds a tree of the lead, its subagent and their tool calls", () => {
+  const state = play()
+  expect(state.review).toBeNull() // the resumed drive supersedes the answered interrupt
+  expect(state.agents.map((a) => [a.name, a.status])).toEqual([
+    ["lead", "running"],
+    ["scout", "done"],
+  ])
+  expect(state.tools.map((t) => [t.name, t.agentId, t.status])).toEqual([
+    ["submit_plan", "lead", "done"],
+    ["search_papers", "sub-1", "done"],
+  ])
+  expect(state.summary).toEqual({
+    status: "completed",
+    spentUsd: 0.86,
+    budgetUsd: 1,
+    coverage: 0.73,
+  })
+  expect(state.cost?.tokens).toBe(42100)
+  expect(state.failed).toBe(false)
+})
+
+test("a repeated tool call across a resume does not duplicate its node", () => {
+  const start = {
+    type: "TOOL_CALL_START",
+    toolCallId: "call-plan",
+    toolCallName: "submit_plan",
+  }
+  const state = [
+    start,
+    { type: "TOOL_CALL_END", toolCallId: "call-plan" },
+    start,
+  ].reduce(reduce, EMPTY)
+  expect(state.tools).toHaveLength(1)
+})
+
+test("a run error is remembered without its message", () => {
+  const state = reduce(EMPTY, { type: "RUN_ERROR", message: "The run failed." })
+  expect(state.failed).toBe(true)
+  expect(JSON.stringify(state)).not.toContain("The run failed.")
+})
+
+test("a failed subagent stops spinning in the tree", () => {
+  const started = {
+    type: "SUBAGENT_STARTED",
+    subagentRunId: "sub-9",
+    name: "scout",
+  }
+  const state = [
+    started,
+    { type: "SUBAGENT_ERROR", subagentRunId: "sub-9" },
+  ].reduce(reduce, EMPTY)
+  expect(state.agents.find((a) => a.id === "sub-9")?.status).toBe("done")
+})
