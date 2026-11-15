@@ -49,7 +49,7 @@ id: 16
 data: {"type": "TOOL_CALL_END", "subagentRunId": "sub-1", "toolCallId": "call-search"}
 id: 17
 
-data: {"type": "TOOL_CALL_RESULT", "subagentRunId": "sub-1", "messageId": "msg-2", "toolCallId": "call-search", "content": "added 12 candidates to /projects/candidates/sq1.jsonl", "role": "tool"}
+data: {"type": "TOOL_CALL_RESULT", "subagentRunId": "sub-1", "messageId": "tool-1", "toolCallId": "call-search", "content": "added 12 candidates to /projects/candidates/sq1.jsonl", "role": "tool"}
 id: 18
 
 data: {"type": "SUBAGENT_FINISHED", "subagentRunId": "sub-1", "outcome": {"type": "success"}}

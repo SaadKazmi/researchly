@@ -181,3 +181,129 @@ test("the real client accepts the committed transcript: every event arrives, in 
   expect(seen).toEqual(frames().map((f) => f.type))
   expect(ref.lastSeq).toBe(frames().at(-1)!.seq)
 })
+
+test("a tool result in the committed transcript never reuses an assistant message's id", () => {
+  // the real adapter gives a tool result the ToolMessage's own id, never the parent assistant
+  // message's (`ag_ui_langgraph/agent.py`). A fixture that reuses one hands assistant-ui two
+  // messages that collide on their React key, and the "client accepts the transcript" test above
+  // cannot see it: that one compares event types only.
+  const events = frames().map(
+    (frame) =>
+      JSON.parse(frame.data) as {
+        type: string
+        messageId?: string
+        parentMessageId?: string
+      }
+  )
+  // an assistant message is created by a TEXT_MESSAGE_* run and also, implicitly, by the tool call
+  // that hangs off it - `parentMessageId` names that one, and it is the id the collision was on
+  const assistant = new Set(
+    events.flatMap((event) =>
+      [
+        event.type.startsWith("TEXT_MESSAGE_") ? event.messageId : undefined,
+        event.parentMessageId,
+      ].filter((id): id is string => Boolean(id))
+    )
+  )
+  const tool = new Set(
+    events
+      .filter((event) => event.type === "TOOL_CALL_RESULT" && event.messageId)
+      .map((event) => event.messageId!)
+  )
+  expect(assistant.size).toBeGreaterThan(0) // a transcript that stopped carrying ids proves nothing
+  expect(tool.size).toBeGreaterThan(0)
+  expect([...tool].filter((id) => assistant.has(id))).toEqual([])
+})
+
+test("the thread's history is handed to the client as its initial messages", async () => {
+  const ref = newRunRef([], "standard")
+  const agent = createAgent(
+    "t1",
+    [
+      {
+        id: "m1",
+        role: "user",
+        text: "Why?",
+        run_id: "r1",
+        created_at: "2026-11-13T10:00:00Z",
+      },
+      {
+        id: "m2",
+        role: "assistant",
+        text: "Because.",
+        run_id: "r1",
+        created_at: "2026-11-13T10:01:00Z",
+      },
+    ],
+    ref
+  )
+  // without this the client starts every reload with an empty transcript, and the user's own
+  // question disappears from the thread they just reopened
+  expect(agent.messages).toEqual([
+    { id: "m1", role: "user", content: "Why?" },
+    { id: "m2", role: "assistant", content: "Because." },
+  ])
+})
+
+test("an id line split across two network chunks still advances the sequence", async () => {
+  const body = frames()
+    .map((frame) => `data: ${frame.data}\nid: ${frame.seq}\n\n`)
+    .join("")
+  const cut = body.lastIndexOf("\nid: ") + 3 // leaves a bare "id" at the end of the first chunk
+  serve({
+    "POST /api/v1/runs/r1/stream": () =>
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            const encode = new TextEncoder()
+            controller.enqueue(encode.encode(body.slice(0, cut)))
+            controller.enqueue(encode.encode(body.slice(cut)))
+            controller.close()
+          },
+        }),
+        { headers: { "content-type": "text/event-stream" } }
+      ),
+  })
+  const ref = {
+    runId: "r1",
+    lastSeq: 0,
+    lastUserMessageId: "u1",
+    effort: "standard" as const,
+  }
+  const response = await makeFetch("t1", ref)(
+    "/",
+    input([{ id: "u1", role: "user", content: "Why?" }])
+  )
+  await response.text() // drain it: the tap only sees what the consumer pulls
+  expect(ref.lastSeq).toBe(frames().at(-1)!.seq)
+})
+
+test("attaching with no run known fails instead of silently streaming nothing", async () => {
+  serve({})
+  const ref = newRunRef([], "standard")
+  // the trailing message is the one the ref already saw, so no run is created and none is known
+  await expect(
+    makeFetch("t1", { ...ref, lastUserMessageId: "u1" })(
+      "/",
+      input([{ id: "u1", role: "user", content: "Why?" }])
+    )
+  ).rejects.toMatchObject({ status: 409 })
+})
+
+test("a refused stream surfaces its status rather than being treated as a run", async () => {
+  serve({
+    "POST /api/v1/runs/r1/stream": () => new Response("no", { status: 503 }),
+  })
+  const ref = {
+    runId: "r1",
+    lastSeq: 4,
+    lastUserMessageId: "u1",
+    effort: "standard" as const,
+  }
+  await expect(
+    makeFetch("t1", ref)(
+      "/",
+      input([{ id: "u1", role: "user", content: "Why?" }])
+    )
+  ).rejects.toMatchObject({ status: 503 })
+})
