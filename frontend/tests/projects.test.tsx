@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react"
+import { screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, expect, test, vi } from "vitest"
 
@@ -48,11 +48,11 @@ test("opening a project without threads creates one and goes to its chat", async
     "GET /api/v1/threads/t1": () => Response.json({ ...thread, messages: [] }),
     "GET /api/v1/efforts": () => Response.json([]),
   })
-  renderAt("/")
+  const { router } = renderAt("/")
   await userEvent.click(await screen.findByRole("link", { name: "Retrieval" }))
-  expect(
-    await screen.findByRole("navigation", { name: "Threads" })
-  ).toBeInTheDocument()
+  await waitFor(() =>
+    expect(router.state.location.pathname).toBe("/p/p1/chat/t1")
+  )
   expect(
     calls.some(
       (call) =>
@@ -63,8 +63,8 @@ test("opening a project without threads creates one and goes to its chat", async
 })
 
 // The API lists threads newest first (threads.py orders by created_at desc), so opening a
-// project must take the first one and create nothing. Like the test above, the chat view that
-// proves which thread was opened arrives in Task 8.
+// project must take the first one and create nothing. The chat view arrives in Task 8, so both
+// tests assert the route the navigation landed on rather than what that route renders.
 test("opening a project with threads reuses the newest one", async () => {
   const newest = { ...thread, id: "t2", created_at: "2026-11-13T12:00:00Z" }
   const calls = serve({
@@ -75,13 +75,10 @@ test("opening a project with threads reuses the newest one", async () => {
     "GET /api/v1/threads/t2": () => Response.json({ ...newest, messages: [] }),
     "GET /api/v1/efforts": () => Response.json([]),
   })
-  renderAt("/")
+  const { router } = renderAt("/")
   await userEvent.click(await screen.findByRole("link", { name: "Retrieval" }))
-  expect(
-    await screen.findByRole("navigation", { name: "Threads" })
-  ).toBeInTheDocument()
-  expect(calls.some((call) => call.method === "POST")).toBe(false)
-  expect(calls.some((call) => call.url.endsWith("/api/v1/threads/t2"))).toBe(
-    true
+  await waitFor(() =>
+    expect(router.state.location.pathname).toBe("/p/p1/chat/t2")
   )
+  expect(calls.some((call) => call.method === "POST")).toBe(false)
 })

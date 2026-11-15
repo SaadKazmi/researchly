@@ -37,11 +37,16 @@ export function renderAt(path: string) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  )
+  // the router comes back too, so a test can assert where a navigation landed without needing the
+  // destination screen to exist yet
+  return {
+    ...render(
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    ),
+    router,
+  }
 }
 
 export const healthy = () => Response.json({ status: "ok" })
