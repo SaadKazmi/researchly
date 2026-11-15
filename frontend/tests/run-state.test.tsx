@@ -81,3 +81,28 @@ test("a failed subagent stops spinning in the tree", () => {
   ].reduce(reduce, EMPTY)
   expect(state.agents.find((a) => a.id === "sub-9")?.status).toBe("done")
 })
+
+test("resuming a run clears the previous drive's outcome, not just its review", () => {
+  // the whole point of RUN_STARTED: a resumed drive supersedes whatever the last one ended with.
+  // Without this, a run that errored or finished once keeps showing that verdict while it runs on,
+  // so a resumed run renders as already failed and its stale summary sits under a live tree.
+  const ended = [
+    { type: "RUN_ERROR", message: "The run failed." },
+    {
+      type: "CUSTOM",
+      name: "run_summary",
+      value: {
+        status: "failed",
+        spent_usd: 0.4,
+        budget_usd: 1.0,
+        coverage: 0.1,
+      },
+    },
+  ].reduce(reduce, EMPTY)
+  expect(ended.failed).toBe(true)
+  expect(ended.summary).not.toBeNull()
+
+  const resumed = reduce(ended, { type: "RUN_STARTED", threadId: "thread-1" })
+  expect(resumed.failed).toBe(false)
+  expect(resumed.summary).toBeNull()
+})
