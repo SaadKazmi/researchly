@@ -27,5 +27,10 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./tests/setup.ts"],
     include: ["tests/**/*.test.{ts,tsx}"],
+    // Must stay well above the 10s `asyncUtilTimeout` that `tests/setup.ts` sets for assistant-ui's
+    // slow first render. At vitest's 5s default a single `findBy` that used its whole window left
+    // under a second for the rest of the test, so chat tests failed on the clock under load rather
+    // than on the DOM. A ceiling, not a delay: passing tests are no slower for it.
+    testTimeout: 20_000,
   },
 })

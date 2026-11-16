@@ -27,6 +27,7 @@ from ag_ui.core import (
     UserMessage,
 )
 from langchain_core.messages import ToolMessage
+from langgraph.checkpoint.base import BaseCheckpointSaver
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -55,8 +56,15 @@ def _now() -> datetime:
 
 
 class RunManager:
-    def __init__(self, sessions: async_sessionmaker[AsyncSession], build: Callable[[Run], Awaitable[Any]]) -> None:
-        self.sessions, self.build = sessions, build
+    def __init__(
+        self,
+        sessions: async_sessionmaker[AsyncSession],
+        build: Callable[[Run], Awaitable[Any]],
+        checkpointer: BaseCheckpointSaver | None = None,
+    ) -> None:
+        # `build` makes a run's graph and costs an LLM provider and the local models; `checkpointer` is the saver
+        # behind it, so a reader that only needs stored checkpoints can skip the build entirely.
+        self.sessions, self.build, self.checkpointer = sessions, build, checkpointer
         self.hub = RunHub()
         self._tasks: dict[uuid.UUID, asyncio.Task[None]] = {}
         # a pause or cancel must not interleave with a resume or start of the same run

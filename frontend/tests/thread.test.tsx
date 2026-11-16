@@ -1,0 +1,400 @@
+import { act, fireEvent, screen, waitFor } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
+import { afterEach, expect, test, vi } from "vitest"
+
+import { healthy, renderAt, serve, version } from "./render"
+import { frames, sse } from "./sse"
+
+const efforts = [
+  {
+    name: "quick",
+    scouts: 0,
+    readers: 0,
+    tool_calls: 10,
+    budget_usd: "0.10",
+    estimate_low_usd: "0.03",
+    estimate_high_usd: "0.10",
+  },
+  {
+    name: "standard",
+    scouts: 4,
+    readers: 4,
+    tool_calls: 25,
+    budget_usd: "1.00",
+    estimate_low_usd: "0.25",
+    estimate_high_usd: "1.00",
+  },
+  {
+    name: "deep",
+    scouts: 8,
+    readers: 12,
+    tool_calls: 40,
+    budget_usd: "5.00",
+    estimate_low_usd: "1.25",
+    estimate_high_usd: "5.00",
+  },
+]
+
+const run = {
+  id: "r1",
+  project_id: "p1",
+  thread_id: "t1",
+  parent_run_id: null,
+  effort: "standard",
+  status: "running",
+  plan: null,
+  budget_usd: "1.00",
+  spent_usd: "0.00",
+  branch_from_checkpoint: null,
+  started_at: null,
+  ended_at: null,
+}
+
+function routes(messages: unknown[] = []) {
+  return {
+    "/health": healthy,
+    "/api/v1/system": version,
+    "GET /api/v1/efforts": () => Response.json(efforts),
+    "GET /api/v1/projects/p1/threads": () =>
+      Response.json([
+        {
+          id: "t1",
+          project_id: "p1",
+          title: "Retrieval",
+          created_at: "2026-11-13T10:00:00Z",
+        },
+      ]),
+    "GET /api/v1/threads/t1": () =>
+      Response.json({
+        id: "t1",
+        project_id: "p1",
+        title: "Retrieval",
+        created_at: "2026-11-13T10:00:00Z",
+        messages,
+      }),
+    "GET /api/v1/runs/r1": () => Response.json(run),
+    "POST /api/v1/threads/t1/runs": () => Response.json(run, { status: 201 }),
+    "POST /api/v1/runs/r1/stream": () => sse(frames()),
+  }
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+  localStorage.clear()
+})
+
+const posted = (calls: Request[]) =>
+  calls.some((call) => call.url.endsWith("/threads/t1/runs"))
+
+async function askOnDeep() {
+  await userEvent.selectOptions(
+    await screen.findByRole("combobox", { name: "Effort" }),
+    "deep"
+  )
+  await userEvent.type(
+    screen.getByRole("textbox", { name: "Ask a research question" }),
+    "Why does RAG help?"
+  )
+}
+
+test("the stored messages hydrate the thread", async () => {
+  serve(
+    routes([
+      {
+        id: "m1",
+        role: "user",
+        text: "Why does RAG help?",
+        run_id: "r0",
+        created_at: "2026-11-13T10:00:00Z",
+      },
+      {
+        id: "m2",
+        role: "assistant",
+        text: "Because it grounds the answer.",
+        run_id: "r0",
+        created_at: "2026-11-13T10:01:00Z",
+      },
+    ])
+  )
+  renderAt("/p/p1/chat/t1")
+  expect(await screen.findByText("Why does RAG help?")).toBeInTheDocument()
+  expect(
+    await screen.findByText("Because it grounds the answer.")
+  ).toBeInTheDocument()
+})
+
+test("a quick run starts without confirmation and streams its answer", async () => {
+  const calls = serve(routes())
+  renderAt("/p/p1/chat/t1")
+  await userEvent.selectOptions(
+    await screen.findByRole("combobox", { name: "Effort" }),
+    "quick"
+  )
+  await userEvent.type(
+    screen.getByRole("textbox", { name: "Ask a research question" }),
+    "Why does RAG help?"
+  )
+  await userEvent.click(screen.getByRole("button", { name: "Send" }))
+  expect(
+    await screen.findByText(/lowers hallucination rates/)
+  ).toBeInTheDocument()
+  const created = calls.find((call) => call.url.endsWith("/threads/t1/runs"))!
+  expect(await created.clone().json()).toEqual({
+    message: "Why does RAG help?",
+    effort: "quick",
+  })
+})
+
+test("a tier over the budget threshold asks for confirmation first", async () => {
+  const calls = serve(routes())
+  renderAt("/p/p1/chat/t1")
+  await userEvent.selectOptions(
+    await screen.findByRole("combobox", { name: "Effort" }),
+    "deep"
+  )
+  expect(
+    screen.getByText("Estimated $1.25–$5.00 · budget $5.00")
+  ).toBeInTheDocument()
+  await userEvent.type(
+    screen.getByRole("textbox", { name: "Ask a research question" }),
+    "Why does RAG help?"
+  )
+  await userEvent.click(screen.getByRole("button", { name: "Send" }))
+  expect(
+    await screen.findByRole("dialog", { name: "Confirm the budget" })
+  ).toBeInTheDocument()
+  expect(calls.some((call) => call.url.endsWith("/threads/t1/runs"))).toBe(
+    false
+  )
+  await userEvent.click(screen.getByRole("button", { name: "Start the run" }))
+  const created = await vi.waitUntil(() =>
+    calls.find((call) => call.url.endsWith("/threads/t1/runs"))
+  )
+  expect(await created.clone().json()).toEqual({
+    message: "Why does RAG help?",
+    effort: "deep",
+  })
+})
+
+test("a thread whose last run is still live re-attaches to its stream", async () => {
+  const calls = serve(
+    routes([
+      {
+        id: "m1",
+        role: "user",
+        text: "Why does RAG help?",
+        run_id: "r1",
+        created_at: "2026-11-13T10:00:00Z",
+      },
+    ])
+  )
+  renderAt("/p/p1/chat/t1")
+  expect(
+    await screen.findByText(/lowers hallucination rates/)
+  ).toBeInTheDocument()
+  expect(calls.some((call) => call.url.endsWith("/threads/t1/runs"))).toBe(
+    false
+  )
+  expect(calls.some((call) => call.url.includes("/runs/r1/stream"))).toBe(true)
+})
+
+test("the default tier sits exactly on the threshold and still sends without asking", async () => {
+  // `standard` has a budget of $1.00 and the default threshold is $1, so this is the boundary the
+  // comparison turns on. Relaxing `>` to `>=` would make the default tier - the one almost every run
+  // uses - demand a confirmation before it would spend a cent, and no other test touches the case.
+  const calls = serve(routes())
+  renderAt("/p/p1/chat/t1")
+  await screen.findByRole("combobox", { name: "Effort" })
+  await userEvent.type(
+    screen.getByRole("textbox", { name: "Ask a research question" }),
+    "Why does RAG help?"
+  )
+  await userEvent.click(screen.getByRole("button", { name: "Send" }))
+  const created = await vi.waitUntil(() =>
+    calls.find((call) => call.url.endsWith("/threads/t1/runs"))
+  )
+  expect(await created.clone().json()).toEqual({
+    message: "Why does RAG help?",
+    effort: "standard",
+  })
+  expect(screen.queryByRole("dialog")).toBeNull()
+})
+
+test("a threshold raised in this browser lets a dearer tier through without asking", async () => {
+  // the stored threshold is the only thing that makes the confirmation configurable, and nothing
+  // else reads it: with the localStorage lookup removed, every run would be judged against $1
+  localStorage.setItem("researchly.budget-threshold", "10")
+  const calls = serve(routes())
+  renderAt("/p/p1/chat/t1")
+  await userEvent.selectOptions(
+    await screen.findByRole("combobox", { name: "Effort" }),
+    "deep"
+  )
+  await userEvent.type(
+    screen.getByRole("textbox", { name: "Ask a research question" }),
+    "Why does RAG help?"
+  )
+  await userEvent.click(screen.getByRole("button", { name: "Send" }))
+  const created = await vi.waitUntil(() =>
+    calls.find((call) => call.url.endsWith("/threads/t1/runs"))
+  )
+  expect(await created.clone().json()).toEqual({
+    message: "Why does RAG help?",
+    effort: "deep",
+  })
+  expect(screen.queryByRole("dialog")).toBeNull()
+})
+
+test("Escape dismisses the confirmation, and the next send asks again rather than starting the run", async () => {
+  const calls = serve(routes())
+  renderAt("/p/p1/chat/t1")
+  await askOnDeep()
+  await userEvent.click(screen.getByRole("button", { name: "Send" }))
+  const dialog = await screen.findByRole<HTMLDialogElement>("dialog", {
+    name: "Confirm the budget",
+  })
+  // jsdom has no native Escape, so replay what the browser does: `cancel`, the close, then `close`
+  fireEvent(dialog, new Event("cancel", { cancelable: true }))
+  dialog.close()
+  fireEvent(dialog, new Event("close"))
+  expect(screen.queryByRole("dialog")).toBeNull()
+  await userEvent.click(screen.getByRole("button", { name: "Send" }))
+  expect(
+    await screen.findByRole("dialog", { name: "Confirm the budget" })
+  ).toBeInTheDocument()
+  expect(posted(calls)).toBe(false)
+})
+
+test("Cancel closes the confirmation without starting the run", async () => {
+  const calls = serve(routes())
+  renderAt("/p/p1/chat/t1")
+  await askOnDeep()
+  await userEvent.click(screen.getByRole("button", { name: "Send" }))
+  await screen.findByRole("dialog", { name: "Confirm the budget" })
+  // an open dialog is not consent: only Confirm lets a submit through. (A browser makes the page
+  // inert behind the modal; jsdom does not, which is what lets this second submit be made at all.)
+  await userEvent.click(screen.getByRole("button", { name: "Send" }))
+  expect(posted(calls)).toBe(false)
+  await userEvent.click(screen.getByRole("button", { name: "Cancel" }))
+  expect(screen.queryByRole("dialog")).toBeNull()
+  expect(posted(calls)).toBe(false)
+  await userEvent.click(screen.getByRole("button", { name: "Send" }))
+  expect(
+    await screen.findByRole("dialog", { name: "Confirm the budget" })
+  ).toBeInTheDocument()
+  expect(posted(calls)).toBe(false)
+})
+
+test("an empty composer on a dear tier cannot send and asks nothing", async () => {
+  const calls = serve(routes())
+  renderAt("/p/p1/chat/t1")
+  await userEvent.selectOptions(
+    await screen.findByRole("combobox", { name: "Effort" }),
+    "deep"
+  )
+  expect(screen.getByRole("button", { name: "Send" })).toBeDisabled()
+  // Enter still submits the form; the composer then has nothing to send, so neither may the guard
+  await userEvent.type(
+    screen.getByRole("textbox", { name: "Ask a research question" }),
+    "{Enter}"
+  )
+  expect(screen.queryByRole("dialog")).toBeNull()
+  expect(posted(calls)).toBe(false)
+})
+
+test("the intercepted submit is prevented, so the form never navigates", async () => {
+  // jsdom cannot show the navigation a submit without preventDefault would cause; the flag can
+  const submits: Event[] = []
+  const record = (event: Event) => submits.push(event)
+  window.addEventListener("submit", record, true)
+  serve(routes())
+  renderAt("/p/p1/chat/t1")
+  await askOnDeep()
+  await userEvent.click(screen.getByRole("button", { name: "Send" }))
+  await screen.findByRole("dialog", { name: "Confirm the budget" })
+  window.removeEventListener("submit", record, true)
+  expect(submits).toHaveLength(1)
+  expect(submits[0]!.defaultPrevented).toBe(true)
+})
+
+test("without the effort catalogue nothing can be sent", async () => {
+  // no catalogue, no budget to judge: sending anyway would skip the confirmation on any tier
+  const calls = serve({
+    ...routes(),
+    "GET /api/v1/efforts": () => new Response(null, { status: 500 }),
+  })
+  renderAt("/p/p1/chat/t1")
+  const input = await screen.findByRole("textbox", {
+    name: "Ask a research question",
+  })
+  await userEvent.type(input, "Why does RAG help?")
+  expect(screen.getByRole("button", { name: "Send" })).toBeDisabled()
+  await userEvent.type(input, "{Enter}")
+  expect(input).toHaveValue("Why does RAG help?") // a send would have cleared it
+  expect(posted(calls)).toBe(false)
+})
+
+test("a revisited thread shows the answer of a run that finished meanwhile", async () => {
+  const question = {
+    id: "m1",
+    role: "user",
+    text: "Why does RAG help?",
+    run_id: "r1",
+    created_at: "2026-11-13T10:00:00Z",
+  }
+  const answer = {
+    id: "m2",
+    role: "assistant",
+    text: "Because it grounds the answer.",
+    run_id: "r1",
+    created_at: "2026-11-13T10:01:00Z",
+  }
+  const thread = (id: string, messages: unknown[]) =>
+    Response.json({
+      id,
+      project_id: "p1",
+      title: null,
+      created_at: "2026-11-13T10:00:00Z",
+      messages,
+    })
+  // the run's answer lands between the first visit and the second
+  let visits = 0
+  serve({
+    ...routes(),
+    "GET /api/v1/threads/t1": () =>
+      thread("t1", ++visits === 1 ? [question] : [question, answer]),
+    "GET /api/v1/threads/t2": () => thread("t2", []),
+    "GET /api/v1/runs/r1": () => Response.json({ ...run, status: "completed" }),
+  })
+  const { router } = renderAt("/p/p1/chat/t1")
+  expect(await screen.findByText("Why does RAG help?")).toBeInTheDocument()
+  expect(screen.queryByText("Because it grounds the answer.")).toBeNull()
+  const open = (id: string) =>
+    act(() =>
+      router.navigate({
+        to: "/p/$id/chat/$thread",
+        params: { id: "p1", thread: id },
+      })
+    )
+  await open("t2")
+  await waitFor(() =>
+    expect(screen.queryByText("Why does RAG help?")).toBeNull()
+  )
+  await open("t1")
+  expect(
+    await screen.findByText("Because it grounds the answer.")
+  ).toBeInTheDocument()
+})
+
+test("a thread that fails to load says so instead of loading forever", async () => {
+  serve({
+    ...routes(),
+    "GET /api/v1/threads/t1": () => new Response(null, { status: 500 }),
+  })
+  renderAt("/p/p1/chat/t1")
+  expect(
+    await screen.findByText(
+      "Could not load this thread. Check that Researchly is still running."
+    )
+  ).toBeInTheDocument()
+})

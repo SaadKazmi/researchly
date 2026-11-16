@@ -30,6 +30,44 @@
         "title": "BranchIn",
         "type": "object"
       },
+      "CheckpointOut": {
+        "description": "A point a run can be branched from (F1.6): LangGraph's checkpoint id, when it was written and its step.",
+        "properties": {
+          "checkpoint_id": {
+            "title": "Checkpoint Id",
+            "type": "string"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "step": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step"
+          }
+        },
+        "required": [
+          "checkpoint_id",
+          "created_at",
+          "step"
+        ],
+        "title": "CheckpointOut",
+        "type": "object"
+      },
       "Edit": {
         "additionalProperties": false,
         "properties": {
@@ -67,6 +105,55 @@
           "args"
         ],
         "title": "EditedAction",
+        "type": "object"
+      },
+      "EffortOut": {
+        "description": "A tier as the UI offers it (spec \u00a76.4): its limits, its budget and the pre-run estimate range (F1.7).",
+        "properties": {
+          "budget_usd": {
+            "title": "Budget Usd",
+            "type": "string"
+          },
+          "estimate_high_usd": {
+            "title": "Estimate High Usd",
+            "type": "string"
+          },
+          "estimate_low_usd": {
+            "title": "Estimate Low Usd",
+            "type": "string"
+          },
+          "name": {
+            "enum": [
+              "quick",
+              "standard",
+              "deep"
+            ],
+            "title": "Name",
+            "type": "string"
+          },
+          "readers": {
+            "title": "Readers",
+            "type": "integer"
+          },
+          "scouts": {
+            "title": "Scouts",
+            "type": "integer"
+          },
+          "tool_calls": {
+            "title": "Tool Calls",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "scouts",
+          "readers",
+          "tool_calls",
+          "budget_usd",
+          "estimate_low_usd",
+          "estimate_high_usd"
+        ],
+        "title": "EffortOut",
         "type": "object"
       },
       "ErrorOut": {
@@ -603,6 +690,41 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/efforts": {
+      "get": {
+        "operationId": "listEfforts",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EffortOut"
+                  },
+                  "title": "Response Listefforts",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "List Efforts",
+        "tags": [
+          "runs"
+        ]
+      }
+    },
     "/api/v1/projects": {
       "get": {
         "operationId": "listProjects",
@@ -823,6 +945,7 @@
     },
     "/api/v1/projects/{project_id}/threads": {
       "get": {
+        "description": "The project's threads, newest first. `q` keeps those whose title or any message contains it (F1.1).",
         "operationId": "listThreads",
         "parameters": [
           {
@@ -833,6 +956,23 @@
               "format": "uuid",
               "title": "Project Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
             }
           }
         ],
@@ -1173,6 +1313,74 @@
           }
         },
         "summary": "Cancel Run",
+        "tags": [
+          "runs"
+        ]
+      }
+    },
+    "/api/v1/runs/{run_id}/checkpoints": {
+      "get": {
+        "description": "The run's newest checkpoints, newest first.\n\nRead straight from the checkpoint saver, never through `runs.build`: building a run's graph needs a configured\nLLM provider and loads the local embedding models, and branching must stay readable without either.",
+        "operationId": "listCheckpoints",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CheckpointOut"
+                  },
+                  "title": "Response Listcheckpoints",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorOut"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "List Checkpoints",
         "tags": [
           "runs"
         ]

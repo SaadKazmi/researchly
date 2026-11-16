@@ -1,6 +1,12 @@
 {
-  "app": { "name": "Researchly", "version": "v{{version}}" },
-  "shell": { "skip": "Skip to content", "nav": "Main" },
+  "app": {
+    "name": "Researchly",
+    "version": "v{{version}}"
+  },
+  "shell": {
+    "skip": "Skip to content",
+    "nav": "Main"
+  },
   "nav": {
     "projects": "Projects",
     "memory": "Memory",
@@ -27,6 +33,35 @@
     "usage": "Usage",
     "settings": "Settings",
     "onboarding": "Welcome"
+  },
+  "projects": {
+    "name": "Project name",
+    "create": "Create project",
+    "empty": "No projects yet. Create one to start researching.",
+    "loading": "Loading projects...",
+    "error": "Could not load your projects. Check that Researchly is still running."
+  },
+  "chat": {
+    "threads": "Threads",
+    "search": "Search chat history",
+    "newThread": "New thread",
+    "untitled": "Untitled thread",
+    "noThreads": "No threads yet. Choose New thread to start one.",
+    "loading": "Loading threads...",
+    "error": "Could not load your threads. Check that Researchly is still running.",
+    "noMatches": "No threads match your search.",
+    "conversation": "Conversation",
+    "loadingThread": "Loading the thread…",
+    "threadError": "Could not load this thread. Check that Researchly is still running.",
+    "ask": "Ask a research question",
+    "send": "Send",
+    "effort": "Effort",
+    "efforts": { "quick": "Quick", "standard": "Standard", "deep": "Deep" },
+    "estimate": "Estimated {{low}}–{{high}} · budget {{budget}}",
+    "confirmTitle": "Confirm the budget",
+    "confirmBody": "A {{effort}} run may spend up to {{budget}}.",
+    "confirm": "Start the run",
+    "cancel": "Cancel"
   },
   "placeholder": "This view arrives in a later build step."
 }

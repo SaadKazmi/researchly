@@ -32,6 +32,7 @@ from researchly.agents.middleware import BudgetGuard, EffortGuard, LoopGuard
 from researchly.agents.tools import ToolDeps, make_tools
 
 Spent = Callable[[uuid.UUID], Awaitable[Decimal]]
+Tokens = Callable[[uuid.UUID], Awaitable[int]]
 PRIVATE = ["/projects/candidates/**", "/projects/evidence/**"]  # full records and quotes: tools only (§19.1)
 HITL: dict[str, Any] = {
     "submit_plan": {"allowed_decisions": ["approve", "edit", "reject"]},
@@ -52,10 +53,17 @@ def _no_general_purpose(*models: BaseChatModel) -> None:
 
 
 def _subagent(
-    name: str, description: str, prompt: str, tools: list[BaseTool], model: BaseChatModel, effort: Effort, spent: Spent
+    name: str,
+    description: str,
+    prompt: str,
+    tools: list[BaseTool],
+    model: BaseChatModel,
+    effort: Effort,
+    spent: Spent,
+    tokens: Tokens,
 ) -> SubAgent:
     middleware: list[Any] = [  # Any: langchain's middleware generics are invariant in state and context
-        BudgetGuard(spent),
+        BudgetGuard(spent, tokens=tokens),
         LoopGuard(),
         ModelCallLimitMiddleware(run_limit=effort.model_calls, exit_behavior="end"),
         ToolCallLimitMiddleware(run_limit=effort.tool_calls, exit_behavior="end"),
@@ -79,6 +87,7 @@ def build_agent(
     reader: BaseChatModel,
     deps: ToolDeps,
     spent: Spent,
+    tokens: Tokens,
     checkpointer: BaseCheckpointSaver | None = None,
     store: BaseStore | None = None,
 ):
@@ -97,7 +106,7 @@ def build_agent(
     if effort.name == "quick":
         # past the cap each tool call errors, the Lead answers from what it has and the run is marked partial
         quick_guards: list[Any] = [
-            BudgetGuard(spent, wrap_up=True),
+            BudgetGuard(spent, tokens=tokens, wrap_up=True),
             LoopGuard(),
             ToolCallLimitMiddleware(thread_limit=effort.tool_calls, exit_behavior="continue"),
         ]
@@ -110,7 +119,7 @@ def build_agent(
         )
     lead_guards: list[Any] = [
         TodoListMiddleware(),
-        BudgetGuard(spent, wrap_up=True),
+        BudgetGuard(spent, tokens=tokens, wrap_up=True),
         LoopGuard(),
         EffortGuard(effort),
         ToolCallLimitMiddleware(tool_name="ask_user", thread_limit=3, exit_behavior="continue"),
@@ -122,8 +131,10 @@ def build_agent(
         system_prompt=prompts.LEAD,
         tools=[tools["rank_candidates"], tools["ask_user"], tools["submit_plan"]],
         subagents=[
-            _subagent("scout", prompts.SCOUT_DESCRIPTION, prompts.SCOUT, scout_tools, scout, effort, spent),
-            _subagent("reader", prompts.READER_DESCRIPTION, prompts.READER, reader_tools, reader, effort, spent),
+            _subagent("scout", prompts.SCOUT_DESCRIPTION, prompts.SCOUT, scout_tools, scout, effort, spent, tokens),
+            _subagent(
+                "reader", prompts.READER_DESCRIPTION, prompts.READER, reader_tools, reader, effort, spent, tokens
+            ),
         ],
         middleware=lead_guards,
         interrupt_on=HITL,
