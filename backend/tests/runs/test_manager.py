@@ -512,3 +512,67 @@ async def test_a_summary_precedes_the_end_of_the_run(sm):
     assert summary["name"] == "run_summary"
     coverage = {"observed": 1, "estimated": 1.0, "lists": 2}
     assert summary["value"] == {"status": "completed", "spent_usd": 0.0, "budget_usd": 1.0, "coverage": coverage}
+
+
+async def test_resume_answers_once_the_resumed_run_is_streaming(sm):
+    """A stream opened once `resume` answers must find the resumed RUN_STARTED, not just the paused segment's
+    end: `follow` reads a `running` run whose newest row is terminal as one that has already finished."""
+    run = await seed_run(sm)
+    fetch, entered, gate, calls = blocking_tool()
+    graph = agent(script(call("fetch", {"x": "a"}), "done"), [fetch])
+    builds, building, release = 0, asyncio.Event(), asyncio.Event()
+
+    async def build(run: Run) -> Any:
+        nonlocal builds
+        builds += 1
+        if builds == 2:  # the resumed drive is slow to reach its first event, as a cold build is
+            building.set()
+            await release.wait()
+        return graph
+
+    m = RunManager(sm, build)
+    await m.start(run.id)
+    await entered.wait()
+    await m.pause(run.id)
+    resuming = asyncio.create_task(m.resume(run.id))
+    await building.wait()
+    await asyncio.sleep(0.05)
+    assert not resuming.done()  # the status says `running`, but nothing streams yet
+    release.set()
+    with anyio.fail_after(5):  # the resumed drive blocks in its tool: waiting for the drive to end would hang
+        await resuming
+    assert (await kinds(sm, run.id)).count("RUN_STARTED") == 2
+    gate.set()
+    await m.wait(run.id)
+    assert (await row(sm, run.id)).status == "completed"
+
+
+async def test_a_resume_whose_drive_dies_before_its_first_event_does_not_hang(sm, monkeypatch):
+    run = await seed_run(sm)
+    fetch, entered, gate, calls = blocking_tool()
+    m = manager(sm, agent(script(call("fetch", {"x": "a"}), "done"), [fetch]))
+    await m.start(run.id)
+    await entered.wait()
+    await m.pause(run.id)
+    gate.set()
+    real = RunEventLog.append
+
+    async def failing(self, event, **kwargs):
+        if event.type.value == "RUN_STARTED":  # not even the failure path can open the AG-UI run
+            raise RuntimeError("database gone")
+        await real(self, event, **kwargs)
+
+    monkeypatch.setattr(RunEventLog, "append", failing)
+    spawn, drives = m._spawn, []
+
+    def record(*args):
+        task, started = spawn(*args)
+        drives.append(task)
+        return task, started
+
+    monkeypatch.setattr(m, "_spawn", record)
+    with anyio.fail_after(5):
+        await m.resume(run.id)  # no RUN_STARTED will ever commit: the drive's end is what answers
+    assert (await kinds(sm, run.id)).count("RUN_STARTED") == 1  # only the paused segment's
+    with pytest.raises(RuntimeError):
+        await drives[0]

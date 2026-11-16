@@ -124,7 +124,15 @@ class RunManager:
             raise RunStateError("this run is waiting for the user's decisions")
         async with self.sessions.begin() as session:
             await self._set(session, run_id, "running", ("paused", "awaiting_user"))
-        self._spawn(run_id, decisions or None)
+        task, started = self._spawn(run_id, decisions or None)
+        # answer once the resumed AG-UI run is in the log: before that, a stream sees `running` with the paused
+        # segment's end as its newest row, and `follow` reads that as a run that has already finished. A drive
+        # that dies before its first event answers too; it has recorded its failure.
+        waiter = asyncio.create_task(started.wait())
+        try:
+            await asyncio.wait({waiter, task}, return_when=asyncio.FIRST_COMPLETED)
+        finally:
+            waiter.cancel()
 
     async def _check(self, run_id: uuid.UUID, decisions: list[dict[str, Any]]) -> None:
         """Decisions must answer the open review action by action: HITL fails the run on a mismatch."""
@@ -209,8 +217,10 @@ class RunManager:
 
     def _spawn(
         self, run_id: uuid.UUID, decisions: list[dict[str, Any]] | None, checkpoint_id: str | None = None
-    ) -> None:
-        task = asyncio.create_task(self._drive(run_id, decisions, checkpoint_id))
+    ) -> tuple[asyncio.Task[None], asyncio.Event]:
+        """Start the drive task. The event is set once its RUN_STARTED row commits."""
+        started = asyncio.Event()
+        task = asyncio.create_task(self._drive(run_id, decisions, checkpoint_id, started))
         self._tasks[run_id] = task
 
         def forget(done: asyncio.Task[None]) -> None:
@@ -218,6 +228,7 @@ class RunManager:
                 del self._tasks[run_id]
 
         task.add_done_callback(forget)
+        return task, started
 
     async def _stop(self, run_id: uuid.UUID) -> None:
         task = self._tasks.get(run_id)
@@ -227,9 +238,13 @@ class RunManager:
                 await task
 
     async def _drive(
-        self, run_id: uuid.UUID, decisions: list[dict[str, Any]] | None, checkpoint_id: str | None
+        self,
+        run_id: uuid.UUID,
+        decisions: list[dict[str, Any]] | None,
+        checkpoint_id: str | None,
+        started: asyncio.Event,
     ) -> None:
-        log = RunEventLog(self.sessions, self.hub, run_id)
+        log = RunEventLog(self.sessions, self.hub, run_id, started=started)
         thread, agui_run = str(run_id), str(uuid.uuid4())  # one AG-UI run per drive
         try:
             async with self.sessions() as session:
