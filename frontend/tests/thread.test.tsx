@@ -183,3 +183,50 @@ test("a thread whose last run is still live re-attaches to its stream", async ()
   )
   expect(calls.some((call) => call.url.includes("/runs/r1/stream"))).toBe(true)
 })
+
+test("the default tier sits exactly on the threshold and still sends without asking", async () => {
+  // `standard` has a budget of $1.00 and the default threshold is $1, so this is the boundary the
+  // comparison turns on. Relaxing `>` to `>=` would make the default tier - the one almost every run
+  // uses - demand a confirmation before it would spend a cent, and no other test touches the case.
+  const calls = serve(routes())
+  renderAt("/p/p1/chat/t1")
+  await screen.findByRole("combobox", { name: "Effort" })
+  await userEvent.type(
+    screen.getByRole("textbox", { name: "Ask a research question" }),
+    "Why does RAG help?"
+  )
+  await userEvent.click(screen.getByRole("button", { name: "Send" }))
+  const created = await vi.waitUntil(() =>
+    calls.find((call) => call.url.endsWith("/threads/t1/runs"))
+  )
+  expect(await created.clone().json()).toEqual({
+    message: "Why does RAG help?",
+    effort: "standard",
+  })
+  expect(screen.queryByRole("dialog")).toBeNull()
+})
+
+test("a threshold raised in this browser lets a dearer tier through without asking", async () => {
+  // the stored threshold is the only thing that makes the confirmation configurable, and nothing
+  // else reads it: with the localStorage lookup removed, every run would be judged against $1
+  localStorage.setItem("researchly.budget-threshold", "10")
+  const calls = serve(routes())
+  renderAt("/p/p1/chat/t1")
+  await userEvent.selectOptions(
+    await screen.findByRole("combobox", { name: "Effort" }),
+    "deep"
+  )
+  await userEvent.type(
+    screen.getByRole("textbox", { name: "Ask a research question" }),
+    "Why does RAG help?"
+  )
+  await userEvent.click(screen.getByRole("button", { name: "Send" }))
+  const created = await vi.waitUntil(() =>
+    calls.find((call) => call.url.endsWith("/threads/t1/runs"))
+  )
+  expect(await created.clone().json()).toEqual({
+    message: "Why does RAG help?",
+    effort: "deep",
+  })
+  expect(screen.queryByRole("dialog")).toBeNull()
+})
