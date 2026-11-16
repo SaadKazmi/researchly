@@ -81,7 +81,8 @@
     "branch": "Branch",
     "branchFrom": "Branch from here",
     "checkpoint": "Checkpoint",
-    "step": "step {{step}}"
+    "step": "step {{step}}",
+    "actionFailed": "That did not go through. Check that Researchly is still running, then try again."
   },
   "placeholder": "This view arrives in a later build step."
 }

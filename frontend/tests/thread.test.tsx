@@ -357,12 +357,13 @@ test("a revisited thread shows the answer of a run that finished meanwhile", asy
       created_at: "2026-11-13T10:00:00Z",
       messages,
     })
-  // the run's answer lands between the first visit and the second
+  // the run's answer lands between the first visit and the second. The first visit reads the thread
+  // twice: the run had already ended when it was read, so its answer may have landed in between
   let visits = 0
   serve({
     ...routes(),
     "GET /api/v1/threads/t1": () =>
-      thread("t1", ++visits === 1 ? [question] : [question, answer]),
+      thread("t1", ++visits <= 2 ? [question] : [question, answer]),
     "GET /api/v1/threads/t2": () => thread("t2", []),
     "GET /api/v1/runs/r1": () => Response.json({ ...run, status: "completed" }),
   })
@@ -460,4 +461,141 @@ test("branching from the panel re-attaches the transcript to the child run's str
     await screen.findByText(/lowers hallucination rates/)
   ).toBeInTheDocument()
   expect(calls.some((call) => call.url.includes("/runs/r2/stream"))).toBe(true)
+})
+
+test("a paused and resumed run keeps the question the composer sent", async () => {
+  // the view opened on an empty thread; the question exists only in the stored thread from here on,
+  // so the remount that re-attaches must hydrate from a fresh copy
+  let asked = false
+  let status = "running"
+  const question = {
+    id: "m1",
+    role: "user",
+    text: "Why does RAG help?",
+    run_id: "r1",
+    created_at: "2026-11-13T10:00:00Z",
+  }
+  const calls = serve({
+    ...routes(),
+    "GET /api/v1/threads/t1": () =>
+      Response.json({
+        id: "t1",
+        project_id: "p1",
+        title: null,
+        created_at: "2026-11-13T10:00:00Z",
+        messages: asked ? [question] : [],
+      }),
+    "POST /api/v1/threads/t1/runs": () => {
+      asked = true
+      return Response.json(run, { status: 201 })
+    },
+    "GET /api/v1/runs/r1": () => Response.json({ ...run, status }),
+    "POST /api/v1/runs/r1/pause": () => {
+      status = "paused"
+      return Response.json({ ...run, status })
+    },
+    "POST /api/v1/runs/r1/resume": () => {
+      status = "running"
+      return Response.json({ ...run, status })
+    },
+    "POST /api/v1/runs/r1/stream": () => sse(untilInterrupt()),
+  })
+  renderAt("/p/p1/chat/t1")
+  await userEvent.selectOptions(
+    await screen.findByRole("combobox", { name: "Effort" }),
+    "quick"
+  )
+  await userEvent.type(
+    screen.getByRole("textbox", { name: "Ask a research question" }),
+    "Why does RAG help?"
+  )
+  await userEvent.click(screen.getByRole("button", { name: "Send" }))
+  await userEvent.click(await screen.findByRole("button", { name: "Pause" }))
+  await userEvent.click(await screen.findByRole("button", { name: "Resume" }))
+  const streams = () =>
+    calls.filter((call) => call.url.includes("/runs/r1/stream")).length
+  // only the remounted runtime opens a second stream
+  await vi.waitUntil(() => streams() === 2, { timeout: 10_000 })
+  expect(await screen.findByText("Why does RAG help?")).toBeInTheDocument()
+})
+
+test("a run that ended while the thread loaded still shows its answer on the first visit", async () => {
+  // the thread is read before the run's answer is stored, the run after it has ended: no stream
+  // will carry the answer, so the thread is read again
+  let reads = 0
+  serve({
+    ...routes(),
+    "GET /api/v1/threads/t1": () =>
+      Response.json({
+        id: "t1",
+        project_id: "p1",
+        title: null,
+        created_at: "2026-11-13T10:00:00Z",
+        messages: [
+          {
+            id: "m1",
+            role: "user",
+            text: "Why does RAG help?",
+            run_id: "r1",
+            created_at: "2026-11-13T10:00:00Z",
+          },
+          ...(++reads === 1
+            ? []
+            : [
+                {
+                  id: "m2",
+                  role: "assistant",
+                  text: "Because it grounds the answer.",
+                  run_id: "r1",
+                  created_at: "2026-11-13T10:01:00Z",
+                },
+              ]),
+        ],
+      }),
+    "GET /api/v1/runs/r1": () => Response.json({ ...run, status: "completed" }),
+  })
+  renderAt("/p/p1/chat/t1")
+  expect(
+    await screen.findByText("Because it grounds the answer.")
+  ).toBeInTheDocument()
+})
+
+test("a conversation stays open when its run ends under it", async () => {
+  // the run turns terminal while the view is open, which is exactly what the opening gates wait out;
+  // re-applying them would unmount the streamed transcript and reopen on a thread without it
+  let runReads = 0
+  let threadReads = 0
+  const base = routes([
+    {
+      id: "m1",
+      role: "user",
+      text: "Why does RAG help?",
+      run_id: "r1",
+      created_at: "2026-11-13T10:00:00Z",
+    },
+  ])
+  serve({
+    ...base,
+    "GET /api/v1/threads/t1": async () => {
+      // the panel's reread at the run's end is slow, as a real one can be: the view renders the
+      // ended run before the newer thread lands
+      if (++threadReads > 1) await new Promise((done) => setTimeout(done, 300))
+      return base["GET /api/v1/threads/t1"]()
+    },
+    "GET /api/v1/runs/r1": () =>
+      Response.json({
+        ...run,
+        status: ++runReads === 1 ? "running" : "completed",
+      }),
+  })
+  renderAt("/p/p1/chat/t1")
+  expect(
+    await screen.findByText(/lowers hallucination rates/)
+  ).toBeInTheDocument()
+  await waitFor(() => expect(threadReads).toBe(2))
+  await act(() => new Promise((done) => setTimeout(done, 500))) // the slow reread lands
+  expect(screen.getByText(/lowers hallucination rates/)).toBeInTheDocument()
+  expect(
+    screen.getByText("completed · $0.86 spent · 73% coverage")
+  ).toBeInTheDocument()
 })

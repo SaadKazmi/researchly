@@ -148,3 +148,52 @@ test("branching posts the chosen checkpoint and re-attaches to the child run", a
   expect(await branch.clone().json()).toEqual({ checkpoint_id: "ck-1" })
   expect(onReattach).toHaveBeenCalledWith("r2")
 })
+
+test("resuming a paused run re-attaches the transcript to the same run", async () => {
+  serve({
+    "GET /api/v1/runs/r1": () => Response.json({ ...run, status: "paused" }),
+    "POST /api/v1/runs/r1/resume": () => Response.json(run),
+  })
+  const { agent } = fakeAgent()
+  const onReattach = mount(agent)
+  await userEvent.click(await screen.findByRole("button", { name: "Resume" }))
+  await vi.waitUntil(() => onReattach.mock.calls.length > 0)
+  expect(onReattach).toHaveBeenCalledWith() // no id: the same run, on a fresh stream
+})
+
+test("cancelling a live run calls the API", async () => {
+  const calls = serve({
+    "GET /api/v1/runs/r1": () => Response.json(run),
+    "POST /api/v1/runs/r1/cancel": () =>
+      Response.json({ ...run, status: "cancelled" }),
+  })
+  const { agent } = fakeAgent()
+  mount(agent)
+  await userEvent.click(
+    await screen.findByRole("button", { name: "Cancel the run" })
+  )
+  expect(calls.some((call) => call.url.endsWith("/runs/r1/cancel"))).toBe(true)
+})
+
+test("a spent budget says the run stopped early, not that it is wrapping up", async () => {
+  serve({ "GET /api/v1/runs/r1": () => Response.json(run) })
+  const { agent, play } = fakeAgent()
+  mount(agent)
+  const cost = { spent_usd: 1, budget_usd: 1, tokens: 9000 }
+  await play([
+    { data: JSON.stringify({ type: "CUSTOM", name: "cost", value: cost }) },
+  ])
+  expect(screen.getByText(/stopped early/)).toBeInTheDocument()
+  expect(screen.queryByText(/wrapping up/)).toBeNull()
+})
+
+test("a control the API refuses says so", async () => {
+  serve({
+    "GET /api/v1/runs/r1": () => Response.json(run),
+    "POST /api/v1/runs/r1/pause": () => new Response(null, { status: 409 }),
+  })
+  const { agent } = fakeAgent()
+  mount(agent)
+  await userEvent.click(await screen.findByRole("button", { name: "Pause" }))
+  expect(await screen.findByText(/did not go through/)).toBeInTheDocument()
+})

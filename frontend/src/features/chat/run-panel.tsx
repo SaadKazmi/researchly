@@ -189,6 +189,7 @@ export function RunPanel({
             type="button"
             size="sm"
             variant="outline"
+            disabled={control.isPending}
             onClick={() => control.mutate("pause")}
           >
             {t("run.pause")}
@@ -198,6 +199,7 @@ export function RunPanel({
           <Button
             type="button"
             size="sm"
+            disabled={control.isPending}
             onClick={() => control.mutate("resume")}
           >
             {t("run.resume")}
@@ -208,6 +210,7 @@ export function RunPanel({
             type="button"
             size="sm"
             variant="outline"
+            disabled={control.isPending}
             onClick={() => control.mutate("cancel")}
           >
             {t("run.cancel")}
@@ -222,11 +225,15 @@ export function RunPanel({
           {t("run.branch")}
         </Button>
       </section>
+      <p aria-live="polite" className="text-sm empty:hidden">
+        {control.isError || branch.isError ? t("run.actionFailed") : ""}
+      </p>
 
       {branching && (
         <BranchPicker
           runId={runId}
           value={checkpoint}
+          pending={branch.isPending}
           onChange={setCheckpoint}
           onBranch={branch.mutate}
         />
@@ -238,11 +245,13 @@ export function RunPanel({
 function BranchPicker({
   runId,
   value,
+  pending,
   onChange,
   onBranch,
 }: {
   runId: string
   value: string
+  pending: boolean
   onChange: (checkpointId: string) => void
   onBranch: (checkpointId: string) => void
 }) {
@@ -276,7 +285,7 @@ function BranchPicker({
       <Button
         type="button"
         size="sm"
-        disabled={!chosen}
+        disabled={!chosen || pending}
         onClick={() => onBranch(chosen)}
       >
         {t("run.branchFrom")}

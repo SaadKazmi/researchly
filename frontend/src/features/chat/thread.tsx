@@ -7,7 +7,7 @@ import {
   useAuiState,
 } from "@assistant-ui/react"
 import { useAgUiRuntime } from "@assistant-ui/react-ag-ui"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 
@@ -39,6 +39,10 @@ function threshold(): number {
 const dollars = (value: string | number) => `$${Number(value).toFixed(2)}`
 
 export function ChatThread({ threadId }: { threadId: string }) {
+  return <ThreadView key={threadId} threadId={threadId} />
+}
+
+function ThreadView({ threadId }: { threadId: string }) {
   const { t } = useTranslation()
   // the runtime reads the transcript once, on mount, so it must not start from a cached copy: a
   // run may have answered since the thread was last open
@@ -46,19 +50,45 @@ export function ChatThread({ threadId }: { threadId: string }) {
     data: thread,
     isError,
     isFetchedAfterMount,
+    dataUpdatedAt: threadAt,
+    refetch,
   } = useQuery({ ...threadQuery(threadId), refetchOnMount: "always" })
   const last = thread?.messages.at(-1)
   // only a trailing user message can belong to a run that has not answered yet
   const candidate = last?.role === "user" ? (last.run_id ?? null) : null
-  const { data: run, isPending: runPending } = useQuery(runQuery(candidate))
+  const {
+    data: run,
+    isPending: runPending,
+    dataUpdatedAt: runAt,
+  } = useQuery(runQuery(candidate))
+  // a run that had already ended when it was read may have stored its answer after the thread was
+  // read: read the thread once more. It cannot loop: the reread is newer, and an ended run stops polling
+  const stale =
+    run !== undefined &&
+    !LIVE_STATUSES.includes(run.status) &&
+    runAt >= threadAt
+  // the gates hold only until the conversation opens: a later refetch that fails, or that moves
+  // `candidate`, must never unmount a live runtime
+  const [opened, setOpened] = useState(false)
+  useEffect(() => {
+    if (stale && !opened) void refetch()
+  }, [stale, opened, refetch])
 
-  if (isError) return <p>{t("chat.threadError")}</p>
   // `runQuery(null)` is disabled, and a disabled query stays pending forever, so the run only
   // gets a say when there is a candidate to fetch
-  if (!thread || !isFetchedAfterMount || (candidate !== null && runPending))
-    return <p>{t("chat.loadingThread")}</p>
-  const live = run && LIVE_STATUSES.includes(run.status) ? run.id : null
-  return <Attachment key={threadId} thread={thread} live={live} />
+  const ready =
+    thread !== undefined &&
+    isFetchedAfterMount &&
+    !(candidate !== null && runPending) &&
+    !(stale && !isError) // a failed reread opens on the copy we have
+  if (ready && !opened) setOpened(true)
+  if (thread && (opened || ready)) {
+    // read once, on the Attachment's mount
+    const live = run && LIVE_STATUSES.includes(run.status) ? run.id : null
+    return <Attachment thread={thread} live={live} />
+  }
+  if (isError && !thread) return <p>{t("chat.threadError")}</p>
+  return <p>{t("chat.loadingThread")}</p>
 }
 
 /**
@@ -67,26 +97,41 @@ export function ChatThread({ threadId }: { threadId: string }) {
  * from `agent.runAgent()` never reach the transcript.
  */
 function Attachment({
-  thread,
+  thread: initial,
   live,
 }: {
   thread: ThreadDetail
   live: string | null
 }) {
-  const [runId, setRunId] = useState(live)
-  const [generation, setGeneration] = useState(0)
+  const queryClient = useQueryClient()
+  const [view, setView] = useState({
+    thread: initial,
+    runId: live,
+    generation: 0,
+  })
   const reattach = (next?: string) => {
-    if (next) setRunId(next)
-    setGeneration((current) => current + 1)
+    // the remount hydrates from this: the copy the view opened with lacks every message sent since
+    void queryClient
+      .fetchQuery({ ...threadQuery(initial.id), staleTime: 0 })
+      .catch(() => undefined) // re-attach on the copy we have rather than not at all
+      .then((thread) =>
+        setView((current) => ({
+          thread: thread ?? current.thread,
+          runId: next ?? current.runId,
+          generation: current.generation + 1,
+        }))
+      )
   }
+  const onRun = (id: string) =>
+    setView((current) => ({ ...current, runId: id }))
   // keyed on the generation alone: a run the composer starts moves `runId` (through `onRun`) while
   // the mounted runtime already streams it, so `runId` in the key would remount it mid-stream
   return (
     <Runtime
-      key={generation}
-      thread={thread}
-      runId={runId}
-      onRun={setRunId}
+      key={view.generation}
+      thread={view.thread}
+      runId={view.runId}
+      onRun={onRun}
       onReattach={reattach}
     />
   )
@@ -168,7 +213,9 @@ function Runtime({
               />
             </ThreadPrimitive.Root>
           </section>
-          {runId && <RunPanel runId={runId} onReattach={onReattach} />}
+          {runId && (
+            <RunPanel key={runId} runId={runId} onReattach={onReattach} />
+          )}
         </div>
       </RunStateProvider>
     </AssistantRuntimeProvider>
