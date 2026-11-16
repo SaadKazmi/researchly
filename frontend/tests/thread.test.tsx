@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react"
+import { act, fireEvent, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, expect, test, vi } from "vitest"
 
@@ -82,6 +82,20 @@ afterEach(() => {
   vi.unstubAllGlobals()
   localStorage.clear()
 })
+
+const posted = (calls: Request[]) =>
+  calls.some((call) => call.url.endsWith("/threads/t1/runs"))
+
+async function askOnDeep() {
+  await userEvent.selectOptions(
+    await screen.findByRole("combobox", { name: "Effort" }),
+    "deep"
+  )
+  await userEvent.type(
+    screen.getByRole("textbox", { name: "Ask a research question" }),
+    "Why does RAG help?"
+  )
+}
 
 test("the stored messages hydrate the thread", async () => {
   serve(
@@ -229,4 +243,158 @@ test("a threshold raised in this browser lets a dearer tier through without aski
     effort: "deep",
   })
   expect(screen.queryByRole("dialog")).toBeNull()
+})
+
+test("Escape dismisses the confirmation, and the next send asks again rather than starting the run", async () => {
+  const calls = serve(routes())
+  renderAt("/p/p1/chat/t1")
+  await askOnDeep()
+  await userEvent.click(screen.getByRole("button", { name: "Send" }))
+  const dialog = await screen.findByRole<HTMLDialogElement>("dialog", {
+    name: "Confirm the budget",
+  })
+  // jsdom has no native Escape, so replay what the browser does: `cancel`, the close, then `close`
+  fireEvent(dialog, new Event("cancel", { cancelable: true }))
+  dialog.close()
+  fireEvent(dialog, new Event("close"))
+  expect(screen.queryByRole("dialog")).toBeNull()
+  await userEvent.click(screen.getByRole("button", { name: "Send" }))
+  expect(
+    await screen.findByRole("dialog", { name: "Confirm the budget" })
+  ).toBeInTheDocument()
+  expect(posted(calls)).toBe(false)
+})
+
+test("Cancel closes the confirmation without starting the run", async () => {
+  const calls = serve(routes())
+  renderAt("/p/p1/chat/t1")
+  await askOnDeep()
+  await userEvent.click(screen.getByRole("button", { name: "Send" }))
+  await screen.findByRole("dialog", { name: "Confirm the budget" })
+  // an open dialog is not consent: only Confirm lets a submit through. (A browser makes the page
+  // inert behind the modal; jsdom does not, which is what lets this second submit be made at all.)
+  await userEvent.click(screen.getByRole("button", { name: "Send" }))
+  expect(posted(calls)).toBe(false)
+  await userEvent.click(screen.getByRole("button", { name: "Cancel" }))
+  expect(screen.queryByRole("dialog")).toBeNull()
+  expect(posted(calls)).toBe(false)
+  await userEvent.click(screen.getByRole("button", { name: "Send" }))
+  expect(
+    await screen.findByRole("dialog", { name: "Confirm the budget" })
+  ).toBeInTheDocument()
+  expect(posted(calls)).toBe(false)
+})
+
+test("an empty composer on a dear tier cannot send and asks nothing", async () => {
+  const calls = serve(routes())
+  renderAt("/p/p1/chat/t1")
+  await userEvent.selectOptions(
+    await screen.findByRole("combobox", { name: "Effort" }),
+    "deep"
+  )
+  expect(screen.getByRole("button", { name: "Send" })).toBeDisabled()
+  // Enter still submits the form; the composer then has nothing to send, so neither may the guard
+  await userEvent.type(
+    screen.getByRole("textbox", { name: "Ask a research question" }),
+    "{Enter}"
+  )
+  expect(screen.queryByRole("dialog")).toBeNull()
+  expect(posted(calls)).toBe(false)
+})
+
+test("the intercepted submit is prevented, so the form never navigates", async () => {
+  // jsdom cannot show the navigation a submit without preventDefault would cause; the flag can
+  const submits: Event[] = []
+  const record = (event: Event) => submits.push(event)
+  window.addEventListener("submit", record, true)
+  serve(routes())
+  renderAt("/p/p1/chat/t1")
+  await askOnDeep()
+  await userEvent.click(screen.getByRole("button", { name: "Send" }))
+  await screen.findByRole("dialog", { name: "Confirm the budget" })
+  window.removeEventListener("submit", record, true)
+  expect(submits).toHaveLength(1)
+  expect(submits[0]!.defaultPrevented).toBe(true)
+})
+
+test("without the effort catalogue nothing can be sent", async () => {
+  // no catalogue, no budget to judge: sending anyway would skip the confirmation on any tier
+  const calls = serve({
+    ...routes(),
+    "GET /api/v1/efforts": () => new Response(null, { status: 500 }),
+  })
+  renderAt("/p/p1/chat/t1")
+  const input = await screen.findByRole("textbox", {
+    name: "Ask a research question",
+  })
+  await userEvent.type(input, "Why does RAG help?")
+  expect(screen.getByRole("button", { name: "Send" })).toBeDisabled()
+  await userEvent.type(input, "{Enter}")
+  expect(input).toHaveValue("Why does RAG help?") // a send would have cleared it
+  expect(posted(calls)).toBe(false)
+})
+
+test("a revisited thread shows the answer of a run that finished meanwhile", async () => {
+  const question = {
+    id: "m1",
+    role: "user",
+    text: "Why does RAG help?",
+    run_id: "r1",
+    created_at: "2026-11-13T10:00:00Z",
+  }
+  const answer = {
+    id: "m2",
+    role: "assistant",
+    text: "Because it grounds the answer.",
+    run_id: "r1",
+    created_at: "2026-11-13T10:01:00Z",
+  }
+  const thread = (id: string, messages: unknown[]) =>
+    Response.json({
+      id,
+      project_id: "p1",
+      title: null,
+      created_at: "2026-11-13T10:00:00Z",
+      messages,
+    })
+  // the run's answer lands between the first visit and the second
+  let visits = 0
+  serve({
+    ...routes(),
+    "GET /api/v1/threads/t1": () =>
+      thread("t1", ++visits === 1 ? [question] : [question, answer]),
+    "GET /api/v1/threads/t2": () => thread("t2", []),
+    "GET /api/v1/runs/r1": () => Response.json({ ...run, status: "completed" }),
+  })
+  const { router } = renderAt("/p/p1/chat/t1")
+  expect(await screen.findByText("Why does RAG help?")).toBeInTheDocument()
+  expect(screen.queryByText("Because it grounds the answer.")).toBeNull()
+  const open = (id: string) =>
+    act(() =>
+      router.navigate({
+        to: "/p/$id/chat/$thread",
+        params: { id: "p1", thread: id },
+      })
+    )
+  await open("t2")
+  await waitFor(() =>
+    expect(screen.queryByText("Why does RAG help?")).toBeNull()
+  )
+  await open("t1")
+  expect(
+    await screen.findByText("Because it grounds the answer.")
+  ).toBeInTheDocument()
+})
+
+test("a thread that fails to load says so instead of loading forever", async () => {
+  serve({
+    ...routes(),
+    "GET /api/v1/threads/t1": () => new Response(null, { status: 500 }),
+  })
+  renderAt("/p/p1/chat/t1")
+  expect(
+    await screen.findByText(
+      "Could not load this thread. Check that Researchly is still running."
+    )
+  ).toBeInTheDocument()
 })

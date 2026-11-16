@@ -28,4 +28,8 @@ globalThis.ResizeObserver ??= class {
   disconnect() {}
 }
 
+// assistant-ui scrolls the window; jsdom defines scrollTo only to log "Not implemented", so `??=`
+// would keep that stub and this overrides it.
+window.scrollTo = () => {}
+
 afterEach(cleanup)

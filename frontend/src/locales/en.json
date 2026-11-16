@@ -52,6 +52,7 @@
     "noMatches": "No threads match your search.",
     "conversation": "Conversation",
     "loadingThread": "Loading the thread…",
+    "threadError": "Could not load this thread. Check that Researchly is still running.",
     "ask": "Ask a research question",
     "send": "Send",
     "effort": "Effort",

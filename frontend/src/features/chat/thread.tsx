@@ -4,6 +4,7 @@ import {
   ExportedMessageRepository,
   MessagePrimitive,
   ThreadPrimitive,
+  useAuiState,
 } from "@assistant-ui/react"
 import { useAgUiRuntime } from "@assistant-ui/react-ag-ui"
 import { useQuery } from "@tanstack/react-query"
@@ -43,15 +44,22 @@ export function ChatThread({
   threadId: string
 }) {
   const { t } = useTranslation()
-  const { data: thread } = useQuery(threadQuery(threadId))
+  // the runtime reads the transcript once, on mount, so it must not start from a cached copy: a
+  // run may have answered since the thread was last open
+  const {
+    data: thread,
+    isError,
+    isFetchedAfterMount,
+  } = useQuery({ ...threadQuery(threadId), refetchOnMount: "always" })
   const last = thread?.messages.at(-1)
   // only a trailing user message can belong to a run that has not answered yet
   const candidate = last?.role === "user" ? (last.run_id ?? null) : null
   const { data: run, isPending: runPending } = useQuery(runQuery(candidate))
 
+  if (isError) return <p>{t("chat.threadError")}</p>
   // `runQuery(null)` is disabled, and a disabled query stays pending forever, so the run only
   // gets a say when there is a candidate to fetch
-  if (!thread || (candidate !== null && runPending))
+  if (!thread || !isFetchedAfterMount || (candidate !== null && runPending))
     return <p>{t("chat.loadingThread")}</p>
   const live = run && LIVE_STATUSES.includes(run.status) ? run.id : null
   return <Runtime key={threadId} thread={thread} live={live} />
@@ -150,7 +158,11 @@ function Composer({
   onEffort: (effort: EffortName) => void
 }) {
   const { t } = useTranslation()
+  // what the composer's own submit checks: an empty draft or a run in flight sends nothing
+  const canSend = useAuiState((s) => s.composer.canSend && !s.thread.isRunning)
   const [pending, setPending] = useState<HTMLFormElement | null>(null)
+  // set by `confirm` for exactly the one submit it makes; the guard spends it
+  const confirmed = useRef(false)
   const dialog = useRef<HTMLDialogElement>(null)
   const over =
     selected !== undefined && Number(selected.budget_usd) > threshold()
@@ -161,18 +173,27 @@ function Composer({
   }, [pending])
 
   const confirm = () => {
-    const form = pending
+    confirmed.current = true
+    pending?.requestSubmit()
     setPending(null)
-    form?.requestSubmit() // the guard lets it through: `pending` is null again
   }
 
   return (
     <div
       onSubmitCapture={(event) => {
-        if (!over || pending) return
+        // a send the composer will drop, one under the threshold, or the confirmed one goes through
+        if (
+          !canSend ||
+          (selected !== undefined && !over) ||
+          confirmed.current
+        ) {
+          confirmed.current = false
+          return
+        }
         event.preventDefault() // capture runs before the composer's own submit
         event.stopPropagation()
-        setPending(event.target as HTMLFormElement)
+        // no catalogue, no budget to judge: nothing goes out until it loads
+        if (selected) setPending(event.target as HTMLFormElement)
       }}
     >
       <ComposerPrimitive.Root className="flex flex-col gap-2 border-t pt-3">
@@ -214,14 +235,17 @@ function Composer({
               it. A submit puts the click and the Enter key on the one path the guard watches. */}
           <button
             type="submit"
+            disabled={!canSend || selected === undefined}
             className="ml-auto h-8 rounded-md bg-primary px-3 text-sm text-primary-foreground"
           >
             {t("chat.send")}
           </button>
         </div>
       </ComposerPrimitive.Root>
+      {/* `close` follows Escape, Cancel and the effect's close() alike: each one drops the send */}
       <dialog
         ref={dialog}
+        onClose={() => setPending(null)}
         aria-label={t("chat.confirmTitle")}
         className="rounded-md border p-4"
       >
