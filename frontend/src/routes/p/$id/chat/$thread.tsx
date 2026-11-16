@@ -10,7 +10,7 @@ function Chat() {
   return (
     <div className="flex flex-1 gap-6">
       <ThreadList projectId={id} />
-      <ChatThread projectId={id} threadId={thread} />
+      <ChatThread threadId={thread} />
     </div>
   )
 }

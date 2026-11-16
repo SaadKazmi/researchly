@@ -22,6 +22,7 @@ import {
 } from "@/api/queries"
 import { Button } from "@/components/ui/button"
 import { createAgent, newRunRef } from "@/features/chat/agent"
+import { RunPanel } from "@/features/chat/run-panel"
 import { RunStateProvider } from "@/features/chat/run-state"
 
 const DEFAULT_THRESHOLD = 1
@@ -37,12 +38,7 @@ function threshold(): number {
 
 const dollars = (value: string | number) => `$${Number(value).toFixed(2)}`
 
-export function ChatThread({
-  threadId,
-}: {
-  projectId: string
-  threadId: string
-}) {
+export function ChatThread({ threadId }: { threadId: string }) {
   const { t } = useTranslation()
   // the runtime reads the transcript once, on mount, so it must not start from a cached copy: a
   // run may have answered since the thread was last open
@@ -62,23 +58,61 @@ export function ChatThread({
   if (!thread || !isFetchedAfterMount || (candidate !== null && runPending))
     return <p>{t("chat.loadingThread")}</p>
   const live = run && LIVE_STATUSES.includes(run.status) ? run.id : null
-  return <Runtime key={threadId} thread={thread} live={live} />
+  return <Attachment key={threadId} thread={thread} live={live} />
 }
 
-function Runtime({
+/**
+ * The run the panel follows, and the one way to re-attach the transcript to a run: remount the
+ * runtime with that run as its live one, so its history adapter resumes the stream on mount. Events
+ * from `agent.runAgent()` never reach the transcript.
+ */
+function Attachment({
   thread,
   live,
 }: {
   thread: ThreadDetail
   live: string | null
 }) {
+  const [runId, setRunId] = useState(live)
+  const [generation, setGeneration] = useState(0)
+  const reattach = (next?: string) => {
+    if (next) setRunId(next)
+    setGeneration((current) => current + 1)
+  }
+  // keyed on the generation alone: a run the composer starts moves `runId` (through `onRun`) while
+  // the mounted runtime already streams it, so `runId` in the key would remount it mid-stream
+  return (
+    <Runtime
+      key={generation}
+      thread={thread}
+      runId={runId}
+      onRun={setRunId}
+      onReattach={reattach}
+    />
+  )
+}
+
+function Runtime({
+  thread,
+  runId,
+  onRun,
+  onReattach,
+}: {
+  thread: ThreadDetail
+  /** The run the panel shows. On mount, it is also the live run the transcript attaches to. */
+  runId: string | null
+  onRun: (id: string) => void
+  onReattach: (runId?: string) => void
+}) {
   const { t } = useTranslation()
   const { data: efforts = [] } = useQuery(effortsQuery)
   const [effort, setEffort] = useState<EffortName>("standard")
-  // one ref and one agent per mounted thread; the key above remounts them when the thread changes
+  // one ref and one agent per mount; the keys above remount them when the thread changes or a run
+  // is re-attached
   const [ref] = useState(() => {
     const created = newRunRef(thread.messages, effort)
-    created.runId = live // a known live run is attached to, not created again
+    created.runId = runId // a known live run is attached to, not created again
+    created.onRun = onRun // a run the composer starts is reported up, so the panel follows it
     return created
   })
   const [agent] = useState(() => createAgent(thread.id, thread.messages, ref))
@@ -107,7 +141,7 @@ function Runtime({
       ),
       // a run still going gets picked up where it left off instead of asked again (ruling 9). The
       // runtime has to drive it: events from `agent.runAgent()` never reach the transcript.
-      unstable_resume: live !== null,
+      unstable_resume: runId !== null,
     }),
     append: async () => {}, // the backend stores every message as the run produces it
   }))
@@ -117,22 +151,25 @@ function Runtime({
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <RunStateProvider agent={agent}>
-        <section
-          aria-label={t("chat.conversation")}
-          className="flex min-w-0 flex-1 flex-col gap-3"
-        >
-          <ThreadPrimitive.Root className="flex min-h-0 flex-1 flex-col">
-            <ThreadPrimitive.Viewport className="flex-1 overflow-y-auto">
-              <ThreadPrimitive.Messages components={{ Message: Bubble }} />
-            </ThreadPrimitive.Viewport>
-            <Composer
-              effort={effort}
-              efforts={efforts}
-              selected={selected}
-              onEffort={chooseEffort}
-            />
-          </ThreadPrimitive.Root>
-        </section>
+        <div className="flex min-w-0 flex-1 gap-4">
+          <section
+            aria-label={t("chat.conversation")}
+            className="flex min-w-0 flex-1 flex-col gap-3"
+          >
+            <ThreadPrimitive.Root className="flex min-h-0 flex-1 flex-col">
+              <ThreadPrimitive.Viewport className="flex-1 overflow-y-auto">
+                <ThreadPrimitive.Messages components={{ Message: Bubble }} />
+              </ThreadPrimitive.Viewport>
+              <Composer
+                effort={effort}
+                efforts={efforts}
+                selected={selected}
+                onEffort={chooseEffort}
+              />
+            </ThreadPrimitive.Root>
+          </section>
+          {runId && <RunPanel runId={runId} onReattach={onReattach} />}
+        </div>
       </RunStateProvider>
     </AssistantRuntimeProvider>
   )

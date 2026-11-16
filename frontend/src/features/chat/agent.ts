@@ -9,6 +9,8 @@ export type RunRef = {
   lastSeq: number
   lastUserMessageId: string | null
   effort: EffortName
+  /** Told the id of a run this adapter just created, so the run panel can follow it. */
+  onRun?: (id: string) => void
 }
 
 export function newRunRef(messages: Message[], effort: EffortName): RunRef {
@@ -75,6 +77,7 @@ export function makeFetch(threadId: string, ref: RunRef) {
         })
       )
       ref.runId = run.id
+      ref.onRun?.(run.id)
       ref.lastSeq = 0
       ref.lastUserMessageId = last.id
     }

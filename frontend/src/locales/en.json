@@ -63,5 +63,25 @@
     "confirm": "Start the run",
     "cancel": "Cancel"
   },
+  "run": {
+    "panel": "Run",
+    "budget": "Budget",
+    "spent": "{{spent}} of {{budget}}",
+    "tokens": "{{tokens}} tokens",
+    "wrapUp": "80% of the budget is spent: the run is wrapping up.",
+    "stopped": "The budget is spent: the run stopped early.",
+    "summary": "{{status}} · {{spent}} spent · {{coverage}}% coverage",
+    "failed": "The run failed.",
+    "activity": "Run activity",
+    "todos": "Plan",
+    "status": { "running": "running", "done": "done" },
+    "pause": "Pause",
+    "resume": "Resume",
+    "cancel": "Cancel the run",
+    "branch": "Branch",
+    "branchFrom": "Branch from here",
+    "checkpoint": "Checkpoint",
+    "step": "step {{step}}"
+  },
   "placeholder": "This view arrives in a later build step."
 }

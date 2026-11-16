@@ -52,6 +52,23 @@ test("a new user message creates the run, then streams it from the start", async
   expect(ref.lastSeq).toBe(untilInterrupt().at(-1)!.seq)
 })
 
+test("a freshly started run is reported through onRun", async () => {
+  // the run panel follows the run the composer just started; nothing else tells it the id
+  serve({
+    "POST /api/v1/threads/t1/runs": () => Response.json(run, { status: 201 }),
+    "POST /api/v1/runs/r1/stream": () => sse(untilInterrupt()),
+  })
+  const onRun = vi.fn()
+  const ref = { ...newRunRef([], "standard"), onRun }
+  await (
+    await makeFetch("t1", ref)(
+      "https://ignored",
+      input([{ id: "u1", role: "user", content: "Why?" }])
+    )
+  ).text()
+  expect(onRun).toHaveBeenCalledWith("r1")
+})
+
 test("the same transcript attaches to the known run and resumes after the last sequence", async () => {
   const calls = serve({
     "POST /api/v1/threads/t1/runs": () => Response.json(run, { status: 201 }),

@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event"
 import { afterEach, expect, test, vi } from "vitest"
 
 import { healthy, renderAt, serve, version } from "./render"
-import { frames, sse } from "./sse"
+import { frames, sse, untilInterrupt } from "./sse"
 
 const efforts = [
   {
@@ -397,4 +397,67 @@ test("a thread that fails to load says so instead of loading forever", async () 
       "Could not load this thread. Check that Researchly is still running."
     )
   ).toBeInTheDocument()
+})
+
+test("a run that finishes refetches the thread, so the stored copy catches up with its answer", async () => {
+  // the transcript was hydrated before the run's answer was stored; the run's end is the moment
+  // the stored thread catches up
+  let visits = 0
+  const base = routes()
+  serve({
+    ...base,
+    "GET /api/v1/threads/t1": () => {
+      visits += 1
+      return base["GET /api/v1/threads/t1"]()
+    },
+  })
+  renderAt("/p/p1/chat/t1")
+  await userEvent.selectOptions(
+    await screen.findByRole("combobox", { name: "Effort" }),
+    "quick"
+  )
+  await userEvent.type(
+    screen.getByRole("textbox", { name: "Ask a research question" }),
+    "Why does RAG help?"
+  )
+  await userEvent.click(screen.getByRole("button", { name: "Send" }))
+  // the summary is the stream's last event: once the panel shows it, the run is over
+  expect(
+    await screen.findByText("completed · $0.86 spent · 73% coverage")
+  ).toBeInTheDocument()
+  await waitFor(() => expect(visits).toBe(2))
+})
+
+test("branching from the panel re-attaches the transcript to the child run's stream", async () => {
+  const calls = serve({
+    ...routes([
+      {
+        id: "m1",
+        role: "user",
+        text: "Why does RAG help?",
+        run_id: "r1",
+        created_at: "2026-11-13T10:00:00Z",
+      },
+    ]),
+    "GET /api/v1/runs/r1": () => Response.json({ ...run, status: "paused" }),
+    "POST /api/v1/runs/r1/stream": () => sse(untilInterrupt()),
+    "GET /api/v1/runs/r1/checkpoints": () =>
+      Response.json([
+        { checkpoint_id: "ck-1", created_at: "2026-11-13T10:01:00Z", step: 1 },
+      ]),
+    "POST /api/v1/runs/r1/branch": () =>
+      Response.json({ ...run, id: "r2", parent_run_id: "r1" }, { status: 201 }),
+    "GET /api/v1/runs/r2": () => Response.json({ ...run, id: "r2" }),
+    "POST /api/v1/runs/r2/stream": () => sse(frames()),
+  })
+  renderAt("/p/p1/chat/t1")
+  await userEvent.click(await screen.findByRole("button", { name: "Branch" }))
+  await userEvent.click(
+    await screen.findByRole("button", { name: "Branch from here" })
+  )
+  // only the child's stream carries this text: it reaches the transcript through the remount
+  expect(
+    await screen.findByText(/lowers hallucination rates/)
+  ).toBeInTheDocument()
+  expect(calls.some((call) => call.url.includes("/runs/r2/stream"))).toBe(true)
 })
