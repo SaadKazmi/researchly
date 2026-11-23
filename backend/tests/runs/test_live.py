@@ -65,3 +65,17 @@ async def test_a_run_without_a_provider_fails_before_any_model_loads(sm, tmp_pat
         await runtime.build(run)
     assert runtime._base is None  # no HTTP client, embedder or reranker was made
     await runtime.aclose()
+
+
+async def test_a_build_loads_no_local_model(sm, tmp_path, monkeypatch):
+    # a Quick run that calls no tool must not wait on a 1 GB download: the models load on first use
+    def refuse(*args: Any, **kwargs: Any) -> None:
+        raise AssertionError("a model was loaded at build time")
+
+    monkeypatch.setattr("researchly.embeddings.TextEmbedding", refuse)
+    monkeypatch.setattr("researchly.embeddings.TextCrossEncoder", refuse)
+    run = await seed_run(sm, effort="quick")
+    settings = Settings(env="test", data_dir=tmp_path, llm_fixtures="replay", llm_fixtures_dir=tmp_path)
+    runtime = LiveRuntime(settings, sm, checkpointer=InMemorySaver(), store=InMemoryStore(), searxng=None)
+    assert await runtime.build(run) is not None
+    await runtime.aclose()

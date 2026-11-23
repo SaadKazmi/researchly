@@ -6,7 +6,7 @@ const question = "Without searching, define retrieval-augmented generation in on
 
 test.describe("chat end to end", { tag: "@smoke" }, () => {
   test("a Quick run answers in the thread and survives a reload", async ({ page }) => {
-    test.setTimeout(240_000) // replay answers in seconds; a recording waits on the live model
+    test.setTimeout(120_000) // replay answers in seconds; a recording waits on the live model
     const name = `Smoke ${Date.now()}` // the E2E data dir outlives a run
     await page.goto("/")
     await page.getByRole("textbox", { name: "Project name" }).fill(name)
@@ -17,8 +17,8 @@ test.describe("chat end to end", { tag: "@smoke" }, () => {
     await page.getByRole("textbox", { name: "Ask a research question" }).fill(question)
     await page.getByRole("button", { name: "Send", exact: true }).click()
 
-    // the first run in a fresh data dir downloads the embedding models before it starts
-    await expect(page.getByText(/^completed · /)).toBeVisible({ timeout: 180_000 })
+    // a tool-free Quick run loads no local model (they load on first tool use), so only the model calls take time
+    await expect(page.getByText(/^completed · /)).toBeVisible({ timeout: 60_000 })
     // the answer streamed in live; scoped to the conversation, where the question is the only other text
     const conversation = page.getByRole("region", { name: "Conversation" })
     const answer = conversation.getByText(/retriev/i).filter({ hasNotText: question })

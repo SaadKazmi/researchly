@@ -71,16 +71,14 @@ class LiveRuntime:
         async with self._lock:
             if self._base is None:
                 models = self.settings.data_dir / "models" / "fastembed"
-                embedder = await asyncio.to_thread(Embedder, models)  # downloads on first use
-                reranker = await asyncio.to_thread(Reranker, models)
                 self._client = client = PoliteClient(cache=HttpCache(self.sessions))
                 self._base = ToolDeps(
                     sessions=self.sessions,
                     connectors=build_connectors(client),
                     searxng=self.searxng,
                     fetcher=FullTextFetcher(client, Robots(client)),
-                    embedder=embedder,
-                    reranker=reranker,
+                    embedder=Embedder(models),  # each downloads and loads its model on first use
+                    reranker=Reranker(models),
                     extractor=extractor,
                     spent=partial(spent_usd, self.sessions),
                 )
