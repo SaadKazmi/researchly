@@ -31,6 +31,14 @@ test.describe("chat", () => {
     await expect(tree.getByText("submit_plan")).toBeVisible()
     await expect(page.getByRole("list", { name: "Plan" }).getByRole("listitem")).toHaveCount(2)
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([])
+    // each node carries its status (read out to screen readers) and its elapsed time
+    const row = (name: string) => tree.getByText(name, { exact: true }).locator("..")
+    await expect(row("lead")).toContainText(/running \d+ s/)
+    await expect(row("submit_plan")).toContainText(/running \d+ s/) // the plan waits on the review
+    await page.getByRole("button", { name: "Approve", exact: true }).click()
+    await expect(row("search_papers")).toContainText(/done \d+ s/) // its result arrived
+    await expect(row("scout")).toContainText(/done \d+ s/)
+    await expect(row("lead")).toContainText(/done \d+ s/) // the run finished
   })
 
   test(

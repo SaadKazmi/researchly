@@ -106,3 +106,39 @@ test("resuming a run clears the previous drive's outcome, not just its review", 
   expect(resumed.failed).toBe(false)
   expect(resumed.summary).toBeNull()
 })
+
+test("a tool runs until its result arrives, not until its arguments end", () => {
+  // TOOL_CALL_END only closes the streamed arguments; the tool itself finishes at TOOL_CALL_RESULT
+  const start = {
+    type: "TOOL_CALL_START",
+    toolCallId: "call-search",
+    toolCallName: "search_papers",
+  }
+  const argued = [
+    start,
+    { type: "TOOL_CALL_END", toolCallId: "call-search" },
+  ].reduce(reduce, EMPTY)
+  expect(argued.tools[0]?.status).toBe("running")
+  const answered = reduce(argued, {
+    type: "TOOL_CALL_RESULT",
+    toolCallId: "call-search",
+    content: "added 12 candidates",
+  })
+  expect(answered.tools[0]?.status).toBe("done")
+})
+
+test("a finished run closes its tools as well as its agents", () => {
+  const state = [
+    { type: "TOOL_CALL_START", toolCallId: "c1", toolCallName: "note" },
+    { type: "RUN_FINISHED", outcome: { type: "success" } },
+  ].reduce(reduce, EMPTY)
+  expect(state.tools[0]?.status).toBe("done")
+})
+
+test("a paused run leaves its tool running, to resume the same tree", () => {
+  const state = [
+    { type: "TOOL_CALL_START", toolCallId: "c1", toolCallName: "note" },
+    { type: "RUN_FINISHED", outcome: { type: "cancelled" } },
+  ].reduce(reduce, EMPTY)
+  expect(state.tools[0]?.status).toBe("running")
+})

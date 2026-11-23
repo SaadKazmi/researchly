@@ -222,3 +222,34 @@ test("a control the API refuses says so", async () => {
   await userEvent.click(await screen.findByRole("button", { name: "Pause" }))
   expect(await screen.findByText(/did not go through/)).toBeInTheDocument()
 })
+
+test("each node in the tree shows how long it ran", async () => {
+  serve({ "GET /api/v1/runs/r1": () => Response.json(run) })
+  const { agent, play } = fakeAgent()
+  mount(agent)
+  const clock = vi.spyOn(Date, "now")
+  const at = (ms: number, event: Record<string, unknown>) => {
+    clock.mockReturnValue(ms)
+    return play([{ data: JSON.stringify(event) }])
+  }
+  await at(1_000, { type: "RUN_STARTED" })
+  await at(2_000, {
+    type: "SUBAGENT_STARTED",
+    subagentRunId: "s1",
+    name: "scout",
+  })
+  await at(4_000, {
+    type: "TOOL_CALL_START",
+    subagentRunId: "s1",
+    toolCallId: "c1",
+    toolCallName: "search_papers",
+  })
+  await at(9_000, { type: "TOOL_CALL_RESULT", toolCallId: "c1", content: "ok" })
+  await at(14_000, { type: "SUBAGENT_FINISHED", subagentRunId: "s1" })
+  clock.mockRestore()
+  const tree = screen.getByRole("list", { name: "Run activity" })
+  const row = (name: string) => within(tree).getByText(name).parentElement!
+  expect(row("search_papers")).toHaveTextContent("5 s") // its result came 5 s after it started
+  expect(row("scout")).toHaveTextContent("12 s")
+  expect(row("lead")).toHaveTextContent("13 s") // still running: its time as of the last event
+})

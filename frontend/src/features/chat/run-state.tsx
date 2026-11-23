@@ -39,6 +39,8 @@ export type RunState = {
   review: Review | null
   summary: Summary | null
   failed: boolean
+  // when the last event arrived: a running node's elapsed time is measured to it
+  now: number
 }
 
 export const LEAD = "lead"
@@ -51,6 +53,7 @@ export const EMPTY: RunState = {
   review: null,
   summary: null,
   failed: false,
+  now: 0,
 }
 
 function num(value: unknown): number {
@@ -74,6 +77,14 @@ function started(id: string, name: string): AgentNode {
 function finish<T extends AgentNode>(nodes: T[], id: string): T[] {
   return nodes.map((n) =>
     n.id === id ? { ...n, status: "done" as const, endedAt: Date.now() } : n
+  )
+}
+
+function closeAll<T extends AgentNode>(nodes: T[]): T[] {
+  return nodes.map((n) =>
+    n.status === "running"
+      ? { ...n, status: "done" as const, endedAt: Date.now() }
+      : n
   )
 }
 
@@ -120,6 +131,11 @@ function toReview(interrupt: Record<string, unknown>): Review {
 }
 
 export function reduce(state: RunState, event: AgUiEvent): RunState {
+  const next = apply(state, event)
+  return next === state ? state : { ...next, now: Date.now() }
+}
+
+function apply(state: RunState, event: AgUiEvent): RunState {
   switch (event.type) {
     case "RESET": // ours, not AG-UI's: a run the composer starts in this mount gets its own panel
       return EMPTY
@@ -158,7 +174,7 @@ export function reduce(state: RunState, event: AgUiEvent): RunState {
         ],
       }
     }
-    case "TOOL_CALL_END":
+    case "TOOL_CALL_RESULT": // not TOOL_CALL_END, which only closes the streamed arguments
       return { ...state, tools: finish(state.tools, String(event.toolCallId)) }
     case "STATE_SNAPSHOT":
       return {
@@ -196,11 +212,8 @@ export function reduce(state: RunState, event: AgUiEvent): RunState {
       if (outcome?.type === "cancelled") return state
       return {
         ...state,
-        agents: state.agents.map((a) =>
-          a.status === "running"
-            ? { ...a, status: "done" as const, endedAt: Date.now() }
-            : a
-        ),
+        agents: closeAll(state.agents),
+        tools: closeAll(state.tools),
       }
     }
     case "RUN_ERROR":

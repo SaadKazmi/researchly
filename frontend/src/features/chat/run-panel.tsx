@@ -10,7 +10,7 @@ import {
   unwrap,
 } from "@/api/queries"
 import { Button } from "@/components/ui/button"
-import { useRunState } from "@/features/chat/run-state"
+import { type AgentNode, useRunState } from "@/features/chat/run-state"
 
 const WRAP_UP = 0.8 // the budget guard injects its wrap-up instruction here (spec §6.4)
 const dollars = (value: string | number) => `$${Number(value).toFixed(2)}`
@@ -25,6 +25,9 @@ export function RunPanel({
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const state = useRunState()
+  // a running node is timed to the latest event: the panel re-renders on events, not on a clock
+  const seconds = (node: AgentNode) =>
+    Math.round(((node.endedAt ?? state.now) - node.startedAt) / 1000)
   const { data: run } = useQuery(runQuery(runId))
   const [branching, setBranching] = useState(false)
   const [checkpoint, setCheckpoint] = useState("")
@@ -147,6 +150,10 @@ export function RunPanel({
                 {" "}
                 {t(`run.status.${agent.status}`)}
               </span>
+              <span className="text-xs text-muted-foreground">
+                {" "}
+                {t("run.elapsed", { seconds: seconds(agent) })}
+              </span>
               <ul className="ml-4 flex flex-col text-muted-foreground">
                 {state.tools
                   .filter((tool) => tool.agentId === agent.id)
@@ -156,6 +163,10 @@ export function RunPanel({
                       <span className="sr-only">
                         {" "}
                         {t(`run.status.${tool.status}`)}
+                      </span>
+                      <span className="text-xs">
+                        {" "}
+                        {t("run.elapsed", { seconds: seconds(tool) })}
                       </span>
                     </li>
                   ))}

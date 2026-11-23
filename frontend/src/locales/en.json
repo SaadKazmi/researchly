@@ -68,6 +68,7 @@
     "budget": "Budget",
     "spent": "{{spent}} of {{budget}}",
     "tokens": "{{tokens}} tokens",
+    "elapsed": "{{seconds}} s",
     "wrapUp": "80% of the budget is spent: the run is wrapping up.",
     "stopped": "The budget is spent: the run stopped early.",
     "summary": "{{status}} · {{spent}} spent · {{coverage}}% coverage",
