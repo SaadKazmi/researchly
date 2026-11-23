@@ -1333,7 +1333,7 @@
     },
     "/api/v1/runs/{run_id}/checkpoints": {
       "get": {
-        "description": "The run's newest checkpoints, newest first.\n\nRead straight from the checkpoint saver, never through `runs.build`: building a run's graph needs a configured\nLLM provider and loads the local embedding models, and branching must stay readable without either.",
+        "description": "The run's newest checkpoints, newest first.\n\nBranches share `checkpoint_thread_id`, so this includes the checkpoints of the run's parent and other branches.\n\nRead straight from the checkpoint saver, never through `runs.build`: building a run's graph needs a configured\nLLM provider, and branching must stay readable without one.",
         "operationId": "listCheckpoints",
         "parameters": [
           {

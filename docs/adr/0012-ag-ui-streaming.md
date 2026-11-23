@@ -45,7 +45,9 @@ works with one mandatory override and two recommended ones. Runs are asyncio tas
     `frontend/tests/pins.test.ts` asserts them; an upgrade is an ADR plus the chat tests, as on the Python side.
   - One `HttpAgent` per thread, with an injected `fetch`: a new user message creates the run
     (`POST /threads/{id}/runs`), anything else attaches, and every request opens
-    `POST /runs/{id}/stream?after=<lastSeq>`. The `id:` lines are read off the stream so a reconnect resumes.
+    `POST /runs/{id}/stream?after=<lastSeq>`. Every attach comes from a freshly mounted runtime, so it
+    replays from `after=0`: re-attaching (after a resume, an answered review or a branch) is a remount. A
+    stream that drops mid-run is not reconnected yet (deferred to 3d); the run's answer appears on reload.
   - The run tree, plan panel and budget come from our own reducer over `agent.subscribe({ onEvent })`.
     assistant-ui's nested subagent messages are not used: they are lost on reload and their interrupts
     cannot be resumed.

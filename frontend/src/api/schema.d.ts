@@ -140,8 +140,10 @@ export interface paths {
          * List Checkpoints
          * @description The run's newest checkpoints, newest first.
          *
+         *     Branches share `checkpoint_thread_id`, so this includes the checkpoints of the run's parent and other branches.
+         *
          *     Read straight from the checkpoint saver, never through `runs.build`: building a run's graph needs a configured
-         *     LLM provider and loads the local embedding models, and branching must stay readable without either.
+         *     LLM provider, and branching must stay readable without one.
          */
         get: operations["listCheckpoints"];
         put?: never;
