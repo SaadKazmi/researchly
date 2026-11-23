@@ -27,12 +27,10 @@ test.describe("chat", () => {
   test("streams the run tree while the agent works", { tag: "@F1.5" }, async ({ page }) => {
     await ask(page)
     const tree = page.getByRole("list", { name: "Run activity" })
-    await expect(tree.getByText("lead")).toBeVisible()
+    await expect(tree.getByText("lead", { exact: true })).toBeVisible()
     await expect(tree.getByText("submit_plan")).toBeVisible()
     await expect(page.getByRole("list", { name: "Plan" }).getByRole("listitem")).toHaveCount(2)
-    // TODO: the chat route has no level-one heading (every other page has one); drop this disable once it does
-    const axe = new AxeBuilder({ page }).disableRules(["page-has-heading-one"])
-    expect((await axe.analyze()).violations).toEqual([])
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([])
   })
 
   test(
@@ -43,21 +41,28 @@ test.describe("chat", () => {
       const plan = page.getByRole("textbox", { name: "Plan" })
       await expect(plan).toHaveValue(/retrieval augmentation/i)
       const tree = page.getByRole("list", { name: "Run activity" })
-      await expect(tree.getByText("scout")).toHaveCount(0)
+      await expect(tree.getByText("lead", { exact: true })).toBeVisible() // the tree is drawn
+      await expect(tree.getByText("scout", { exact: true })).toHaveCount(0)
       await page.getByRole("button", { name: "Approve", exact: true }).click()
-      await expect(tree.getByText("scout")).toBeVisible()
+      await expect(tree.getByText("scout", { exact: true })).toBeVisible()
       await expect(page.getByText(/lowers hallucination rates/)).toBeVisible()
       await expect(plan).toHaveCount(0) // the answered review closes
     }
   )
 
   test("the effort selector shows the tier's estimate", { tag: "@F1.4" }, async ({ page }) => {
+    const runs: string[] = []
+    page.on("request", (request) => {
+      if (request.method() === "POST" && request.url().endsWith("/threads/t1/runs"))
+        runs.push(request.url())
+    })
     await page.goto("/p/p1/chat/t1")
     await page.getByRole("combobox", { name: "Effort" }).selectOption("deep")
     await expect(page.getByText("Estimated $1.25–$5.00 · budget $5.00")).toBeVisible()
     await page.getByRole("textbox", { name: "Ask a research question" }).fill("Why does RAG help?")
     await page.getByRole("button", { name: "Send", exact: true }).click()
     await expect(page.getByRole("dialog", { name: "Confirm the budget" })).toBeVisible()
+    expect(runs).toEqual([]) // nothing starts before the budget is confirmed
   })
 
   test(
@@ -76,11 +81,11 @@ test.describe("chat", () => {
   test("a run can be paused and resumed", { tag: "@F1.6" }, async ({ page }) => {
     await ask(page)
     await expect(page.getByRole("textbox", { name: "Plan" })).toBeVisible()
-    await page.getByRole("button", { name: "Pause" }).click()
-    await expect(page.getByRole("button", { name: "Resume" })).toBeVisible()
-    await page.getByRole("button", { name: "Resume" }).click()
+    await page.getByRole("button", { name: "Pause", exact: true }).click()
+    await expect(page.getByRole("button", { name: "Resume", exact: true })).toBeVisible()
+    await page.getByRole("button", { name: "Resume", exact: true }).click()
     // a plain resume drives up to the same review again; only its answer moves the run on
-    await expect(page.getByRole("button", { name: "Pause" })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Pause", exact: true })).toBeVisible()
     await expect(page.getByRole("textbox", { name: "Plan" })).toBeVisible()
     await page.getByRole("button", { name: "Approve", exact: true }).click()
     await expect(page.getByText(/lowers hallucination rates/)).toBeVisible()

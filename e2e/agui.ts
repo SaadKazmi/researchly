@@ -77,7 +77,8 @@ export async function mockRun(page: Page): Promise<void> {
     status,
     plan: null,
     budget_usd: "1.00",
-    spent_usd: "0.84",
+    // nothing spent on the row: the meter must read the spend from the stream's cost events
+    spent_usd: "0.00",
     branch_from_checkpoint: null,
     started_at: "2026-11-13T10:00:00Z",
     ended_at: null,
