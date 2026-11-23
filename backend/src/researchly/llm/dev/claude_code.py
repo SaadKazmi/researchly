@@ -8,7 +8,7 @@ import json
 import sys
 import tempfile
 import uuid
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
 from typing import Any, Literal
 
 from claude_agent_sdk import ClaudeAgentOptions, ResultMessage, query
@@ -16,9 +16,11 @@ from langchain_core.callbacks import AsyncCallbackManagerForLLMRun, CallbackMana
 from langchain_core.language_models import BaseChatModel, LanguageModelInput
 from langchain_core.messages import AIMessage, BaseMessage, SystemMessage, ToolMessage
 from langchain_core.messages.ai import UsageMetadata
-from langchain_core.outputs import ChatGeneration, ChatResult
+from langchain_core.outputs import ChatGeneration, ChatGenerationChunk, ChatResult
 from langchain_core.runnables import Runnable
 from langchain_core.utils.function_calling import convert_to_openai_tool
+
+from researchly.llm.record_replay import as_chunks
 
 _LOOP = asyncio.ProactorEventLoop if sys.platform == "win32" else None  # the SDK spawns a subprocess
 
@@ -163,3 +165,15 @@ class ClaudeCodeChatModel(BaseChatModel):
         **kwargs: Any,
     ) -> ChatResult:
         return await asyncio.to_thread(self._generate, messages, stop, None, **kwargs)
+
+    async def _astream(
+        self,
+        messages: list[BaseMessage],
+        stop: list[str] | None = None,
+        run_manager: AsyncCallbackManagerForLLMRun | None = None,
+        **kwargs: Any,
+    ) -> AsyncIterator[ChatGenerationChunk]:
+        # the SDK answers in one piece; stream it whole so the app's AG-UI transcript shows it
+        result = await self._agenerate(messages, stop=stop, **kwargs)
+        for chunk in as_chunks(result.generations[0].message):
+            yield chunk

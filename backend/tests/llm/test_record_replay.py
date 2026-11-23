@@ -88,3 +88,26 @@ async def test_multi_turn_replay_survives_scrubbed_replies(tmp_path):
     rep = replayer(path)
     replayed = await rep.ainvoke("hi")  # comes back scrubbed
     assert (await rep.ainvoke([HumanMessage("hi"), replayed, HumanMessage("thanks")])).content == "done"
+
+
+@pytest.mark.anyio
+async def test_a_replayed_reply_streams_its_text_and_tool_calls(tmp_path):
+    # the AG-UI adapter drives astream_events: a reply that never streams never reaches the transcript
+    path = tmp_path / "calls.jsonl"
+    reply = AIMessage(
+        content="Let me look.",
+        tool_calls=[{"name": "lookup", "args": {"query": "x"}, "id": "call_1"}],
+        usage_metadata={"input_tokens": 3, "output_tokens": 2, "total_tokens": 5},
+    )
+    await recorder(path, reply).bind_tools([lookup]).ainvoke("q")
+    streamed = [
+        event["data"]["chunk"]
+        async for event in replayer(path).bind_tools([lookup]).astream_events("q", version="v2")
+        if event["event"] == "on_chat_model_stream"
+    ]
+    assert "".join(chunk.text for chunk in streamed) == "Let me look."
+    whole = streamed[0]
+    for chunk in streamed[1:]:
+        whole += chunk
+    assert whole.tool_calls == [{"name": "lookup", "args": {"query": "x"}, "id": "call_1", "type": "tool_call"}]
+    assert whole.usage_metadata is not None and whole.usage_metadata["total_tokens"] == 5
