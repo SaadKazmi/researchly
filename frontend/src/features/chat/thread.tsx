@@ -4,9 +4,14 @@ import {
   ExportedMessageRepository,
   MessagePrimitive,
   ThreadPrimitive,
+  useAui,
   useAuiState,
 } from "@assistant-ui/react"
-import { useAgUiRuntime } from "@assistant-ui/react-ag-ui"
+import {
+  useAgUiInterrupts,
+  useAgUiRuntime,
+  useAgUiSteerAway,
+} from "@assistant-ui/react-ag-ui"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
@@ -258,6 +263,12 @@ function Composer({
   const canSend = useAuiState((s) => s.composer.canSend && !s.thread.isRunning)
   // a run waiting on the user takes its answer from the review, never a second run on top of it
   const reviewing = useOpenReview(runId) !== null
+  // a review is answered over REST (ADR 0012), so the runtime still holds the stream's interrupt
+  // once our review has closed, and it refuses a plain send while it does: steerAway drops it first
+  const stale = useAgUiInterrupts().length > 0
+  const steerAway = useAgUiSteerAway()
+  const aui = useAui()
+  const text = useAuiState((s) => s.composer.text)
   const [pending, setPending] = useState<HTMLFormElement | null>(null)
   // set by `confirm` for exactly the one submit it makes; the guard spends it
   const confirmed = useRef(false)
@@ -293,6 +304,12 @@ function Composer({
           confirmed.current
         ) {
           confirmed.current = false
+          if (canSend && stale) {
+            event.preventDefault()
+            event.stopPropagation()
+            void steerAway(text)
+            aui.composer().setText("")
+          }
           return
         }
         event.preventDefault() // capture runs before the composer's own submit

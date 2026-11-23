@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, waitFor } from "@testing-library/react"
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, expect, test, vi } from "vitest"
 
@@ -754,4 +754,50 @@ test("a reload during a branched run follows the child, not the paused parent", 
   expect(calls.some((call) => call.url.includes("/runs/r2/stream"))).toBe(true)
   expect(calls.some((call) => call.url.includes("/runs/r1/"))).toBe(false)
   expect(screen.queryByRole("button", { name: "Resume" })).toBeNull()
+})
+
+/** A Standard run that went through its plan review to the end, then a second question in the same visit. */
+async function askTwice() {
+  let created = 0
+  const calls = serve({
+    ...routes(),
+    "POST /api/v1/threads/t1/runs": () =>
+      Response.json(
+        { ...run, id: ++created === 1 ? "r1" : "r2" },
+        { status: 201 }
+      ),
+    "GET /api/v1/runs/r2": () => Response.json({ ...run, id: "r2" }),
+    "POST /api/v1/runs/r2/stream": () => sse(untilInterrupt()),
+  })
+  renderAt("/p/p1/chat/t1")
+  const ask = async (question: string) => {
+    await userEvent.type(
+      screen.getByRole("textbox", { name: "Ask a research question" }),
+      question
+    )
+    // the composer frees up once the transcript has taken the first run's last event
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Send" })).toBeEnabled()
+    )
+    await userEvent.click(screen.getByRole("button", { name: "Send" }))
+  }
+  await screen.findByRole("combobox", { name: "Effort" })
+  await ask("Why does RAG help?")
+  await screen.findByText("completed · $0.86 spent · 73% coverage")
+  await ask("And for code?")
+  return calls
+}
+
+test("a follow-up after a run whose plan was answered is sent, not dropped", async () => {
+  // the plan was answered over REST, so the runtime still holds the stream's interrupt and refuses
+  // a plain send: the follow-up must still start a run
+  const calls = await askTwice()
+  const runs = await vi.waitUntil(() => {
+    const posts = calls.filter((call) => call.url.endsWith("/threads/t1/runs"))
+    return posts.length === 2 && posts
+  })
+  expect(await runs[1]!.clone().json()).toEqual({
+    message: "And for code?",
+    effort: "standard",
+  })
 })
