@@ -547,6 +547,34 @@ async def test_resume_answers_once_the_resumed_run_is_streaming(sm):
     assert (await row(sm, run.id)).status == "completed"
 
 
+async def test_a_pause_during_a_slow_resume_stops_it_at_once(sm):
+    """`resume` waits for the resumed run to stream outside the run's lock: a pause sent while a cold build is
+    still running must stop it, not queue behind it."""
+    run = await seed_run(sm)
+    fetch, entered, gate, calls = blocking_tool()
+    graph = agent(script(call("fetch", {"x": "a"}), "done"), [fetch])
+    builds, building = 0, asyncio.Event()
+
+    async def build(run: Run) -> Any:
+        nonlocal builds
+        builds += 1
+        if builds == 2:  # the resumed drive never finishes building
+            building.set()
+            await asyncio.Event().wait()
+        return graph
+
+    m = RunManager(sm, build)
+    await m.start(run.id)
+    await entered.wait()
+    await m.pause(run.id)
+    resuming = asyncio.create_task(m.resume(run.id))
+    await building.wait()
+    with anyio.fail_after(5):  # under the lock, this pause would wait for a build that never ends
+        await m.pause(run.id)
+        await resuming  # stopping the drive ends the wait
+    assert (await row(sm, run.id)).status == "paused"
+
+
 async def test_a_resume_whose_drive_dies_before_its_first_event_does_not_hang(sm, monkeypatch):
     run = await seed_run(sm)
     fetch, entered, gate, calls = blocking_tool()

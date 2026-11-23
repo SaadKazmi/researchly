@@ -172,7 +172,9 @@ test("cancelling a live run calls the API", async () => {
   await userEvent.click(
     await screen.findByRole("button", { name: "Cancel the run" })
   )
-  expect(calls.some((call) => call.url.endsWith("/runs/r1/cancel"))).toBe(true)
+  await vi.waitUntil(() =>
+    calls.find((call) => call.url.endsWith("/runs/r1/cancel"))
+  )
 })
 
 test("a spent budget says the run stopped early, not that it is wrapping up", async () => {

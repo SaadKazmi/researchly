@@ -105,9 +105,23 @@ class RunManager:
 
     async def resume(self, run_id: uuid.UUID, decisions: list[dict[str, Any]] | None = None) -> None:
         async with self._locks[run_id]:
-            await self._resume(run_id, decisions)
+            spawned = await self._resume(run_id, decisions)
+        if spawned is None:  # a reject cancels instead
+            return
+        # answer once the resumed AG-UI run is in the log: before that, a stream sees `running` with the paused
+        # segment's end as its newest row, and `follow` reads that as a run that has already finished. A drive
+        # that dies before its first event answers too. Waited outside the lock: a pause or cancel arriving
+        # during a cold `build()` must still stop it at once, and stopping the task ends this wait.
+        task, started = spawned
+        waiter = asyncio.create_task(started.wait())
+        try:
+            await asyncio.wait({waiter, task}, return_when=asyncio.FIRST_COMPLETED)
+        finally:
+            waiter.cancel()
 
-    async def _resume(self, run_id: uuid.UUID, decisions: list[dict[str, Any]] | None) -> None:
+    async def _resume(
+        self, run_id: uuid.UUID, decisions: list[dict[str, Any]] | None
+    ) -> tuple[asyncio.Task[None], asyncio.Event] | None:
         async with self.sessions() as session:
             run = await session.get_one(Run, run_id)
             superseded = await self._superseded(session, run)
@@ -119,20 +133,12 @@ class RunManager:
             await self._check(run_id, decisions)
             if any(d.get("type") == "reject" for d in decisions):
                 await self._cancel(run_id)
-                return
+                return None
         elif run.status == "awaiting_user":
             raise RunStateError("this run is waiting for the user's decisions")
         async with self.sessions.begin() as session:
             await self._set(session, run_id, "running", ("paused", "awaiting_user"))
-        task, started = self._spawn(run_id, decisions or None)
-        # answer once the resumed AG-UI run is in the log: before that, a stream sees `running` with the paused
-        # segment's end as its newest row, and `follow` reads that as a run that has already finished. A drive
-        # that dies before its first event answers too; it has recorded its failure.
-        waiter = asyncio.create_task(started.wait())
-        try:
-            await asyncio.wait({waiter, task}, return_when=asyncio.FIRST_COMPLETED)
-        finally:
-            waiter.cancel()
+        return self._spawn(run_id, decisions or None)
 
     async def _check(self, run_id: uuid.UUID, decisions: list[dict[str, Any]]) -> None:
         """Decisions must answer the open review action by action: HITL fails the run on a mismatch."""
