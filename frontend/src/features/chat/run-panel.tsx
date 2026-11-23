@@ -83,7 +83,11 @@ export function RunPanel({
       : null)
   const share = cost && cost.budgetUsd > 0 ? cost.spentUsd / cost.budgetUsd : 0
   const notice =
-    share >= 1 ? t("run.stopped") : share >= WRAP_UP ? t("run.wrapUp") : ""
+    share >= 1
+      ? t("run.stopped")
+      : share >= WRAP_UP && !state.summary // a finished run has nothing left to wrap up
+        ? t("run.wrapUp")
+        : ""
 
   return (
     <aside
@@ -106,7 +110,7 @@ export function RunPanel({
           </p>
           {cost.tokens > 0 && (
             <p className="text-xs text-muted-foreground">
-              {t("run.tokens", { tokens: cost.tokens })}
+              {t("run.tokens", { count: cost.tokens })}
             </p>
           )}
         </section>

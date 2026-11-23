@@ -111,6 +111,10 @@ test("the end-of-run summary reports the status, the spend and the coverage", as
   expect(
     await screen.findByText("completed · $0.86 spent · 73% coverage")
   ).toBeInTheDocument()
+  // the meter ends on the same total as the summary, and a finished run is no longer wrapping up
+  expect(screen.getByText("$0.86 of $1.00")).toBeInTheDocument()
+  expect(screen.getByText("43,940 tokens")).toBeInTheDocument()
+  expect(screen.queryByText(/wrapping up/)).toBeNull()
 })
 
 test("a run that found nothing to estimate from reports no coverage", async () => {
@@ -252,4 +256,15 @@ test("each node in the tree shows how long it ran", async () => {
   expect(row("search_papers")).toHaveTextContent("5 s") // its result came 5 s after it started
   expect(row("scout")).toHaveTextContent("12 s")
   expect(row("lead")).toHaveTextContent("13 s") // still running: its time as of the last event
+})
+
+test("a single token is not counted as tokens", async () => {
+  serve({ "GET /api/v1/runs/r1": () => Response.json(run) })
+  const { agent, play } = fakeAgent()
+  mount(agent)
+  const cost = { spent_usd: 0, budget_usd: 1, tokens: 1 }
+  await play([
+    { data: JSON.stringify({ type: "CUSTOM", name: "cost", value: cost }) },
+  ])
+  expect(screen.getByText("1 token")).toBeInTheDocument()
 })

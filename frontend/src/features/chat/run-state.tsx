@@ -198,7 +198,13 @@ function apply(state: RunState, event: AgUiEvent): RunState {
           budgetUsd: num(value.budget_usd),
           coverage: share(value.coverage),
         }
-        return { ...state, summary }
+        // the run's true total: each cost event is sent before a model call, so it trails by one
+        const cost = {
+          spentUsd: summary.spentUsd,
+          budgetUsd: summary.budgetUsd,
+          tokens: num(value.tokens),
+        }
+        return { ...state, summary, cost }
       }
       return state
     }

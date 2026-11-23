@@ -45,7 +45,8 @@ test("the whole run builds a tree of the lead, its subagent and their tool calls
     budgetUsd: 1,
     coverage: 22 / 30.1, // observed over the Chao2 estimate
   })
-  expect(state.cost?.tokens).toBe(42100)
+  // the summary is the run's true total: the last cost event trails it by one model call
+  expect(state.cost).toEqual({ spentUsd: 0.86, budgetUsd: 1, tokens: 43940 })
   expect(state.failed).toBe(false)
 })
 
