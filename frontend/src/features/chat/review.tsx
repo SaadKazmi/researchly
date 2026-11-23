@@ -129,8 +129,13 @@ export function Review({
                         ? "default"
                         : "outline"
                     }
-                    // with several actions, a decision waits for the others: show which one it is
-                    aria-pressed={chosen[index] === type}
+                    // with several actions, a decision waits for the others: show which one it is.
+                    // A single action sends at once, so its buttons are not toggles
+                    aria-pressed={
+                      review.actions.length > 1
+                        ? chosen[index] === type
+                        : undefined
+                    }
                     disabled={
                       busy ||
                       (type === "respond" && !value.trim()) ||

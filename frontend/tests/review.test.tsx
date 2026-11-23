@@ -272,3 +272,13 @@ test("the review's error region is rendered before it has anything to say", () =
   expect(region).toBeEmptyDOMElement()
   expect(region.className).not.toMatch(/(^|\s)(empty:)?hidden(\s|$)/)
 })
+
+test("a single-action review's buttons are plain buttons, not toggles", () => {
+  // the one decision sends at once: there is no chosen state to announce
+  serve({})
+  mount(planEvents)
+  for (const name of ["Approve", "Reject"])
+    expect(screen.getByRole("button", { name })).not.toHaveAttribute(
+      "aria-pressed"
+    )
+})
