@@ -121,6 +121,8 @@ function toReview(interrupt: Record<string, unknown>): Review {
 
 export function reduce(state: RunState, event: AgUiEvent): RunState {
   switch (event.type) {
+    case "RESET": // ours, not AG-UI's: a run the composer starts in this mount gets its own panel
+      return EMPTY
     case "RUN_STARTED": // a new drive supersedes the previous one's outcome
       return {
         ...state,
@@ -224,6 +226,9 @@ export function RunStateProvider({
   const [state, dispatch] = useReducer(reduce, EMPTY)
   useEffect(() => {
     const subscription = agent.subscribe({
+      // before the request goes out, so nothing of the new run can arrive first. A mount's first
+      // attach starts EMPTY anyway; every later run in the same mount is a new question
+      onRunInitialized: () => dispatch({ type: "RESET" }),
       onEvent: ({ event }: { event: unknown }) => dispatch(event as AgUiEvent),
     })
     return () => subscription.unsubscribe()

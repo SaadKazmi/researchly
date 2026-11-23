@@ -801,3 +801,17 @@ test("a follow-up after a run whose plan was answered is sent, not dropped", asy
     effort: "standard",
   })
 })
+
+test("a second question in the same visit starts the run panel afresh", async () => {
+  await askTwice()
+  // the second run's plan review: its own tree, not the first run's appended to
+  await screen.findByRole("textbox", { name: "Plan" })
+  const tree = screen.getByRole("list", { name: "Run activity" })
+  expect(within(tree).queryByText("scout")).toBeNull()
+  expect(within(tree).queryByText("search_papers")).toBeNull()
+  expect(within(tree).getByText("lead").nextSibling).toHaveTextContent(
+    "running"
+  )
+  expect(screen.queryByText(/coverage/)).toBeNull()
+  expect(screen.getByText("$0.01 of $1.00")).toBeInTheDocument()
+})
