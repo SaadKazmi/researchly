@@ -9,7 +9,8 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import or_, select
 
 from researchly.api.deps import NOT_FOUND, UNAVAILABLE, Manager, get_or_404
-from researchly.db.models import Message, Project, Thread
+from researchly.db.models import Message, Project, Run, Thread
+from researchly.runs.manager import TERMINAL
 
 router = APIRouter(prefix="/api/v1", tags=["threads"], responses=UNAVAILABLE)
 
@@ -36,6 +37,9 @@ class MessageOut(BaseModel):
 
 class ThreadDetail(ThreadOut):
     messages: list[MessageOut]
+    # the run a reopened thread follows: its newest run, while that run has not ended. Not the last message's run:
+    # a branch adds no message, and a newer branch supersedes its paused parent
+    live_run_id: uuid.UUID | None
 
 
 def _like(q: str) -> str:
@@ -85,4 +89,10 @@ async def get_thread(thread_id: uuid.UUID, runs: Manager) -> ThreadDetail:
             )
             for m in await session.scalars(stmt)
         ]
-    return ThreadDetail(**ThreadOut.model_validate(thread).model_dump(), messages=messages)
+        # a created run has no start time yet and is the newest of all
+        newest = (
+            select(Run.id, Run.status).where(Run.thread_id == thread_id).order_by(Run.started_at.desc().nulls_first())
+        )
+        latest = (await session.execute(newest.limit(1))).first()
+    live = latest.id if latest is not None and latest.status not in TERMINAL else None
+    return ThreadDetail(**ThreadOut.model_validate(thread).model_dump(), messages=messages, live_run_id=live)

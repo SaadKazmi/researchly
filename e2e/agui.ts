@@ -92,7 +92,11 @@ export async function mockRun(page: Page, transcript = "standard-run.sse"): Prom
       ? json(route, thread, 201)
       : json(route, match ? [thread] : [])
   })
-  await page.route("**/api/v1/threads/t1", (route) => json(route, { ...thread, messages }))
+  // the backend names the thread's newest run while it is live: a reload follows it
+  const live = () => messages.length > 0 && !["completed", "partial", "cancelled", "failed"].includes(status)
+  await page.route("**/api/v1/threads/t1", (route) =>
+    json(route, { ...thread, messages, live_run_id: live() ? "r1" : null }),
+  )
   await page.route("**/api/v1/efforts", (route) => json(route, efforts))
   await page.route("**/api/v1/threads/t1/runs", (route) => {
     const { message } = route.request().postDataJSON() as { message: string }

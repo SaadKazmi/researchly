@@ -552,6 +552,18 @@
             "title": "Id",
             "type": "string"
           },
+          "live_run_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Live Run Id"
+          },
           "messages": {
             "items": {
               "$ref": "#/components/schemas/MessageOut"
@@ -581,7 +593,8 @@
           "project_id",
           "title",
           "created_at",
-          "messages"
+          "messages",
+          "live_run_id"
         ],
         "title": "ThreadDetail",
         "type": "object"

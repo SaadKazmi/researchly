@@ -50,7 +50,7 @@ const run = {
   ended_at: null,
 }
 
-function routes(messages: unknown[] = []) {
+function routes(messages: unknown[] = [], live: string | null = null) {
   return {
     "/health": healthy,
     "/api/v1/system": version,
@@ -71,6 +71,7 @@ function routes(messages: unknown[] = []) {
         title: "Retrieval",
         created_at: "2026-11-13T10:00:00Z",
         messages,
+        live_run_id: live,
       }),
     "GET /api/v1/runs/r1": () => Response.json(run),
     "POST /api/v1/threads/t1/runs": () => Response.json(run, { status: 201 }),
@@ -178,15 +179,18 @@ test("a tier over the budget threshold asks for confirmation first", async () =>
 
 test("a thread whose last run is still live re-attaches to its stream", async () => {
   const calls = serve(
-    routes([
-      {
-        id: "m1",
-        role: "user",
-        text: "Why does RAG help?",
-        run_id: "r1",
-        created_at: "2026-11-13T10:00:00Z",
-      },
-    ])
+    routes(
+      [
+        {
+          id: "m1",
+          role: "user",
+          text: "Why does RAG help?",
+          run_id: "r1",
+          created_at: "2026-11-13T10:00:00Z",
+        },
+      ],
+      "r1"
+    )
   )
   renderAt("/p/p1/chat/t1")
   expect(
@@ -349,6 +353,7 @@ test("a revisited thread shows the answer of a run that finished meanwhile", asy
     run_id: "r1",
     created_at: "2026-11-13T10:01:00Z",
   }
+  // the run was live when the thread was read without its answer
   const thread = (id: string, messages: unknown[]) =>
     Response.json({
       id,
@@ -356,6 +361,7 @@ test("a revisited thread shows the answer of a run that finished meanwhile", asy
       title: null,
       created_at: "2026-11-13T10:00:00Z",
       messages,
+      live_run_id: messages.length === 1 ? "r1" : null,
     })
   // the run's answer lands between the first visit and the second. The first visit reads the thread
   // twice: the run had already ended when it was read, so its answer may have landed in between
@@ -431,15 +437,18 @@ test("a run that finishes refetches the thread, so the stored copy catches up wi
 
 test("branching from the panel re-attaches the transcript to the child run's stream", async () => {
   const calls = serve({
-    ...routes([
-      {
-        id: "m1",
-        role: "user",
-        text: "Why does RAG help?",
-        run_id: "r1",
-        created_at: "2026-11-13T10:00:00Z",
-      },
-    ]),
+    ...routes(
+      [
+        {
+          id: "m1",
+          role: "user",
+          text: "Why does RAG help?",
+          run_id: "r1",
+          created_at: "2026-11-13T10:00:00Z",
+        },
+      ],
+      "r1"
+    ),
     "GET /api/v1/runs/r1": () => Response.json({ ...run, status: "paused" }),
     "POST /api/v1/runs/r1/stream": () => sse(untilInterrupt()),
     "GET /api/v1/runs/r1/checkpoints": () =>
@@ -551,6 +560,7 @@ test("a run that ended while the thread loaded still shows its answer on the fir
                 },
               ]),
         ],
+        live_run_id: reads === 1 ? "r1" : null, // read while the run was still live
       }),
     "GET /api/v1/runs/r1": () => Response.json({ ...run, status: "completed" }),
   })
@@ -565,15 +575,18 @@ test("a conversation stays open when its run ends under it", async () => {
   // re-applying them would unmount the streamed transcript and reopen on a thread without it
   let runReads = 0
   let threadReads = 0
-  const base = routes([
-    {
-      id: "m1",
-      role: "user",
-      text: "Why does RAG help?",
-      run_id: "r1",
-      created_at: "2026-11-13T10:00:00Z",
-    },
-  ])
+  const base = routes(
+    [
+      {
+        id: "m1",
+        role: "user",
+        text: "Why does RAG help?",
+        run_id: "r1",
+        created_at: "2026-11-13T10:00:00Z",
+      },
+    ],
+    "r1"
+  )
   serve({
     ...base,
     "GET /api/v1/threads/t1": async () => {
@@ -611,7 +624,7 @@ const asked = {
 test("a run waiting on its plan review cannot be sent over", async () => {
   // a second run started on top of one waiting for the user would leave the first stuck
   const calls = serve({
-    ...routes([asked]),
+    ...routes([asked], "r1"),
     "GET /api/v1/runs/r1": () =>
       Response.json({ ...run, status: "awaiting_user" }),
     "POST /api/v1/runs/r1/stream": () => sse(untilInterrupt()),
@@ -632,7 +645,7 @@ test("a run waiting on its plan review cannot be sent over", async () => {
 test("approving the plan re-attaches the transcript, which then carries the run's answer", async () => {
   let answered = false
   const calls = serve({
-    ...routes([asked]),
+    ...routes([asked], "r1"),
     "GET /api/v1/runs/r1": () =>
       Response.json({ ...run, status: answered ? "running" : "awaiting_user" }),
     "POST /api/v1/runs/r1/resume": () => {
@@ -666,7 +679,7 @@ test("a rejected plan closes the review and frees the composer", async () => {
   // a reject cancels the run without an event: the stream still ends on the plan interrupt
   let status = "awaiting_user"
   const calls = serve({
-    ...routes([asked]),
+    ...routes([asked], "r1"),
     "GET /api/v1/runs/r1": () => Response.json({ ...run, status }),
     "POST /api/v1/runs/r1/resume": () => {
       status = "cancelled"
@@ -694,7 +707,7 @@ test("a rejected plan closes the review and frees the composer", async () => {
 test("cancelling a run from the panel closes its review and frees the composer", async () => {
   let status = "awaiting_user"
   serve({
-    ...routes([asked]),
+    ...routes([asked], "r1"),
     "GET /api/v1/runs/r1": () => Response.json({ ...run, status }),
     "POST /api/v1/runs/r1/cancel": () => {
       status = "cancelled"
@@ -713,4 +726,32 @@ test("cancelling a run from the panel closes its review and frees the composer",
     "And for code?"
   )
   expect(screen.getByRole("button", { name: "Send" })).toBeEnabled()
+})
+
+test("a reload during a branched run follows the child, not the paused parent", async () => {
+  // a branch adds no message: the trailing question still names the parent, which is paused and
+  // superseded. The thread itself says which run is live
+  const calls = serve({
+    ...routes([asked], "r1"),
+    "GET /api/v1/threads/t1": () =>
+      Response.json({
+        id: "t1",
+        project_id: "p1",
+        title: "Retrieval",
+        created_at: "2026-11-13T10:00:00Z",
+        messages: [asked],
+        live_run_id: "r2",
+      }),
+    "GET /api/v1/runs/r1": () => Response.json({ ...run, status: "paused" }),
+    "GET /api/v1/runs/r2": () =>
+      Response.json({ ...run, id: "r2", parent_run_id: "r1" }),
+    "POST /api/v1/runs/r2/stream": () => sse(frames()),
+  })
+  renderAt("/p/p1/chat/t1")
+  expect(
+    await screen.findByText(/lowers hallucination rates/)
+  ).toBeInTheDocument()
+  expect(calls.some((call) => call.url.includes("/runs/r2/stream"))).toBe(true)
+  expect(calls.some((call) => call.url.includes("/runs/r1/"))).toBe(false)
+  expect(screen.queryByRole("button", { name: "Resume" })).toBeNull()
 })

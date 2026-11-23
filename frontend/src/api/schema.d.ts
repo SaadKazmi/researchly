@@ -495,6 +495,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Live Run Id */
+            live_run_id: string | null;
             /** Messages */
             messages: components["schemas"]["MessageOut"][];
             /**

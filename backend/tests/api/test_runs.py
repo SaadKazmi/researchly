@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import AsyncIterator
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any, cast
 
@@ -370,3 +371,41 @@ async def test_error_responses_and_operation_ids_are_pinned_in_the_schema(api):
         expected = {"503"} | ({"404"} if op_id in lookups else set()) | ({"409"} if op_id in conflicts else set())
         assert {c for c in responses if c in {"404", "409", "503"}} == expected, op_id
         assert all(responses[c]["content"]["application/json"]["schema"] == error_ref for c in expected), op_id
+
+
+async def test_a_thread_names_its_newest_run_while_that_run_is_live(api, sm):
+    # a branch adds no message, so only the runs themselves say which one a reload must follow
+    async with api() as (client, _):
+        thread = await new_thread(client)
+        url = f"/api/v1/threads/{thread['id']}"
+        assert (await client.get(url)).json()["live_run_id"] is None
+
+        def run(status: str, started: datetime | None, parent: uuid.UUID | None = None) -> Run:
+            return Run(
+                id=uuid.uuid4(),
+                project_id=uuid.UUID(thread["project_id"]),
+                thread_id=uuid.UUID(thread["id"]),
+                effort="standard",
+                status=status,
+                budget_usd=Decimal(1),
+                checkpoint_thread_id="ck",
+                parent_run_id=parent,
+                started_at=started,
+            )
+
+        parent = run("paused", datetime(2026, 11, 13, 10, tzinfo=UTC))
+        child = run("running", datetime(2026, 11, 13, 11, tzinfo=UTC), parent.id)
+        async with sm.begin() as session:
+            session.add(parent)
+            await session.flush()
+            session.add(child)
+        assert (await client.get(url)).json()["live_run_id"] == str(child.id)  # not the paused parent
+
+        async with sm.begin() as session:
+            (await session.get_one(Run, child.id)).status = "completed"
+        assert (await client.get(url)).json()["live_run_id"] is None  # the superseded parent is not followed
+
+        pending = run("pending", None)  # created, not yet started: the newest of all
+        async with sm.begin() as session:
+            session.add(pending)
+        assert (await client.get(url)).json()["live_run_id"] == str(pending.id)

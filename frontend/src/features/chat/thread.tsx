@@ -54,9 +54,9 @@ function ThreadView({ threadId }: { threadId: string }) {
     dataUpdatedAt: threadAt,
     refetch,
   } = useQuery({ ...threadQuery(threadId), refetchOnMount: "always" })
-  const last = thread?.messages.at(-1)
-  // only a trailing user message can belong to a run that has not answered yet
-  const candidate = last?.role === "user" ? (last.run_id ?? null) : null
+  // the thread names its newest run while that run is live: a branch adds no message, so the
+  // trailing question can name a superseded parent
+  const candidate = thread?.live_run_id ?? null
   const {
     data: run,
     isPending: runPending,
