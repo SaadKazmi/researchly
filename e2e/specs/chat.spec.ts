@@ -99,3 +99,23 @@ test.describe("chat", () => {
     await expect(page.getByRole("textbox", { name: "Plan" })).toBeVisible() // rebuilt from the replay
   })
 })
+
+test.describe("chat with a clarifying question", () => {
+  test.beforeEach(async ({ page }) => {
+    await mockRun(page, "ask-user.sse")
+  })
+
+  test("the agent's question takes a typed answer", { tag: "@F1.2" }, async ({ page }) => {
+    await ask(page)
+    await expect(page.getByText("Which years should I cover?")).toBeVisible()
+    const answer = page.getByRole("textbox", { name: "Answer" })
+    await answer.fill("2020 onwards.")
+    const resumed = page.waitForRequest("**/api/v1/runs/r1/resume")
+    await page.getByRole("button", { name: "Send answer" }).click()
+    expect((await resumed).postDataJSON()).toEqual({
+      decisions: [{ type: "respond", message: "2020 onwards." }],
+    })
+    await expect(page.getByText(/lowered hallucination rates/)).toBeVisible()
+    await expect(answer).toHaveCount(0) // the answered question closes
+  })
+})

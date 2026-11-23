@@ -103,7 +103,7 @@ async def test_a_replayed_reply_streams_its_text_and_tool_calls(tmp_path):
     streamed = [
         event["data"]["chunk"]
         async for event in replayer(path).bind_tools([lookup]).astream_events("q", version="v2")
-        if event["event"] == "on_chat_model_stream"
+        if event["event"] == "on_chat_model_stream" and "chunk" in event["data"]
     ]
     assert "".join(chunk.text for chunk in streamed) == "Let me look."
     whole = streamed[0]

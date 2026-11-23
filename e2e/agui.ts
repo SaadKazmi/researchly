@@ -7,8 +7,8 @@ import { repo } from "./paths"
 
 type Frame = { seq: number; data: string }
 
-function frames(): Frame[] {
-  const text = readFileSync(resolve(repo, "e2e/fixtures/agui/standard-run.sse"), "utf-8")
+function frames(transcript: string): Frame[] {
+  const text = readFileSync(resolve(repo, "e2e/fixtures/agui", transcript), "utf-8")
   return text
     .split("\n\n")
     .filter((block) => block.trim())
@@ -59,9 +59,9 @@ const json = (route: Route, body: unknown, status = 200) =>
   route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) })
 
 /** Serves the project, thread, efforts and run routes from the frozen transcript: no LLM key, no network. */
-export async function mockRun(page: Page): Promise<void> {
-  const all = frames()
-  // the run stops at the plan interrupt until a resume answers it, exactly as the backend does
+export async function mockRun(page: Page, transcript = "standard-run.sse"): Promise<void> {
+  const all = frames(transcript)
+  // the run stops at the transcript's interrupt until a resume answers it, exactly as the backend does
   const interrupt = all.findIndex((frame) => frame.data.includes('"interrupt"')) + 1
   let until = interrupt
   let status = "running"

@@ -92,6 +92,15 @@ The default `python` on dev machines may be old; always go through `uv`.
   - `follow` ends the stream on a run at rest, or on a replay whose last row is terminal; only the last row counts, because a resumed run replays the paused segment's `RUN_FINISHED` before the resume's `RUN_STARTED`.
   - Test chat models must stream: `ToolFake` implements `_stream`, because the adapter drives `astream_events`.
   - `httpx.ASGITransport` buffers a whole SSE response and runs no lifespan: API tests set `app.state.runs`, and the stream tests start the request as a task.
+- Chat UI (3c):
+  - The run tree, the plan review and the budget meter are our own components fed by `features/chat/run-state.tsx` from AG-UI events, not assistant-ui messages, because only `todos` survive a `STATE_SNAPSHOT` (ADR 0012).
+  - The browser attaches to a run through an injected `fetch` on `HttpAgent`, which creates the run over REST and streams `?after=<last seq>`. Interrupts are answered over `POST /runs/{id}/resume`, because the stream route ignores its request body.
+  - `POST /runs/{id}/resume` answers only once the resumed drive's `RUN_STARTED` has committed (or the drive died), waited outside the run lock; the browser's re-attach relies on it.
+  - API money is a `Decimal` quantized to cents with `ROUND_HALF_UP` (not the banker's default); the UI formats it with `toFixed(2)` at the edge only.
+- E2E has two chat layers:
+  - `e2e/specs/chat.spec.ts` replays the committed `e2e/fixtures/agui/standard-run.sse` through `page.route` (no key, no network, and the same file Vitest reads).
+  - The `@smoke` chat spec drives a real Quick run on replayed model calls (`RESEARCHLY_LLM_FIXTURES=replay`, set in `e2e/global-setup.ts`). The app has no HTTP replay, so a recorded run that calls a tool would hit the live internet: keep the smoke fixture tool-free. To re-record, delete `e2e/fixtures/llm/chat-quick/`, pre-start the E2E app from a venv that has the dev provider (`uv run --directory cli --with claude-agent-sdk==0.2.169 researchly start` with the same env as `e2e/global-setup.ts`; global-setup reuses a running app), and run `RESEARCHLY_ENV=development RESEARCHLY_DEV_PROVIDER=claude-code RESEARCHLY_LLM_FIXTURES=record pnpm -C e2e exec playwright test chat-smoke`.
+  - CI runs every spec except `@live` (`--grep-invert @live`): a spec that needs a key or the network must carry `@live`.
 
 ## Compact instructions
 When compacting, keep: current plan path and task number, failing test names and errors, files changed this session, decisions made and why. Drop: full file dumps, passing test output, exploration dead ends.
