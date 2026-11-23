@@ -70,7 +70,7 @@ id: 23
 data: {"type": "TEXT_MESSAGE_END", "messageId": "msg-3"}
 id: 24
 
-data: {"type": "CUSTOM", "name": "run_summary", "value": {"status": "completed", "spent_usd": 0.86, "budget_usd": 1.0, "coverage": 0.73}}
+data: {"type": "CUSTOM", "name": "run_summary", "value": {"status": "completed", "spent_usd": 0.86, "budget_usd": 1.0, "coverage": {"observed": 22, "estimated": 30.1, "lists": 4}}}
 id: 25
 
 data: {"type": "RUN_FINISHED", "threadId": "thread-1", "runId": "agui-2", "outcome": {"type": "success"}, "usage": [{"provider": "anthropic", "model": "claude-sonnet-4-5", "inputTokens": 41000, "outputTokens": 1100, "totalTokens": 42100}]}

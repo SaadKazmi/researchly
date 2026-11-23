@@ -71,6 +71,7 @@
     "wrapUp": "80% of the budget is spent: the run is wrapping up.",
     "stopped": "The budget is spent: the run stopped early.",
     "summary": "{{status}} · {{spent}} spent · {{coverage}}% coverage",
+    "summaryNoCoverage": "{{status}} · {{spent}} spent",
     "failed": "The run failed.",
     "activity": "Run activity",
     "todos": "Plan",

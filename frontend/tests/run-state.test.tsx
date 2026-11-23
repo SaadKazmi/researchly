@@ -32,7 +32,7 @@ test("the whole run builds a tree of the lead, its subagent and their tool calls
   const state = play()
   expect(state.review).toBeNull() // the resumed drive supersedes the answered interrupt
   expect(state.agents.map((a) => [a.name, a.status])).toEqual([
-    ["lead", "running"],
+    ["lead", "done"], // the run finished: nothing in it is still running
     ["scout", "done"],
   ])
   expect(state.tools.map((t) => [t.name, t.agentId, t.status])).toEqual([
@@ -43,7 +43,7 @@ test("the whole run builds a tree of the lead, its subagent and their tool calls
     status: "completed",
     spentUsd: 0.86,
     budgetUsd: 1,
-    coverage: 0.73,
+    coverage: 22 / 30.1, // observed over the Chao2 estimate
   })
   expect(state.cost?.tokens).toBe(42100)
   expect(state.failed).toBe(false)
@@ -95,7 +95,7 @@ test("resuming a run clears the previous drive's outcome, not just its review", 
         status: "failed",
         spent_usd: 0.4,
         budget_usd: 1.0,
-        coverage: 0.1,
+        coverage: { observed: 1, estimated: 10, lists: 2 },
       },
     },
   ].reduce(reduce, EMPTY)

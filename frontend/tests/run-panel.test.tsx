@@ -113,6 +113,29 @@ test("the end-of-run summary reports the status, the spend and the coverage", as
   ).toBeInTheDocument()
 })
 
+test("a run that found nothing to estimate from reports no coverage", async () => {
+  serve({ "GET /api/v1/runs/r1": () => Response.json(run) })
+  const { agent, play } = fakeAgent()
+  mount(agent)
+  const summary = {
+    status: "completed",
+    spent_usd: 0,
+    budget_usd: 0.1,
+    coverage: { observed: 0, estimated: 0, lists: 0 },
+  }
+  await play([
+    {
+      data: JSON.stringify({
+        type: "CUSTOM",
+        name: "run_summary",
+        value: summary,
+      }),
+    },
+  ])
+  expect(screen.getByText("completed · $0.00 spent")).toBeInTheDocument()
+  expect(screen.queryByText(/coverage/)).toBeNull()
+})
+
 test("pausing a running run calls the API", async () => {
   const calls = serve({
     "GET /api/v1/runs/r1": () => Response.json(run),

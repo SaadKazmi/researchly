@@ -116,11 +116,16 @@ export function RunPanel({
 
       {state.summary && (
         <p className="text-sm font-medium">
-          {t("run.summary", {
-            status: state.summary.status,
-            spent: dollars(state.summary.spentUsd),
-            coverage: Math.round(state.summary.coverage * 100),
-          })}
+          {state.summary.coverage === null
+            ? t("run.summaryNoCoverage", {
+                status: state.summary.status,
+                spent: dollars(state.summary.spentUsd),
+              })
+            : t("run.summary", {
+                status: state.summary.status,
+                spent: dollars(state.summary.spentUsd),
+                coverage: Math.round(state.summary.coverage * 100),
+              })}
         </p>
       )}
       <p aria-live="polite" className="text-sm empty:hidden">

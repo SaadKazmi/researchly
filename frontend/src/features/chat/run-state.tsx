@@ -25,7 +25,8 @@ export type Summary = {
   status: string
   spentUsd: number
   budgetUsd: number
-  coverage: number
+  // found over estimated (Chao2, spec §10); null when nothing was found to estimate from
+  coverage: number | null
 }
 export type ReviewAction = { name: string; text: string; decisions: string[] }
 export type Review = { id: string; actions: ReviewAction[] }
@@ -54,6 +55,16 @@ export const EMPTY: RunState = {
 
 function num(value: unknown): number {
   return typeof value === "number" ? value : Number(value ?? 0)
+}
+
+/** The backend sends `{observed, estimated, lists}` (runs/summary.py), or null without a store. */
+function share(value: unknown): number | null {
+  const { observed, estimated } = (value ?? {}) as Record<string, unknown>
+  return typeof observed === "number" &&
+    typeof estimated === "number" &&
+    estimated > 0
+    ? observed / estimated
+    : null
 }
 
 function started(id: string, name: string): AgentNode {
@@ -167,7 +178,7 @@ export function reduce(state: RunState, event: AgUiEvent): RunState {
           status: String(value.status),
           spentUsd: num(value.spent_usd),
           budgetUsd: num(value.budget_usd),
-          coverage: num(value.coverage),
+          coverage: share(value.coverage),
         }
         return { ...state, summary }
       }
@@ -176,9 +187,19 @@ export function reduce(state: RunState, event: AgUiEvent): RunState {
     case "RUN_FINISHED": {
       const outcome = event.outcome as
         { type?: string; interrupts?: Record<string, unknown>[] } | undefined
-      if (outcome?.type !== "interrupt" || !outcome.interrupts?.length)
-        return state
-      return { ...state, review: toReview(outcome.interrupts[0]) }
+      if (outcome?.type === "interrupt" && outcome.interrupts?.length)
+        return { ...state, review: toReview(outcome.interrupts[0]) }
+      // the drive is over: nothing in it is still running. A pause finishes it as cancelled and an
+      // interrupt waits on the user, and both resume the same tree
+      if (outcome?.type === "cancelled") return state
+      return {
+        ...state,
+        agents: state.agents.map((a) =>
+          a.status === "running"
+            ? { ...a, status: "done" as const, endedAt: Date.now() }
+            : a
+        ),
+      }
     }
     case "RUN_ERROR":
       return { ...state, failed: true }
