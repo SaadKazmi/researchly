@@ -115,9 +115,10 @@ export function RunPanel({
           )}
         </section>
       )}
-      {/* the shell owns the page's one status and one alert role: these are polite live regions,
-          always mounted so a screen reader hears the text arrive */}
-      <p aria-live="polite" className="text-sm empty:hidden">
+      {/* the shell owns the page's one status and one alert role: these are polite live regions.
+          A screen reader announces only a region already in the accessibility tree, so an empty
+          one is visually hidden (out of the flex gap), never `display: none` */}
+      <p aria-live="polite" className="text-sm empty:sr-only">
         {notice}
       </p>
 
@@ -135,7 +136,7 @@ export function RunPanel({
               })}
         </p>
       )}
-      <p aria-live="polite" className="text-sm empty:hidden">
+      <p aria-live="polite" className="text-sm empty:sr-only">
         {state.failed ? t("run.failed") : ""}
       </p>
 
@@ -245,7 +246,7 @@ export function RunPanel({
           {t("run.branch")}
         </Button>
       </section>
-      <p aria-live="polite" className="text-sm empty:hidden">
+      <p aria-live="polite" className="text-sm empty:sr-only">
         {control.isError || branch.isError ? t("run.actionFailed") : ""}
       </p>
 

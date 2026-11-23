@@ -264,3 +264,11 @@ test("a resume that fails says so and does not re-attach", async () => {
   expect(onAnswered).not.toHaveBeenCalled()
   expect(screen.getByRole("button", { name: "Approve" })).toBeEnabled()
 })
+
+test("the review's error region is rendered before it has anything to say", () => {
+  serve({})
+  mount(planEvents)
+  const region = document.querySelector('[aria-live="polite"]')!
+  expect(region).toBeEmptyDOMElement()
+  expect(region.className).not.toMatch(/(^|\s)(empty:)?hidden(\s|$)/)
+})

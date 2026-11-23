@@ -268,3 +268,20 @@ test("a single token is not counted as tokens", async () => {
   ])
   expect(screen.getByText("1 token")).toBeInTheDocument()
 })
+
+test("the live regions are rendered before they have anything to say", async () => {
+  // a screen reader announces a live region's change only if the region was in the accessibility
+  // tree before it: `display: none` while empty (Tailwind's `empty:hidden`) silences the notices
+  serve({
+    "GET /api/v1/runs/r1": () => Response.json({ ...run, spent_usd: "0.00" }),
+  })
+  const { agent } = fakeAgent()
+  mount(agent)
+  await screen.findByRole("button", { name: "Pause" })
+  const regions = document.querySelectorAll('[aria-live="polite"]')
+  expect(regions).toHaveLength(3) // the budget notice, the failure line and the action error
+  for (const region of regions) {
+    expect(region).toBeEmptyDOMElement()
+    expect(region.className).not.toMatch(/(^|\s)(empty:)?hidden(\s|$)/)
+  }
+})

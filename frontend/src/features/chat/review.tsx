@@ -146,8 +146,9 @@ export function Review({
           </div>
         )
       })}
-      {/* the shell owns the page's one status and one alert role: this is a polite live region */}
-      <p aria-live="polite" className="text-sm empty:hidden">
+      {/* the shell owns the page's one status and one alert role: this is a polite live region, kept in
+          the accessibility tree while empty (visually hidden, never `display: none`) so its text is announced */}
+      <p aria-live="polite" className="text-sm empty:sr-only">
         {resume.isError ? t("review.failed") : ""}
       </p>
     </section>
