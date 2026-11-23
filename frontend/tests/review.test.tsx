@@ -1,6 +1,6 @@
 import type { HttpAgent } from "@ag-ui/client"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { act, render, screen } from "@testing-library/react"
+import { act, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, expect, test, vi } from "vitest"
 
@@ -165,14 +165,22 @@ test("an edited plan resumes with the edited action", async () => {
   })
 })
 
-test("rejecting the plan resumes with a reject decision", async () => {
-  const calls = serve({ "POST /api/v1/runs/r1/resume": resumed })
-  mount(planEvents)
+test("rejecting the plan closes the review and re-attaches nothing", async () => {
+  // a reject cancels the run: re-attaching would replay the plan interrupt and reopen the review
+  const calls = serve({
+    "POST /api/v1/runs/r1/resume": () =>
+      Response.json({ id: "r1", status: "cancelled" }),
+  })
+  const onAnswered = mount(planEvents)
   await userEvent.click(screen.getByRole("button", { name: "Reject" }))
   const resume = await vi.waitUntil(() => resumes(calls)[0])
   expect(await resume.clone().json()).toEqual({
     decisions: [{ type: "reject" }],
   })
+  await waitFor(() =>
+    expect(screen.queryByRole("textbox", { name: "Plan" })).toBeNull()
+  )
+  expect(onAnswered).not.toHaveBeenCalled()
 })
 
 test("a clarifying question takes a typed answer", async () => {
@@ -193,8 +201,14 @@ test("a clarifying question takes a typed answer", async () => {
 test("an interrupt with two actions sends both decisions together, in action order", async () => {
   const calls = serve({ "POST /api/v1/runs/r1/resume": resumed })
   mount([started, planAndQuestion])
-  await userEvent.click(screen.getByRole("button", { name: "Approve" }))
+  const plan = screen.getByRole("textbox", { name: "Plan" })
+  await userEvent.type(plan, " Medicine.")
+  const edits = screen.getByRole("button", { name: "Approve with edits" })
+  await userEvent.click(edits)
   expect(resumes(calls)).toHaveLength(0) // the question has no answer yet
+  expect(edits).toHaveAttribute("aria-pressed", "true") // the decision waits, visibly
+  // a recorded decision sends the draft as it stands when the request goes out
+  await userEvent.type(plan, " Since 2020.")
   await userEvent.type(
     screen.getByRole("textbox", { name: "Answer" }),
     "2020 onwards."
@@ -203,7 +217,13 @@ test("an interrupt with two actions sends both decisions together, in action ord
   const resume = await vi.waitUntil(() => resumes(calls)[0])
   expect(await resume.clone().json()).toEqual({
     decisions: [
-      { type: "approve" },
+      {
+        type: "edit",
+        edited_action: {
+          name: "submit_plan",
+          args: { plan: "1. Scope it. Medicine. Since 2020." },
+        },
+      },
       { type: "respond", message: "2020 onwards." },
     ],
   })

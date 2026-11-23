@@ -661,3 +661,56 @@ test("approving the plan re-attaches the transcript, which then carries the run'
     expect(screen.queryByRole("textbox", { name: "Plan" })).toBeNull()
   )
 })
+
+test("a rejected plan closes the review and frees the composer", async () => {
+  // a reject cancels the run without an event: the stream still ends on the plan interrupt
+  let status = "awaiting_user"
+  const calls = serve({
+    ...routes([asked]),
+    "GET /api/v1/runs/r1": () => Response.json({ ...run, status }),
+    "POST /api/v1/runs/r1/resume": () => {
+      status = "cancelled"
+      return Response.json({ ...run, status })
+    },
+    "POST /api/v1/runs/r1/stream": () => sse(untilInterrupt()),
+  })
+  renderAt("/p/p1/chat/t1")
+  await userEvent.click(await screen.findByRole("button", { name: "Reject" }))
+  await waitFor(() =>
+    expect(screen.queryByRole("textbox", { name: "Plan" })).toBeNull()
+  )
+  await userEvent.type(
+    screen.getByRole("textbox", { name: "Ask a research question" }),
+    "And for code?"
+  )
+  expect(screen.getByRole("button", { name: "Send" })).toBeEnabled()
+  // nothing to follow: a re-attach would open a second stream on the cancelled run
+  await act(() => new Promise((done) => setTimeout(done, 300)))
+  expect(
+    calls.filter((call) => call.url.includes("/runs/r1/stream"))
+  ).toHaveLength(1)
+})
+
+test("cancelling a run from the panel closes its review and frees the composer", async () => {
+  let status = "awaiting_user"
+  serve({
+    ...routes([asked]),
+    "GET /api/v1/runs/r1": () => Response.json({ ...run, status }),
+    "POST /api/v1/runs/r1/cancel": () => {
+      status = "cancelled"
+      return Response.json({ ...run, status })
+    },
+    "POST /api/v1/runs/r1/stream": () => sse(untilInterrupt()),
+  })
+  renderAt("/p/p1/chat/t1")
+  await screen.findByRole("textbox", { name: "Plan" })
+  await userEvent.click(screen.getByRole("button", { name: "Cancel the run" }))
+  await waitFor(() =>
+    expect(screen.queryByRole("textbox", { name: "Plan" })).toBeNull()
+  )
+  await userEvent.type(
+    screen.getByRole("textbox", { name: "Ask a research question" }),
+    "And for code?"
+  )
+  expect(screen.getByRole("button", { name: "Send" })).toBeEnabled()
+})

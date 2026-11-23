@@ -22,9 +22,9 @@ import {
 } from "@/api/queries"
 import { Button } from "@/components/ui/button"
 import { createAgent, newRunRef } from "@/features/chat/agent"
-import { Review } from "@/features/chat/review"
+import { Review, useOpenReview } from "@/features/chat/review"
 import { RunPanel } from "@/features/chat/run-panel"
-import { RunStateProvider, useRunState } from "@/features/chat/run-state"
+import { RunStateProvider } from "@/features/chat/run-state"
 
 const DEFAULT_THRESHOLD = 1
 
@@ -208,12 +208,17 @@ function Runtime({
               </ThreadPrimitive.Viewport>
               {/* an answer re-reads the thread and remounts on the same run, whose stream carries the resumed drive */}
               {runId && (
-                <Review runId={runId} onAnswered={() => onReattach()} />
+                <Review
+                  key={runId} // a run the composer starts gets a fresh panel, not one already answered
+                  runId={runId}
+                  onAnswered={() => onReattach()}
+                />
               )}
               <Composer
                 effort={effort}
                 efforts={efforts}
                 selected={selected}
+                runId={runId}
                 onEffort={chooseEffort}
               />
             </ThreadPrimitive.Root>
@@ -240,17 +245,19 @@ function Composer({
   efforts,
   selected,
   onEffort,
+  runId,
 }: {
   effort: EffortName
   efforts: Effort[]
   selected: Effort | undefined
   onEffort: (effort: EffortName) => void
+  runId: string | null
 }) {
   const { t } = useTranslation()
   // what the composer's own submit checks: an empty draft or a run in flight sends nothing
   const canSend = useAuiState((s) => s.composer.canSend && !s.thread.isRunning)
   // a run waiting on the user takes its answer from the review, never a second run on top of it
-  const reviewing = useRunState().review !== null
+  const reviewing = useOpenReview(runId) !== null
   const [pending, setPending] = useState<HTMLFormElement | null>(null)
   // set by `confirm` for exactly the one submit it makes; the guard spends it
   const confirmed = useRef(false)
@@ -274,6 +281,7 @@ function Composer({
       onSubmitCapture={(event) => {
         // the composer itself would still send this one (Enter submits the form): stop it here
         if (reviewing) {
+          confirmed.current = false // a confirmed send the review swallowed is spent all the same
           event.preventDefault()
           event.stopPropagation()
           return
