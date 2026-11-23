@@ -64,6 +64,8 @@ export function RunPanel({
   })
 
   const live = run !== undefined && LIVE_STATUSES.includes(run.status)
+  // the backend branches only a run at rest: paused, or finished
+  const branchable = run !== undefined && (run.status === "paused" || !live)
   // the transcript was hydrated before the run's answer was stored: once the run is over, refetch it
   const ended = state.summary !== null || (run !== undefined && !live)
   const threadId = run?.thread_id
@@ -237,20 +239,22 @@ export function RunPanel({
             {t("run.cancel")}
           </Button>
         )}
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={() => setBranching((open) => !open)}
-        >
-          {t("run.branch")}
-        </Button>
+        {branchable && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setBranching((open) => !open)}
+          >
+            {t("run.branch")}
+          </Button>
+        )}
       </section>
       <p aria-live="polite" className="text-sm empty:sr-only">
         {control.isError || branch.isError ? t("run.actionFailed") : ""}
       </p>
 
-      {branching && (
+      {branching && branchable && (
         <BranchPicker
           runId={runId}
           value={checkpoint}

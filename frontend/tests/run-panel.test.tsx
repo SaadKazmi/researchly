@@ -285,3 +285,20 @@ test("the live regions are rendered before they have anything to say", async () 
     expect(region.className).not.toMatch(/(^|\s)(empty:)?hidden(\s|$)/)
   }
 })
+
+test.each([
+  ["running", false],
+  ["awaiting_user", false],
+  ["paused", true],
+  ["completed", true],
+  ["failed", true],
+])("a %s run offers Branch: %s", async (status, offered) => {
+  // the backend branches only a paused or finished run
+  serve({ "GET /api/v1/runs/r1": () => Response.json({ ...run, status }) })
+  const { agent } = fakeAgent()
+  mount(agent)
+  await screen.findByText("$0.84 of $1.00") // the run has been read
+  expect(screen.queryByRole("button", { name: "Branch" }) !== null).toBe(
+    offered
+  )
+})
