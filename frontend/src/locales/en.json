@@ -84,5 +84,17 @@
     "step": "step {{step}}",
     "actionFailed": "That did not go through. Check that Researchly is still running, then try again."
   },
+  "review": {
+    "panel": "Review",
+    "plan": "Review the plan",
+    "planLabel": "Plan",
+    "question": "The agent needs an answer",
+    "answer": "Answer",
+    "approve": "Approve",
+    "approveEdits": "Approve with edits",
+    "reject": "Reject",
+    "send": "Send answer",
+    "failed": "That answer did not go through. Check that Researchly is still running, then try again."
+  },
   "placeholder": "This view arrives in a later build step."
 }

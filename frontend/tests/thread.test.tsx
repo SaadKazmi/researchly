@@ -599,3 +599,65 @@ test("a conversation stays open when its run ends under it", async () => {
     screen.getByText("completed · $0.86 spent · 73% coverage")
   ).toBeInTheDocument()
 })
+
+const asked = {
+  id: "m1",
+  role: "user",
+  text: "Why does RAG help?",
+  run_id: "r1",
+  created_at: "2026-11-13T10:00:00Z",
+}
+
+test("a run waiting on its plan review cannot be sent over", async () => {
+  // a second run started on top of one waiting for the user would leave the first stuck
+  const calls = serve({
+    ...routes([asked]),
+    "GET /api/v1/runs/r1": () =>
+      Response.json({ ...run, status: "awaiting_user" }),
+    "POST /api/v1/runs/r1/stream": () => sse(untilInterrupt()),
+  })
+  renderAt("/p/p1/chat/t1")
+  await screen.findByRole("textbox", { name: "Plan" })
+  const input = screen.getByRole("textbox", {
+    name: "Ask a research question",
+  })
+  await userEvent.type(input, "And for code?")
+  expect(screen.getByRole("button", { name: "Send" })).toBeDisabled()
+  // Enter submits the form whatever the button says: the guard must drop it too
+  await userEvent.type(input, "{Enter}")
+  expect(input).toHaveValue("And for code?") // a send would have cleared it
+  expect(posted(calls)).toBe(false)
+})
+
+test("approving the plan re-attaches the transcript, which then carries the run's answer", async () => {
+  let answered = false
+  const calls = serve({
+    ...routes([asked]),
+    "GET /api/v1/runs/r1": () =>
+      Response.json({ ...run, status: answered ? "running" : "awaiting_user" }),
+    "POST /api/v1/runs/r1/resume": () => {
+      answered = true
+      return Response.json(run)
+    },
+    // the stream after the answer carries the resumed drive too, behind the paused segment's replay
+    "POST /api/v1/runs/r1/stream": () =>
+      sse(answered ? frames() : untilInterrupt()),
+  })
+  renderAt("/p/p1/chat/t1")
+  expect(await screen.findByRole("textbox", { name: "Plan" })).toHaveValue(
+    "1. How does retrieval augmentation change hallucination rates?"
+  )
+  await userEvent.click(screen.getByRole("button", { name: "Approve" }))
+  const resume = await vi.waitUntil(() =>
+    calls.find((call) => call.url.endsWith("/runs/r1/resume"))
+  )
+  expect(await resume.clone().json()).toEqual({
+    decisions: [{ type: "approve" }],
+  })
+  expect(
+    await screen.findByText(/lowers hallucination rates/)
+  ).toBeInTheDocument()
+  await waitFor(() =>
+    expect(screen.queryByRole("textbox", { name: "Plan" })).toBeNull()
+  )
+})

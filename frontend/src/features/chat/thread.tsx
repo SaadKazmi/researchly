@@ -22,8 +22,9 @@ import {
 } from "@/api/queries"
 import { Button } from "@/components/ui/button"
 import { createAgent, newRunRef } from "@/features/chat/agent"
+import { Review } from "@/features/chat/review"
 import { RunPanel } from "@/features/chat/run-panel"
-import { RunStateProvider } from "@/features/chat/run-state"
+import { RunStateProvider, useRunState } from "@/features/chat/run-state"
 
 const DEFAULT_THRESHOLD = 1
 
@@ -205,6 +206,10 @@ function Runtime({
               <ThreadPrimitive.Viewport className="flex-1 overflow-y-auto">
                 <ThreadPrimitive.Messages components={{ Message: Bubble }} />
               </ThreadPrimitive.Viewport>
+              {/* an answer re-reads the thread and remounts on the same run, whose stream carries the resumed drive */}
+              {runId && (
+                <Review runId={runId} onAnswered={() => onReattach()} />
+              )}
               <Composer
                 effort={effort}
                 efforts={efforts}
@@ -244,6 +249,8 @@ function Composer({
   const { t } = useTranslation()
   // what the composer's own submit checks: an empty draft or a run in flight sends nothing
   const canSend = useAuiState((s) => s.composer.canSend && !s.thread.isRunning)
+  // a run waiting on the user takes its answer from the review, never a second run on top of it
+  const reviewing = useRunState().review !== null
   const [pending, setPending] = useState<HTMLFormElement | null>(null)
   // set by `confirm` for exactly the one submit it makes; the guard spends it
   const confirmed = useRef(false)
@@ -265,6 +272,12 @@ function Composer({
   return (
     <div
       onSubmitCapture={(event) => {
+        // the composer itself would still send this one (Enter submits the form): stop it here
+        if (reviewing) {
+          event.preventDefault()
+          event.stopPropagation()
+          return
+        }
         // a send the composer will drop, one under the threshold, or the confirmed one goes through
         if (
           !canSend ||
@@ -319,7 +332,7 @@ function Composer({
               it. A submit puts the click and the Enter key on the one path the guard watches. */}
           <button
             type="submit"
-            disabled={!canSend || selected === undefined}
+            disabled={!canSend || reviewing || selected === undefined}
             className="ml-auto h-8 rounded-md bg-primary px-3 text-sm text-primary-foreground"
           >
             {t("chat.send")}
