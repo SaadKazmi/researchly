@@ -70,7 +70,7 @@ async def test_a_run_streams_its_events_end_to_end(api):
     got = frames(response.text)
     assert [seq for seq, _ in got] == list(range(1, len(got) + 1))
     assert [shape(p) for _, p in got] == SHAPE
-    summary = {"status": "completed", "spent_usd": 0.0, "budget_usd": 1.0, "coverage": None}
+    summary = {"status": "completed", "spent_usd": 0.0, "budget_usd": 1.0, "tokens": 0, "coverage": None}
     assert got[-2][1]["value"] == summary
 
 

@@ -34,7 +34,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from researchly.agents.context import EFFORTS, EffortName, RunContext
 from researchly.agents.middleware import BUDGET_SPENT, LOOP_STOP
 from researchly.db.models import Message, Project, Run, RunEvent
-from researchly.llm.ledger import spent_usd
+from researchly.llm.ledger import spent_usd, tokens_used
 from researchly.runs.agui import ResearchlyAgent, allowed_decisions
 from researchly.runs.events import RunEventLog, RunHub, RunUpdate
 from researchly.runs.summary import coverage
@@ -332,6 +332,7 @@ class RunManager:
                 "status": status,
                 "spent_usd": float(spent),
                 "budget_usd": float(run.budget_usd),
+                "tokens": await tokens_used(self.sessions, run.id),
                 "coverage": await coverage(getattr(graph, "store", None), run.project_id),
             }
             await log.append(CustomEvent(name="run_summary", value=summary))

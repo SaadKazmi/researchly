@@ -17,7 +17,7 @@ from sqlalchemy import func, select, update
 from researchly.agents.middleware import BUDGET_SPENT, BudgetGuard
 from researchly.db import migrate, provision
 from researchly.db.engine import make_engine, make_sessionmaker
-from researchly.db.models import Message, Run, RunEvent
+from researchly.db.models import LlmCall, Message, Run, RunEvent
 from researchly.runs.events import RunEventLog, follow
 from researchly.runs.manager import RUN_ERROR, RunManager, RunStateError
 
@@ -504,6 +504,9 @@ async def test_a_summary_precedes_the_end_of_the_run(sm):
     store = InMemoryStore()
     line = json.dumps({"title": "Attention", "source": "openalex", "extra": {"found_by": ["arxiv", "openalex"]}})
     await store.aput(("project", str(run.project_id)), "/candidates/sq1.jsonl", {"content": line + "\n"})
+    async with sm.begin() as session:  # a model call already billed: the summary carries its tokens
+        call_row = dict(agent="lead", role="strong", provider="p", model="m", cost_usd=Decimal(0), latency_ms=1)
+        session.add(LlmCall(run_id=run.id, in_tok=30, cached_tok=0, out_tok=12, status="ok", **call_row))
     m = manager(sm, agent(script("The answer."), store=store))
     await m.start(run.id)
     await m.wait(run.id)
@@ -511,7 +514,13 @@ async def test_a_summary_precedes_the_end_of_the_run(sm):
     [summary] = await events(sm, run.id, "CUSTOM")
     assert summary["name"] == "run_summary"
     coverage = {"observed": 1, "estimated": 1.0, "lists": 2}
-    assert summary["value"] == {"status": "completed", "spent_usd": 0.0, "budget_usd": 1.0, "coverage": coverage}
+    assert summary["value"] == {
+        "status": "completed",
+        "spent_usd": 0.0,
+        "budget_usd": 1.0,
+        "tokens": 42,
+        "coverage": coverage,
+    }
 
 
 async def test_resume_answers_once_the_resumed_run_is_streaming(sm):
