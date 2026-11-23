@@ -62,7 +62,7 @@ class RunManager:
         build: Callable[[Run], Awaitable[Any]],
         checkpointer: BaseCheckpointSaver | None = None,
     ) -> None:
-        # `build` makes a run's graph and costs an LLM provider and the local models; `checkpointer` is the saver
+        # `build` makes a run's graph and needs an LLM provider; `checkpointer` is the saver
         # behind it, so a reader that only needs stored checkpoints can skip the build entirely.
         self.sessions, self.build, self.checkpointer = sessions, build, checkpointer
         self.hub = RunHub()
