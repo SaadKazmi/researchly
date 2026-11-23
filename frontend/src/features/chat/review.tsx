@@ -80,11 +80,14 @@ export function Review({
     return { type }
   }
   // the request goes out once every action has its decision, in the order of the actions, each
-  // built from its draft as it stands now
+  // built from its draft as it stands now; an answer cleared since it was given holds it back
   const decide = (index: number, type: DecisionType) => {
     const next = { ...chosen, [index]: type }
     setChosen(next)
-    if (review.actions.every((_, i) => next[i] !== undefined))
+    const ready = (action: ReviewAction, i: number) =>
+      next[i] !== undefined &&
+      (next[i] !== "respond" || draft(i, action).trim() !== "")
+    if (review.actions.every(ready))
       resume.mutate(review.actions.map((_, i) => payload(i, next[i]!)))
   }
   // a successful answer remounts this panel; until then nothing else may go out

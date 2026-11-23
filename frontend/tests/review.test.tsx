@@ -230,6 +230,26 @@ test("an interrupt with two actions sends both decisions together, in action ord
   expect(resumes(calls)).toHaveLength(1)
 })
 
+test("an answer cleared after it was recorded holds the request until it is given again", async () => {
+  const calls = serve({ "POST /api/v1/runs/r1/resume": resumed })
+  mount([started, planAndQuestion])
+  const answer = screen.getByRole("textbox", { name: "Answer" })
+  await userEvent.type(answer, "2020 onwards.")
+  await userEvent.click(screen.getByRole("button", { name: "Send answer" }))
+  await userEvent.clear(answer)
+  await userEvent.click(screen.getByRole("button", { name: "Approve" }))
+  expect(resumes(calls)).toHaveLength(0) // an empty answer never reaches the agent
+  await userEvent.type(answer, "Since 2018.")
+  await userEvent.click(screen.getByRole("button", { name: "Send answer" }))
+  const resume = await vi.waitUntil(() => resumes(calls)[0])
+  expect(await resume.clone().json()).toEqual({
+    decisions: [
+      { type: "approve" },
+      { type: "respond", message: "Since 2018." },
+    ],
+  })
+})
+
 test("a resume that fails says so and does not re-attach", async () => {
   serve({
     "POST /api/v1/runs/r1/resume": () => new Response(null, { status: 409 }),
