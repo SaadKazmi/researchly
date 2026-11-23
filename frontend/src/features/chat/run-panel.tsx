@@ -43,9 +43,11 @@ export function RunPanel({
           }
         )
       ),
-    onSuccess: async (updated) => {
+    onSuccess: async (updated, action) => {
       await queryClient.invalidateQueries({ queryKey: ["run", runId] })
-      if (updated.status === "running") onReattach() // a resume opens a new AG-UI run on the same stream
+      // a resume opens a new AG-UI run on the same stream; one whose drive died at once ends it with
+      // the RUN_ERROR, which only a re-attach reads. Only a resume still paused has nothing to show
+      if (action === "resume" && updated.status !== "paused") onReattach()
     },
   })
 

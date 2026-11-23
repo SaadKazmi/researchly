@@ -286,6 +286,20 @@ test("the live regions are rendered before they have anything to say", async () 
   }
 })
 
+test("a resume whose drive died at once still re-attaches, so its failure is read", async () => {
+  // the stream carries the RUN_ERROR; without a re-attach the user sees only the buttons go away
+  serve({
+    "GET /api/v1/runs/r1": () => Response.json({ ...run, status: "paused" }),
+    "POST /api/v1/runs/r1/resume": () =>
+      Response.json({ ...run, status: "failed" }),
+  })
+  const { agent } = fakeAgent()
+  const onReattach = mount(agent)
+  await userEvent.click(await screen.findByRole("button", { name: "Resume" }))
+  await vi.waitUntil(() => onReattach.mock.calls.length > 0)
+  expect(onReattach).toHaveBeenCalledWith()
+})
+
 test.each([
   ["running", false],
   ["awaiting_user", false],
