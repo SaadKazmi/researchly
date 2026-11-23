@@ -205,7 +205,7 @@ jobs:
       - run: pnpm -C e2e install --frozen-lockfile
       - run: pnpm -C e2e exec playwright install --with-deps --only-shell chromium
       # No frontend pre-build: the first `researchly start` builds the web UI, as on a fresh checkout
-      - run: pnpm -C e2e exec playwright test --grep @smoke
+      - run: pnpm -C e2e exec playwright test --grep-invert @live
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
