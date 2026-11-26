@@ -47,6 +47,33 @@ async def test_threads_list_newest_first_and_show_their_messages(api):
         assert (await client.get(f"/api/v1/threads/{uuid.uuid4()}")).status_code == 404
 
 
+async def test_threads_can_be_searched_by_title_and_message_text(api):
+    async with api() as (client, m):
+        project = (await client.post("/api/v1/projects", json={"name": "p"})).json()
+        url = f"/api/v1/projects/{project['id']}/threads"
+        titled = (await client.post(url, json={"title": "Retrieval augmentation"})).json()
+        other = (await client.post(url, json={"title": "Diffusion"})).json()
+        await m.create(uuid.UUID(project["id"]), uuid.UUID(other["id"]), "How does RETRIEVAL scale?")
+        found = (await client.get(url, params={"q": "retriev"})).json()
+        assert {t["id"] for t in found} == {titled["id"], other["id"]}
+        assert [t["id"] for t in (await client.get(url, params={"q": "diffusion"})).json()] == [other["id"]]
+        assert (await client.get(url, params={"q": "nothing here"})).json() == []
+        assert len((await client.get(url, params={"q": ""})).json()) == 2  # blank: no filter
+        assert (await client.get(f"/api/v1/projects/{uuid.uuid4()}/threads", params={"q": "x"})).status_code == 404
+
+
+async def test_thread_search_treats_like_wildcards_as_literal_text(api):
+    async with api() as (client, _):
+        project = (await client.post("/api/v1/projects", json={"name": "p"})).json()
+        url = f"/api/v1/projects/{project['id']}/threads"
+        percent = (await client.post(url, json={"title": "100% recall"})).json()
+        await client.post(url, json={"title": "plain title"})
+        assert [t["id"] for t in (await client.get(url, params={"q": "%"})).json()] == [percent["id"]]
+        assert [t["id"] for t in (await client.get(url, params={"q": "0% r"})).json()] == [percent["id"]]
+        assert (await client.get(url, params={"q": "_"})).json() == []  # `_` is a character, not "any character"
+        assert (await client.get(url, params={"q": "\\"})).json() == []
+
+
 async def test_the_api_answers_503_without_a_run_manager():
     app = create_app(Settings(env="test"), token=TOKEN)  # no lifespan ran, so there is no manager
     transport = httpx.ASGITransport(app=app)

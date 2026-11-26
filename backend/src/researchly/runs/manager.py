@@ -27,13 +27,14 @@ from ag_ui.core import (
     UserMessage,
 )
 from langchain_core.messages import ToolMessage
+from langgraph.checkpoint.base import BaseCheckpointSaver
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from researchly.agents.context import EFFORTS, EffortName, RunContext
 from researchly.agents.middleware import BUDGET_SPENT, LOOP_STOP
 from researchly.db.models import Message, Project, Run, RunEvent
-from researchly.llm.ledger import spent_usd
+from researchly.llm.ledger import spent_usd, tokens_used
 from researchly.runs.agui import ResearchlyAgent, allowed_decisions
 from researchly.runs.events import RunEventLog, RunHub, RunUpdate
 from researchly.runs.summary import coverage
@@ -55,8 +56,15 @@ def _now() -> datetime:
 
 
 class RunManager:
-    def __init__(self, sessions: async_sessionmaker[AsyncSession], build: Callable[[Run], Awaitable[Any]]) -> None:
-        self.sessions, self.build = sessions, build
+    def __init__(
+        self,
+        sessions: async_sessionmaker[AsyncSession],
+        build: Callable[[Run], Awaitable[Any]],
+        checkpointer: BaseCheckpointSaver | None = None,
+    ) -> None:
+        # `build` makes a run's graph and needs an LLM provider; `checkpointer` is the saver
+        # behind it, so a reader that only needs stored checkpoints can skip the build entirely.
+        self.sessions, self.build, self.checkpointer = sessions, build, checkpointer
         self.hub = RunHub()
         self._tasks: dict[uuid.UUID, asyncio.Task[None]] = {}
         # a pause or cancel must not interleave with a resume or start of the same run
@@ -97,9 +105,23 @@ class RunManager:
 
     async def resume(self, run_id: uuid.UUID, decisions: list[dict[str, Any]] | None = None) -> None:
         async with self._locks[run_id]:
-            await self._resume(run_id, decisions)
+            spawned = await self._resume(run_id, decisions)
+        if spawned is None:  # a reject cancels instead
+            return
+        # answer once the resumed AG-UI run is in the log: before that, a stream sees `running` with the paused
+        # segment's end as its newest row, and `follow` reads that as a run that has already finished. A drive
+        # that dies before its first event answers too. Waited outside the lock: a pause or cancel arriving
+        # during a cold `build()` must still stop it at once, and stopping the task ends this wait.
+        task, started = spawned
+        waiter = asyncio.create_task(started.wait())
+        try:
+            await asyncio.wait({waiter, task}, return_when=asyncio.FIRST_COMPLETED)
+        finally:
+            waiter.cancel()
 
-    async def _resume(self, run_id: uuid.UUID, decisions: list[dict[str, Any]] | None) -> None:
+    async def _resume(
+        self, run_id: uuid.UUID, decisions: list[dict[str, Any]] | None
+    ) -> tuple[asyncio.Task[None], asyncio.Event] | None:
         async with self.sessions() as session:
             run = await session.get_one(Run, run_id)
             superseded = await self._superseded(session, run)
@@ -111,12 +133,12 @@ class RunManager:
             await self._check(run_id, decisions)
             if any(d.get("type") == "reject" for d in decisions):
                 await self._cancel(run_id)
-                return
+                return None
         elif run.status == "awaiting_user":
             raise RunStateError("this run is waiting for the user's decisions")
         async with self.sessions.begin() as session:
             await self._set(session, run_id, "running", ("paused", "awaiting_user"))
-        self._spawn(run_id, decisions or None)
+        return self._spawn(run_id, decisions or None)
 
     async def _check(self, run_id: uuid.UUID, decisions: list[dict[str, Any]]) -> None:
         """Decisions must answer the open review action by action: HITL fails the run on a mismatch."""
@@ -201,8 +223,10 @@ class RunManager:
 
     def _spawn(
         self, run_id: uuid.UUID, decisions: list[dict[str, Any]] | None, checkpoint_id: str | None = None
-    ) -> None:
-        task = asyncio.create_task(self._drive(run_id, decisions, checkpoint_id))
+    ) -> tuple[asyncio.Task[None], asyncio.Event]:
+        """Start the drive task. The event is set once its RUN_STARTED row commits."""
+        started = asyncio.Event()
+        task = asyncio.create_task(self._drive(run_id, decisions, checkpoint_id, started))
         self._tasks[run_id] = task
 
         def forget(done: asyncio.Task[None]) -> None:
@@ -210,6 +234,7 @@ class RunManager:
                 del self._tasks[run_id]
 
         task.add_done_callback(forget)
+        return task, started
 
     async def _stop(self, run_id: uuid.UUID) -> None:
         task = self._tasks.get(run_id)
@@ -219,9 +244,13 @@ class RunManager:
                 await task
 
     async def _drive(
-        self, run_id: uuid.UUID, decisions: list[dict[str, Any]] | None, checkpoint_id: str | None
+        self,
+        run_id: uuid.UUID,
+        decisions: list[dict[str, Any]] | None,
+        checkpoint_id: str | None,
+        started: asyncio.Event,
     ) -> None:
-        log = RunEventLog(self.sessions, self.hub, run_id)
+        log = RunEventLog(self.sessions, self.hub, run_id, started=started)
         thread, agui_run = str(run_id), str(uuid.uuid4())  # one AG-UI run per drive
         try:
             async with self.sessions() as session:
@@ -303,6 +332,7 @@ class RunManager:
                 "status": status,
                 "spent_usd": float(spent),
                 "budget_usd": float(run.budget_usd),
+                "tokens": await tokens_used(self.sessions, run.id),
                 "coverage": await coverage(getattr(graph, "store", None), run.project_id),
             }
             await log.append(CustomEvent(name="run_summary", value=summary))

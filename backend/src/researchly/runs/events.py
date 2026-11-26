@@ -74,9 +74,11 @@ class RunEventLog:
         max_bytes: int = 2048,
         max_age_s: float = 0.25,
         clock: Callable[[], float] = time.monotonic,
+        started: asyncio.Event | None = None,
     ) -> None:
         self.sessions, self.hub, self.run_id = sessions, hub, run_id
         self.max_bytes, self.max_age_s, self.clock = max_bytes, max_age_s, clock
+        self.started = started  # set once a RUN_STARTED row has committed
         self.open = False  # an AG-UI run has started and not yet finished
         self._pending: list[tuple[str, str, dict[str, Any]]] = []  # deltas only: anything else flushes at once
         self._since: float | None = None
@@ -90,6 +92,8 @@ class RunEventLog:
         payload = event.model_dump(mode="json", by_alias=True, exclude_none=True)
         # the log is the persistence boundary: even if a caller enables emit_raw_events, no raw payload is stored
         payload.pop("rawEvent", None)
+        # wall-clock ms: a replay reaches the browser in one burst, so the run tree times nodes from this
+        payload.setdefault("timestamp", int(time.time() * 1000))
         if kind in ERRORS:
             payload["message"] = ERROR_TEXT
         sub = payload.get("subagentRunId")
@@ -164,6 +168,8 @@ class RunEventLog:
         for event in stored:
             if event.type == "RUN_STARTED":
                 self.open = True
+                if self.started is not None:
+                    self.started.set()
             elif event.type in ENDS:
                 self.open = False
         self.hub.publish(self.run_id, stored)

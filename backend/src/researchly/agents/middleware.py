@@ -83,16 +83,25 @@ def _quarantine(result: ToolMessage | Command) -> ToolMessage | Command:
 
 
 class BudgetGuard(AgentMiddleware[AgentState[Any], RunContext]):
-    def __init__(self, spent: Callable[[uuid.UUID], Awaitable[Decimal]], *, wrap_up: bool = False) -> None:
+    def __init__(
+        self,
+        spent: Callable[[uuid.UUID], Awaitable[Decimal]],
+        *,
+        tokens: Callable[[uuid.UUID], Awaitable[int]] | None = None,
+        wrap_up: bool = False,
+    ) -> None:
         super().__init__()
-        self.spent, self.wrap_up = spent, wrap_up
+        self.spent, self.tokens, self.wrap_up = spent, tokens, wrap_up
 
     @hook_config(can_jump_to=["end"])
     async def abefore_model(self, state: AgentState, runtime: Runtime[RunContext]) -> dict[str, Any] | None:
         ctx = runtime.context
         spent = await self.spent(ctx.run_id)
+        used = await self.tokens(ctx.run_id) if self.tokens else 0
         # the run tree shows cost as it grows (AG-UI CUSTOM "cost", spec §17)
-        await adispatch_custom_event("cost", {"spent_usd": float(spent), "budget_usd": float(ctx.budget_usd)})
+        await adispatch_custom_event(
+            "cost", {"spent_usd": float(spent), "budget_usd": float(ctx.budget_usd), "tokens": used}
+        )
         if spent >= ctx.budget_usd:
             return {"messages": [AIMessage(BUDGET_SPENT)], "jump_to": "end"}
         return None

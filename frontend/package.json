@@ -21,6 +21,9 @@
     "api:schema": "uv run --directory ../backend python -m researchly.openapi ../frontend/src/api/openapi.json && openapi-typescript src/api/openapi.json -o src/api/schema.d.ts"
   },
   "dependencies": {
+    "@ag-ui/client": "1.0.4",
+    "@assistant-ui/react": "0.15.32",
+    "@assistant-ui/react-ag-ui": "0.1.1",
     "@base-ui/react": "^1.9.0",
     "@fontsource-variable/geist": "^5.3.0",
     "@tailwindcss/vite": "^4",
@@ -44,6 +47,7 @@
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "14.6.8",
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",

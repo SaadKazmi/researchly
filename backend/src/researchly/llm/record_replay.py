@@ -3,14 +3,15 @@
 import difflib
 import hashlib
 import json
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Iterator, Sequence
 from pathlib import Path
 from typing import Any, Literal
 
 from langchain_core.callbacks import AsyncCallbackManagerForLLMRun, CallbackManagerForLLMRun
 from langchain_core.language_models import BaseChatModel, LanguageModelInput
-from langchain_core.messages import AIMessage, BaseMessage, message_to_dict, messages_from_dict
-from langchain_core.outputs import ChatGeneration, ChatResult
+from langchain_core.messages import AIMessage, AIMessageChunk, BaseMessage, message_to_dict, messages_from_dict
+from langchain_core.messages.tool import tool_call_chunk
+from langchain_core.outputs import ChatGeneration, ChatGenerationChunk, ChatResult
 from langchain_core.runnables import Runnable
 from langchain_core.utils.function_calling import convert_to_openai_tool
 
@@ -39,6 +40,19 @@ def _scrub(obj: Any) -> Any:
     if isinstance(obj, list):
         return [_scrub(v) for v in obj]
     return obj
+
+
+def as_chunks(message: BaseMessage) -> Iterator[ChatGenerationChunk]:
+    """A whole reply as a stream: its text, each tool call, then the usage. The AG-UI adapter drives
+    `astream_events`, and a model that does not stream never reaches the transcript (ADR 0012)."""
+    assert isinstance(message, AIMessage)
+    if message.content:
+        yield ChatGenerationChunk(message=AIMessageChunk(content=message.content, id=message.id))
+    for i, call in enumerate(message.tool_calls):
+        part = tool_call_chunk(name=call["name"], args=json.dumps(call["args"]), id=call["id"], index=i)
+        yield ChatGenerationChunk(message=AIMessageChunk(content="", id=message.id, tool_call_chunks=[part]))
+    last = AIMessageChunk(content="", id=message.id, usage_metadata=message.usage_metadata, chunk_position="last")
+    yield ChatGenerationChunk(message=last)
 
 
 def fixtures_path(settings: Settings) -> Path:
@@ -152,3 +166,23 @@ class RecordReplayChatModel(BaseChatModel):
         result = await self.inner._agenerate(messages, stop=stop, **kwargs)
         self._record(request, result)
         return result
+
+    def _stream(
+        self,
+        messages: list[BaseMessage],
+        stop: list[str] | None = None,
+        run_manager: CallbackManagerForLLMRun | None = None,
+        **kwargs: Any,
+    ) -> Iterator[ChatGenerationChunk]:
+        yield from as_chunks(self._generate(messages, stop=stop, **kwargs).generations[0].message)
+
+    async def _astream(
+        self,
+        messages: list[BaseMessage],
+        stop: list[str] | None = None,
+        run_manager: AsyncCallbackManagerForLLMRun | None = None,
+        **kwargs: Any,
+    ) -> AsyncIterator[ChatGenerationChunk]:
+        result = await self._agenerate(messages, stop=stop, **kwargs)
+        for chunk in as_chunks(result.generations[0].message):
+            yield chunk

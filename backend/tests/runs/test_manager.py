@@ -4,6 +4,7 @@ import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
+from unittest.mock import ANY
 
 import anyio
 import pytest
@@ -17,7 +18,7 @@ from sqlalchemy import func, select, update
 from researchly.agents.middleware import BUDGET_SPENT, BudgetGuard
 from researchly.db import migrate, provision
 from researchly.db.engine import make_engine, make_sessionmaker
-from researchly.db.models import Message, Run, RunEvent
+from researchly.db.models import LlmCall, Message, Run, RunEvent
 from researchly.runs.events import RunEventLog, follow
 from researchly.runs.manager import RUN_ERROR, RunManager, RunStateError
 
@@ -120,7 +121,7 @@ async def test_a_model_call_logs_the_cost_so_far(sm):
     await m.start(run.id)
     await m.wait(run.id)
     costs = [e["value"] for e in await events(sm, run.id, "CUSTOM") if e["name"] == "cost"]
-    assert costs == [{"spent_usd": 0.25, "budget_usd": 1.0}]
+    assert costs == [{"spent_usd": 0.25, "budget_usd": 1.0, "tokens": 0}]
 
 
 async def test_ask_user_waits_for_the_answer(sm):
@@ -314,7 +315,7 @@ async def test_a_failing_build_fails_the_run_with_an_event(sm):
     await m.wait(run.id)
     assert (await row(sm, run.id)).status == "failed"
     assert await events(sm, run.id, RUN_ERROR) == [
-        {"type": "RUN_ERROR", "message": "The run failed.", "code": "ValueError"}
+        {"type": "RUN_ERROR", "message": "The run failed.", "code": "ValueError", "timestamp": ANY}
     ]
 
 
@@ -504,6 +505,9 @@ async def test_a_summary_precedes_the_end_of_the_run(sm):
     store = InMemoryStore()
     line = json.dumps({"title": "Attention", "source": "openalex", "extra": {"found_by": ["arxiv", "openalex"]}})
     await store.aput(("project", str(run.project_id)), "/candidates/sq1.jsonl", {"content": line + "\n"})
+    async with sm.begin() as session:  # a model call already billed: the summary carries its tokens
+        call_row = dict(agent="lead", role="strong", provider="p", model="m", cost_usd=Decimal(0), latency_ms=1)
+        session.add(LlmCall(run_id=run.id, in_tok=30, cached_tok=0, out_tok=12, status="ok", **call_row))
     m = manager(sm, agent(script("The answer."), store=store))
     await m.start(run.id)
     await m.wait(run.id)
@@ -511,4 +515,102 @@ async def test_a_summary_precedes_the_end_of_the_run(sm):
     [summary] = await events(sm, run.id, "CUSTOM")
     assert summary["name"] == "run_summary"
     coverage = {"observed": 1, "estimated": 1.0, "lists": 2}
-    assert summary["value"] == {"status": "completed", "spent_usd": 0.0, "budget_usd": 1.0, "coverage": coverage}
+    assert summary["value"] == {
+        "status": "completed",
+        "spent_usd": 0.0,
+        "budget_usd": 1.0,
+        "tokens": 42,
+        "coverage": coverage,
+    }
+
+
+async def test_resume_answers_once_the_resumed_run_is_streaming(sm):
+    """A stream opened once `resume` answers must find the resumed RUN_STARTED, not just the paused segment's
+    end: `follow` reads a `running` run whose newest row is terminal as one that has already finished."""
+    run = await seed_run(sm)
+    fetch, entered, gate, calls = blocking_tool()
+    graph = agent(script(call("fetch", {"x": "a"}), "done"), [fetch])
+    builds, building, release = 0, asyncio.Event(), asyncio.Event()
+
+    async def build(run: Run) -> Any:
+        nonlocal builds
+        builds += 1
+        if builds == 2:  # the resumed drive is slow to reach its first event, as a cold build is
+            building.set()
+            await release.wait()
+        return graph
+
+    m = RunManager(sm, build)
+    await m.start(run.id)
+    await entered.wait()
+    await m.pause(run.id)
+    resuming = asyncio.create_task(m.resume(run.id))
+    await building.wait()
+    await asyncio.sleep(0.05)
+    assert not resuming.done()  # the status says `running`, but nothing streams yet
+    release.set()
+    with anyio.fail_after(5):  # the resumed drive blocks in its tool: waiting for the drive to end would hang
+        await resuming
+    assert (await kinds(sm, run.id)).count("RUN_STARTED") == 2
+    gate.set()
+    await m.wait(run.id)
+    assert (await row(sm, run.id)).status == "completed"
+
+
+async def test_a_pause_during_a_slow_resume_stops_it_at_once(sm):
+    """`resume` waits for the resumed run to stream outside the run's lock: a pause sent while a cold build is
+    still running must stop it, not queue behind it."""
+    run = await seed_run(sm)
+    fetch, entered, gate, calls = blocking_tool()
+    graph = agent(script(call("fetch", {"x": "a"}), "done"), [fetch])
+    builds, building = 0, asyncio.Event()
+
+    async def build(run: Run) -> Any:
+        nonlocal builds
+        builds += 1
+        if builds == 2:  # the resumed drive never finishes building
+            building.set()
+            await asyncio.Event().wait()
+        return graph
+
+    m = RunManager(sm, build)
+    await m.start(run.id)
+    await entered.wait()
+    await m.pause(run.id)
+    resuming = asyncio.create_task(m.resume(run.id))
+    await building.wait()
+    with anyio.fail_after(5):  # under the lock, this pause would wait for a build that never ends
+        await m.pause(run.id)
+        await resuming  # stopping the drive ends the wait
+    assert (await row(sm, run.id)).status == "paused"
+
+
+async def test_a_resume_whose_drive_dies_before_its_first_event_does_not_hang(sm, monkeypatch):
+    run = await seed_run(sm)
+    fetch, entered, gate, calls = blocking_tool()
+    m = manager(sm, agent(script(call("fetch", {"x": "a"}), "done"), [fetch]))
+    await m.start(run.id)
+    await entered.wait()
+    await m.pause(run.id)
+    gate.set()
+    real = RunEventLog.append
+
+    async def failing(self, event, **kwargs):
+        if event.type.value == "RUN_STARTED":  # not even the failure path can open the AG-UI run
+            raise RuntimeError("database gone")
+        await real(self, event, **kwargs)
+
+    monkeypatch.setattr(RunEventLog, "append", failing)
+    spawn, drives = m._spawn, []
+
+    def record(*args):
+        task, started = spawn(*args)
+        drives.append(task)
+        return task, started
+
+    monkeypatch.setattr(m, "_spawn", record)
+    with anyio.fail_after(5):
+        await m.resume(run.id)  # no RUN_STARTED will ever commit: the drive's end is what answers
+    assert (await kinds(sm, run.id)).count("RUN_STARTED") == 1  # only the paused segment's
+    with pytest.raises(RuntimeError):
+        await drives[0]

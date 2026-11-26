@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/api/v1/efforts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Efforts */
+        get: operations["listEfforts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/projects": {
         parameters: {
             query?: never;
@@ -47,7 +64,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Threads */
+        /**
+         * List Threads
+         * @description The project's threads, newest first. `q` keeps those whose title or any message contains it (F1.1).
+         */
         get: operations["listThreads"];
         put?: never;
         /** Create Thread */
@@ -103,6 +123,31 @@ export interface paths {
         put?: never;
         /** Cancel Run */
         post: operations["cancelRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/runs/{run_id}/checkpoints": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Checkpoints
+         * @description The run's newest checkpoints, newest first.
+         *
+         *     Branches share `checkpoint_thread_id`, so this includes the checkpoints of the run's parent and other branches.
+         *
+         *     Read straight from the checkpoint saver, never through `runs.build`: building a run's graph needs a configured
+         *     LLM provider, and branching must stay readable without one.
+         */
+        get: operations["listCheckpoints"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -250,6 +295,18 @@ export interface components {
             /** Checkpoint Id */
             checkpoint_id: string;
         };
+        /**
+         * CheckpointOut
+         * @description A point a run can be branched from (F1.6): LangGraph's checkpoint id, when it was written and its step.
+         */
+        CheckpointOut: {
+            /** Checkpoint Id */
+            checkpoint_id: string;
+            /** Created At */
+            created_at: string | null;
+            /** Step */
+            step: number | null;
+        };
         /** Edit */
         Edit: {
             edited_action: components["schemas"]["EditedAction"];
@@ -267,6 +324,29 @@ export interface components {
             };
             /** Name */
             name: string;
+        };
+        /**
+         * EffortOut
+         * @description A tier as the UI offers it (spec §6.4): its limits, its budget and the pre-run estimate range (F1.7).
+         */
+        EffortOut: {
+            /** Budget Usd */
+            budget_usd: string;
+            /** Estimate High Usd */
+            estimate_high_usd: string;
+            /** Estimate Low Usd */
+            estimate_low_usd: string;
+            /**
+             * Name
+             * @enum {string}
+             */
+            name: "quick" | "standard" | "deep";
+            /** Readers */
+            readers: number;
+            /** Scouts */
+            scouts: number;
+            /** Tool Calls */
+            tool_calls: number;
         };
         /** ErrorOut */
         ErrorOut: {
@@ -417,6 +497,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Live Run Id */
+            live_run_id: string | null;
             /** Messages */
             messages: components["schemas"]["MessageOut"][];
             /**
@@ -474,6 +556,35 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    listEfforts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EffortOut"][];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
     listProjects: {
         parameters: {
             query?: never;
@@ -649,7 +760,9 @@ export interface operations {
     };
     listThreads: {
         parameters: {
-            query?: never;
+            query?: {
+                q?: string | null;
+            };
             header?: never;
             path: {
                 project_id: string;
@@ -891,6 +1004,55 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    listCheckpoints: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckpointOut"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -39,6 +39,20 @@ works with one mandatory override and two recommended ones. Runs are asyncio tas
   - `: ping` every 15 s, `Cache-Control: no-cache`, `X-Accel-Buffering: no`;
   - resume point: `Last-Event-ID`, else `?after=`;
   - the request body is not read.
+- **Frontend (3c):** the browser speaks the same pinned protocol.
+  - Pins, exact: `@assistant-ui/react@0.15.32`, `@assistant-ui/react-ag-ui@0.1.1`, `@ag-ui/client@1.0.4`
+    (`@ag-ui/core@1.0.4` ships `PROTOCOL_VERSION = "1.0"`, which is the backend's `ag-ui-protocol==1.0.0`).
+    `frontend/tests/pins.test.ts` asserts them; an upgrade is an ADR plus the chat tests, as on the Python side.
+  - One `HttpAgent` per thread, with an injected `fetch`: a new user message creates the run
+    (`POST /threads/{id}/runs`), anything else attaches, and every request opens
+    `POST /runs/{id}/stream?after=<lastSeq>`. Every attach comes from a freshly mounted runtime, so it
+    replays from `after=0`: re-attaching (after a resume, an answered review or a branch) is a remount. A
+    stream that drops mid-run is not reconnected yet (deferred to 3d); the run's answer appears on reload.
+  - The run tree, plan panel and budget come from our own reducer over `agent.subscribe({ onEvent })`.
+    assistant-ui's nested subagent messages are not used: they are lost on reload and their interrupts
+    cannot be resumed.
+  - Interrupts are answered with `POST /runs/{id}/resume`, because the stream endpoint ignores its body.
+    `useAgUiInterrupts` and `useAgUiSubmitInterruptResponses` are therefore unused.
 
 ## Consequences
 - Postgres `LISTEN/NOTIFY` is not used (spec §4.2 amended): one process holds every run and every subscriber. A
@@ -50,6 +64,8 @@ works with one mandatory override and two recommended ones. Runs are asyncio tas
   - Each AG-UI run opens with `RUN_STARTED` and closes with `RUN_FINISHED` or `RUN_ERROR`.
   - A pause closes the open AG-UI run with the outcome `cancelled`.
 - Tool-call events repeat across a resume, so clients key them by `toolCallId`.
+- The browser never sends `RunAgentInput.resume`; a decision travels as REST `decisions` and the agent re-attaches.
+- `@ag-ui/client` 1.0.4 is the first version whose zod is a peer dependency, so the SPA keeps one zod major.
 
 ## Evidence
 - Spike §3: the context dict fails on `thread_id`. Spike §4: without `input=None`, a continue drops the pending tool

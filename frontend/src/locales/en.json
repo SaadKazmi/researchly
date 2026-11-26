@@ -1,6 +1,12 @@
 {
-  "app": { "name": "Researchly", "version": "v{{version}}" },
-  "shell": { "skip": "Skip to content", "nav": "Main" },
+  "app": {
+    "name": "Researchly",
+    "version": "v{{version}}"
+  },
+  "shell": {
+    "skip": "Skip to content",
+    "nav": "Main"
+  },
   "nav": {
     "projects": "Projects",
     "memory": "Memory",
@@ -27,6 +33,71 @@
     "usage": "Usage",
     "settings": "Settings",
     "onboarding": "Welcome"
+  },
+  "projects": {
+    "name": "Project name",
+    "create": "Create project",
+    "empty": "No projects yet. Create one to start researching.",
+    "loading": "Loading projects...",
+    "error": "Could not load your projects. Check that Researchly is still running."
+  },
+  "chat": {
+    "threads": "Threads",
+    "search": "Search chat history",
+    "newThread": "New thread",
+    "untitled": "Untitled thread",
+    "noThreads": "No threads yet. Choose New thread to start one.",
+    "loading": "Loading threads...",
+    "error": "Could not load your threads. Check that Researchly is still running.",
+    "noMatches": "No threads match your search.",
+    "conversation": "Conversation",
+    "loadingThread": "Loading the thread…",
+    "threadError": "Could not load this thread. Check that Researchly is still running.",
+    "ask": "Ask a research question",
+    "send": "Send",
+    "effort": "Effort",
+    "efforts": { "quick": "Quick", "standard": "Standard", "deep": "Deep" },
+    "estimate": "Estimated {{low}}–{{high}} · budget {{budget}}",
+    "confirmTitle": "Confirm the budget",
+    "confirmBody": "A {{effort}} run may spend up to {{budget}}.",
+    "confirm": "Start the run",
+    "cancel": "Cancel"
+  },
+  "run": {
+    "panel": "Run",
+    "budget": "Budget",
+    "spent": "{{spent}} of {{budget}}",
+    "tokens_one": "{{count, number}} token",
+    "tokens_other": "{{count, number}} tokens",
+    "elapsed": "{{seconds}} s",
+    "wrapUp": "80% of the budget is spent: the run is wrapping up.",
+    "stopped": "The budget is spent: the run stopped early.",
+    "summary": "{{status}} · {{spent}} spent · {{coverage}}% coverage",
+    "summaryNoCoverage": "{{status}} · {{spent}} spent",
+    "failed": "The run failed.",
+    "activity": "Run activity",
+    "todos": "Plan",
+    "status": { "running": "running", "done": "done" },
+    "pause": "Pause",
+    "resume": "Resume",
+    "cancel": "Cancel the run",
+    "branch": "Branch",
+    "branchFrom": "Branch from here",
+    "checkpoint": "Checkpoint",
+    "step": "step {{step}}",
+    "actionFailed": "That did not go through. Check that Researchly is still running, then try again."
+  },
+  "review": {
+    "panel": "Review",
+    "plan": "Review the plan",
+    "planLabel": "Plan",
+    "question": "The agent needs an answer",
+    "answer": "Answer",
+    "approve": "Approve",
+    "approveEdits": "Approve with edits",
+    "reject": "Reject",
+    "send": "Send answer",
+    "failed": "That answer did not go through. Check that Researchly is still running, then try again."
   },
   "placeholder": "This view arrives in a later build step."
 }

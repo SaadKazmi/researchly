@@ -1,0 +1,322 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
+
+import { api } from "@/api/client"
+import {
+  checkpointsQuery,
+  LIVE_STATUSES,
+  runQuery,
+  unwrap,
+} from "@/api/queries"
+import { Button } from "@/components/ui/button"
+import { type AgentNode, useRunState } from "@/features/chat/run-state"
+
+const WRAP_UP = 0.8 // the budget guard injects its wrap-up instruction here (spec §6.4)
+const dollars = (value: string | number) => `$${Number(value).toFixed(2)}`
+
+export function RunPanel({
+  runId,
+  onReattach,
+}: {
+  runId: string
+  onReattach: (runId?: string) => void
+}) {
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
+  const state = useRunState()
+  // a running node is timed to the latest event: the panel re-renders on events, not on a clock
+  const seconds = (node: AgentNode) =>
+    Math.round(((node.endedAt ?? state.now) - node.startedAt) / 1000)
+  const { data: run } = useQuery(runQuery(runId))
+  const [branching, setBranching] = useState(false)
+  const [checkpoint, setCheckpoint] = useState("")
+
+  const control = useMutation({
+    // the three endpoints share a path shape and take no body; the cast names one of them for the types
+    mutationFn: async (action: "pause" | "resume" | "cancel") =>
+      unwrap(
+        await api.POST(
+          `/api/v1/runs/{run_id}/${action}` as "/api/v1/runs/{run_id}/pause",
+          {
+            params: { path: { run_id: runId } },
+          }
+        )
+      ),
+    onSuccess: async (updated, action) => {
+      await queryClient.invalidateQueries({ queryKey: ["run", runId] })
+      // a resume opens a new AG-UI run on the same stream; one whose drive died at once ends it with
+      // the RUN_ERROR, which only a re-attach reads. Only a resume still paused has nothing to show
+      if (action === "resume" && updated.status !== "paused") onReattach()
+    },
+  })
+
+  const branch = useMutation({
+    mutationFn: async (checkpointId: string) =>
+      unwrap(
+        await api.POST("/api/v1/runs/{run_id}/branch", {
+          params: { path: { run_id: runId } },
+          body: { checkpoint_id: checkpointId },
+        })
+      ),
+    onSuccess: (child) => {
+      setBranching(false)
+      onReattach(child.id)
+    },
+  })
+
+  const live = run !== undefined && LIVE_STATUSES.includes(run.status)
+  // the backend branches only a run at rest: paused, or finished
+  const branchable = run !== undefined && (run.status === "paused" || !live)
+  // the transcript was hydrated before the run's answer was stored: once the run is over, refetch it
+  const ended = state.summary !== null || (run !== undefined && !live)
+  const threadId = run?.thread_id
+  useEffect(() => {
+    if (ended && threadId)
+      void queryClient.invalidateQueries({ queryKey: ["thread", threadId] })
+  }, [ended, threadId, queryClient])
+
+  const cost =
+    state.cost ??
+    (run
+      ? {
+          spentUsd: Number(run.spent_usd),
+          budgetUsd: Number(run.budget_usd),
+          tokens: 0,
+        }
+      : null)
+  const share = cost && cost.budgetUsd > 0 ? cost.spentUsd / cost.budgetUsd : 0
+  const notice =
+    share >= 1
+      ? t("run.stopped")
+      : share >= WRAP_UP && !state.summary // a finished run has nothing left to wrap up
+        ? t("run.wrapUp")
+        : ""
+
+  return (
+    <aside
+      aria-label={t("run.panel")}
+      className="flex w-72 shrink-0 flex-col gap-4 border-l pl-4"
+    >
+      {cost && (
+        <section className="flex flex-col gap-1">
+          <progress
+            aria-label={t("run.budget")}
+            value={cost.spentUsd}
+            max={cost.budgetUsd}
+            className="w-full"
+          />
+          <p className="text-sm">
+            {t("run.spent", {
+              spent: dollars(cost.spentUsd),
+              budget: dollars(cost.budgetUsd),
+            })}
+          </p>
+          {cost.tokens > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {t("run.tokens", { count: cost.tokens })}
+            </p>
+          )}
+        </section>
+      )}
+      {/* the shell owns the page's one status and one alert role: these are polite live regions.
+          A screen reader announces only a region already in the accessibility tree, so an empty
+          one is visually hidden (out of the flex gap), never `display: none` */}
+      <p aria-live="polite" className="text-sm empty:sr-only">
+        {notice}
+      </p>
+
+      {state.summary && (
+        <p className="text-sm font-medium">
+          {state.summary.coverage === null
+            ? t("run.summaryNoCoverage", {
+                status: state.summary.status,
+                spent: dollars(state.summary.spentUsd),
+              })
+            : t("run.summary", {
+                status: state.summary.status,
+                spent: dollars(state.summary.spentUsd),
+                coverage: Math.round(state.summary.coverage * 100),
+              })}
+        </p>
+      )}
+      <p aria-live="polite" className="text-sm empty:sr-only">
+        {state.failed ? t("run.failed") : ""}
+      </p>
+
+      <section className="flex flex-col gap-1">
+        <h2 className="text-sm font-medium">{t("run.activity")}</h2>
+        <ul
+          aria-label={t("run.activity")}
+          className="flex flex-col gap-1 text-sm"
+        >
+          {state.agents.map((agent) => (
+            <li key={agent.id}>
+              <span className={agent.status === "running" ? "font-medium" : ""}>
+                {agent.name}
+              </span>
+              <span className="sr-only">
+                {" "}
+                {t(`run.status.${agent.status}`)}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {" "}
+                {t("run.elapsed", { seconds: seconds(agent) })}
+              </span>
+              <ul className="ml-4 flex flex-col text-muted-foreground">
+                {state.tools
+                  .filter((tool) => tool.agentId === agent.id)
+                  .map((tool) => (
+                    <li key={tool.id}>
+                      {tool.name}
+                      <span className="sr-only">
+                        {" "}
+                        {t(`run.status.${tool.status}`)}
+                      </span>
+                      <span className="text-xs">
+                        {" "}
+                        {t("run.elapsed", { seconds: seconds(tool) })}
+                      </span>
+                    </li>
+                  ))}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {state.todos.length > 0 && (
+        <section className="flex flex-col gap-1">
+          <h2 className="text-sm font-medium">{t("run.todos")}</h2>
+          <ul
+            aria-label={t("run.todos")}
+            className="flex flex-col gap-1 text-sm"
+          >
+            {state.todos.map((todo) => (
+              <li
+                key={todo.content}
+                className={
+                  todo.status === "completed"
+                    ? "text-muted-foreground line-through"
+                    : ""
+                }
+              >
+                {todo.content}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <section className="flex flex-wrap gap-2">
+        {run?.status === "running" && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={control.isPending}
+            onClick={() => control.mutate("pause")}
+          >
+            {t("run.pause")}
+          </Button>
+        )}
+        {run?.status === "paused" && (
+          <Button
+            type="button"
+            size="sm"
+            disabled={control.isPending}
+            onClick={() => control.mutate("resume")}
+          >
+            {t("run.resume")}
+          </Button>
+        )}
+        {live && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={control.isPending}
+            onClick={() => control.mutate("cancel")}
+          >
+            {t("run.cancel")}
+          </Button>
+        )}
+        {branchable && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => setBranching((open) => !open)}
+          >
+            {t("run.branch")}
+          </Button>
+        )}
+      </section>
+      <p aria-live="polite" className="text-sm empty:sr-only">
+        {control.isError || branch.isError ? t("run.actionFailed") : ""}
+      </p>
+
+      {branching && branchable && (
+        <BranchPicker
+          runId={runId}
+          value={checkpoint}
+          pending={branch.isPending}
+          onChange={setCheckpoint}
+          onBranch={branch.mutate}
+        />
+      )}
+    </aside>
+  )
+}
+
+function BranchPicker({
+  runId,
+  value,
+  pending,
+  onChange,
+  onBranch,
+}: {
+  runId: string
+  value: string
+  pending: boolean
+  onChange: (checkpointId: string) => void
+  onBranch: (checkpointId: string) => void
+}) {
+  const { t } = useTranslation()
+  const { data: checkpoints = [] } = useQuery(checkpointsQuery(runId))
+  const chosen = value || checkpoints[0]?.checkpoint_id || ""
+  return (
+    <section className="flex flex-col gap-2">
+      <label className="text-sm">
+        <span className="sr-only">{t("run.checkpoint")}</span>
+        <select
+          aria-label={t("run.checkpoint")}
+          value={chosen}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-8 w-full rounded-md border px-2 text-sm"
+        >
+          {checkpoints.map((entry) => (
+            <option key={entry.checkpoint_id} value={entry.checkpoint_id}>
+              {/* the saver may not record either: show what it has, the id when it has neither */}
+              {[
+                entry.created_at &&
+                  new Date(entry.created_at).toLocaleTimeString(),
+                entry.step !== null && t("run.step", { step: entry.step }),
+              ]
+                .filter(Boolean)
+                .join(" · ") || entry.checkpoint_id}
+            </option>
+          ))}
+        </select>
+      </label>
+      <Button
+        type="button"
+        size="sm"
+        disabled={!chosen || pending}
+        onClick={() => onBranch(chosen)}
+      >
+        {t("run.branchFrom")}
+      </Button>
+    </section>
+  )
+}

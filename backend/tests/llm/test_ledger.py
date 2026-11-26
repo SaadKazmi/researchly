@@ -9,7 +9,7 @@ from sqlalchemy import select
 from researchly.db import migrate
 from researchly.db.engine import make_engine, make_sessionmaker
 from researchly.db.models import LlmCall
-from researchly.llm.ledger import LedgerCallback, attach_ledger, spent_usd
+from researchly.llm.ledger import LedgerCallback, attach_ledger, spent_usd, tokens_used
 
 pytestmark = [pytest.mark.db, pytest.mark.anyio]
 
@@ -117,4 +117,38 @@ async def test_spent_usd_sums_one_run(db_url):
         session.add_all([row(run_id, "0.25"), row(run_id, "0.5"), row(uuid.uuid4(), "9")])
     assert await spent_usd(sessions, run_id) == Decimal("0.75")
     assert await spent_usd(sessions, uuid.uuid4()) == 0
+    await engine.dispose()
+
+
+async def test_tokens_used_sums_input_and_output_over_a_run(db_url):
+    migrate.upgrade(db_url)
+    engine = make_engine(db_url)
+    sessions = make_sessionmaker(engine)
+    run_id = uuid.uuid4()
+
+    def row(run: uuid.UUID, agent: str, in_tok: int, cached: int, out_tok: int, cost: str) -> LlmCall:
+        return LlmCall(
+            run_id=run,
+            agent=agent,
+            role="plan",
+            provider="p",
+            model="m",
+            in_tok=in_tok,
+            cached_tok=cached,
+            out_tok=out_tok,
+            cost_usd=Decimal(cost),
+            latency_ms=5,
+            status="ok",
+        )
+
+    async with sessions() as session, session.begin():
+        session.add_all(
+            [
+                row(run_id, "lead", 100, 10, 20, "0.01"),
+                row(run_id, "scout", 5, 0, 7, "0.002"),
+                row(uuid.uuid4(), "lead", 999, 0, 999, "1"),
+            ]
+        )
+    assert await tokens_used(sessions, run_id) == 132
+    assert await tokens_used(sessions, uuid.uuid4()) == 0
     await engine.dispose()

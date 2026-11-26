@@ -125,4 +125,18 @@ async def test_budget_guard_reports_the_cost_before_each_model_call():
     graph = create_agent(script("fine"), [], middleware=[BudgetGuard(spend(box))], context_schema=RunContext)
     stream = graph.astream_events(GO, context=CTX, version="v2")
     got = [(e["name"], e["data"]) async for e in stream if e["event"] == "on_custom_event"]
-    assert got == [("cost", {"spent_usd": 0.25, "budget_usd": 1.0})]
+    assert got == [("cost", {"spent_usd": 0.25, "budget_usd": 1.0, "tokens": 0})]  # no reader: tokens is 0
+
+
+async def test_the_cost_event_carries_the_runs_token_total():
+    async def spent(_run_id: uuid.UUID) -> Decimal:
+        return Decimal("0.4")
+
+    async def tokens(_run_id: uuid.UUID) -> int:
+        return 1234
+
+    guard = BudgetGuard(spent, tokens=tokens)
+    graph = create_agent(script("fine"), [], middleware=[guard], context_schema=RunContext)
+    stream = graph.astream_events(GO, context=CTX, version="v2")
+    got = [(e["name"], e["data"]) async for e in stream if e["event"] == "on_custom_event"]
+    assert got == [("cost", {"spent_usd": 0.4, "budget_usd": 1.0, "tokens": 1234})]

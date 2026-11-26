@@ -25,7 +25,7 @@ from researchly.connectors.robots import Robots
 from researchly.connectors.sidecar import SidecarClient
 from researchly.db.models import ProviderConfig, Run
 from researchly.embeddings import Embedder, Reranker
-from researchly.llm.ledger import attach_ledger, spent_usd
+from researchly.llm.ledger import attach_ledger, spent_usd, tokens_used
 from researchly.llm.registry import ProviderSpec, Role, chat_model
 from researchly.services.fulltext import FullTextFetcher
 
@@ -62,6 +62,7 @@ class LiveRuntime:
             reader=mid,
             deps=await self._deps(mid),
             spent=partial(spent_usd, self.sessions),
+            tokens=partial(tokens_used, self.sessions),
             checkpointer=self.checkpointer,
             store=self.store,
         )
@@ -70,16 +71,14 @@ class LiveRuntime:
         async with self._lock:
             if self._base is None:
                 models = self.settings.data_dir / "models" / "fastembed"
-                embedder = await asyncio.to_thread(Embedder, models)  # downloads on first use
-                reranker = await asyncio.to_thread(Reranker, models)
                 self._client = client = PoliteClient(cache=HttpCache(self.sessions))
                 self._base = ToolDeps(
                     sessions=self.sessions,
                     connectors=build_connectors(client),
                     searxng=self.searxng,
                     fetcher=FullTextFetcher(client, Robots(client)),
-                    embedder=embedder,
-                    reranker=reranker,
+                    embedder=Embedder(models),  # each downloads and loads its model on first use
+                    reranker=Reranker(models),
                     extractor=extractor,
                     spent=partial(spent_usd, self.sessions),
                 )

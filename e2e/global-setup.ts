@@ -11,6 +11,11 @@ const env = {
   RESEARCHLY_DATA_DIR: resolve(artifacts, "data"),
   RESEARCHLY_LOG_DIR: resolve(artifacts, "logs"),
   PYTHON_KEYRING_BACKEND: "keyring.backends.fail.Keyring",
+  // the app inherits this env (native.py), so its runs replay committed model calls: no key, no cost.
+  // Re-recording sets RESEARCHLY_LLM_FIXTURES=record with the dev claude-code provider (spec §7.7).
+  RESEARCHLY_LLM_FIXTURES: process.env.RESEARCHLY_LLM_FIXTURES ?? "replay",
+  RESEARCHLY_LLM_FIXTURES_DIR: resolve(repo, "e2e", "fixtures", "llm"),
+  RESEARCHLY_LLM_FIXTURES_SUITE: "chat-quick",
 }
 
 function researchly(...args: string[]): string {

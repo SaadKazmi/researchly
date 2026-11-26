@@ -68,7 +68,7 @@ async def run_manager(settings: Settings, searxng: SidecarClient | None) -> Asyn
     runtime = LiveRuntime(
         settings, sessions, checkpointer=AsyncPostgresSaver(pool), store=AsyncPostgresStore(pool), searxng=searxng
     )
-    manager = RunManager(sessions, runtime.build)
+    manager = RunManager(sessions, runtime.build, runtime.checkpointer)
     try:
         await manager.resume_running()
         yield manager
