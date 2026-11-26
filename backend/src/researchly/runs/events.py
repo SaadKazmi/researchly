@@ -92,6 +92,8 @@ class RunEventLog:
         payload = event.model_dump(mode="json", by_alias=True, exclude_none=True)
         # the log is the persistence boundary: even if a caller enables emit_raw_events, no raw payload is stored
         payload.pop("rawEvent", None)
+        # wall-clock ms: a replay reaches the browser in one burst, so the run tree times nodes from this
+        payload.setdefault("timestamp", int(time.time() * 1000))
         if kind in ERRORS:
             payload["message"] = ERROR_TEXT
         sub = payload.get("subagentRunId")

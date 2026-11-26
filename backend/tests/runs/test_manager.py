@@ -4,6 +4,7 @@ import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
+from unittest.mock import ANY
 
 import anyio
 import pytest
@@ -314,7 +315,7 @@ async def test_a_failing_build_fails_the_run_with_an_event(sm):
     await m.wait(run.id)
     assert (await row(sm, run.id)).status == "failed"
     assert await events(sm, run.id, RUN_ERROR) == [
-        {"type": "RUN_ERROR", "message": "The run failed.", "code": "ValueError"}
+        {"type": "RUN_ERROR", "message": "The run failed.", "code": "ValueError", "timestamp": ANY}
     ]
 
 

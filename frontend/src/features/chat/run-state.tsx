@@ -70,28 +70,28 @@ function share(value: unknown): number | null {
     : null
 }
 
-function started(id: string, name: string): AgentNode {
-  return { id, name, status: "running", startedAt: Date.now(), endedAt: null }
+function started(id: string, name: string, at: number): AgentNode {
+  return { id, name, status: "running", startedAt: at, endedAt: null }
 }
 
-function finish<T extends AgentNode>(nodes: T[], id: string): T[] {
+function finish<T extends AgentNode>(nodes: T[], id: string, at: number): T[] {
   return nodes.map((n) =>
-    n.id === id ? { ...n, status: "done" as const, endedAt: Date.now() } : n
+    n.id === id ? { ...n, status: "done" as const, endedAt: at } : n
   )
 }
 
-function closeAll<T extends AgentNode>(nodes: T[]): T[] {
+function closeAll<T extends AgentNode>(nodes: T[], at: number): T[] {
   return nodes.map((n) =>
     n.status === "running"
-      ? { ...n, status: "done" as const, endedAt: Date.now() }
+      ? { ...n, status: "done" as const, endedAt: at }
       : n
   )
 }
 
-function withLead(agents: AgentNode[]): AgentNode[] {
+function withLead(agents: AgentNode[], at: number): AgentNode[] {
   return agents.some((a) => a.id === LEAD)
     ? agents
-    : [started(LEAD, LEAD), ...agents]
+    : [started(LEAD, LEAD, at), ...agents]
 }
 
 /** An HITL review (ADR 0012): its actions come from the raw interrupt, its decisions from the schema. */
@@ -131,18 +131,20 @@ function toReview(interrupt: Record<string, unknown>): Review {
 }
 
 export function reduce(state: RunState, event: AgUiEvent): RunState {
-  const next = apply(state, event)
-  return next === state ? state : { ...next, now: Date.now() }
+  // the log's stamp (runs/events.py): a replay arrives in one burst, so arrival time would read 0 s
+  const at = typeof event.timestamp === "number" ? event.timestamp : Date.now()
+  const next = apply(state, event, at)
+  return next === state ? state : { ...next, now: at }
 }
 
-function apply(state: RunState, event: AgUiEvent): RunState {
+function apply(state: RunState, event: AgUiEvent, at: number): RunState {
   switch (event.type) {
     case "RESET": // ours, not AG-UI's: a run the composer starts in this mount gets its own panel
       return EMPTY
     case "RUN_STARTED": // a new drive supersedes the previous one's outcome
       return {
         ...state,
-        agents: withLead(state.agents),
+        agents: withLead(state.agents, at),
         review: null,
         summary: null,
         failed: false,
@@ -152,22 +154,22 @@ function apply(state: RunState, event: AgUiEvent): RunState {
       if (state.agents.some((a) => a.id === id)) return state
       return {
         ...state,
-        agents: [...withLead(state.agents), started(id, String(event.name))],
+        agents: [...withLead(state.agents, at), started(id, String(event.name), at)],
       }
     }
     case "SUBAGENT_FINISHED":
     case "SUBAGENT_ERROR":
       return {
         ...state,
-        agents: finish(state.agents, String(event.subagentRunId)),
+        agents: finish(state.agents, String(event.subagentRunId), at),
       }
     case "TOOL_CALL_START": {
       const id = String(event.toolCallId)
       if (state.tools.some((t) => t.id === id)) return state // a resume repeats its pending call
-      const node = started(id, String(event.toolCallName))
+      const node = started(id, String(event.toolCallName), at)
       return {
         ...state,
-        agents: withLead(state.agents),
+        agents: withLead(state.agents, at),
         tools: [
           ...state.tools,
           { ...node, agentId: String(event.subagentRunId ?? LEAD) },
@@ -175,7 +177,7 @@ function apply(state: RunState, event: AgUiEvent): RunState {
       }
     }
     case "TOOL_CALL_RESULT": // not TOOL_CALL_END, which only closes the streamed arguments
-      return { ...state, tools: finish(state.tools, String(event.toolCallId)) }
+      return { ...state, tools: finish(state.tools, String(event.toolCallId), at) }
     case "STATE_SNAPSHOT":
       return {
         ...state,
@@ -218,8 +220,8 @@ function apply(state: RunState, event: AgUiEvent): RunState {
       if (outcome?.type === "cancelled") return state
       return {
         ...state,
-        agents: closeAll(state.agents),
-        tools: closeAll(state.tools),
+        agents: closeAll(state.agents, at),
+        tools: closeAll(state.tools, at),
       }
     }
     case "RUN_ERROR":

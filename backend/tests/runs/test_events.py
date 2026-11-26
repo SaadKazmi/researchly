@@ -1,4 +1,6 @@
 import asyncio
+import time
+from unittest.mock import ANY
 
 import anyio
 import pytest
@@ -87,7 +89,9 @@ async def test_raw_events_and_message_snapshots_are_skipped_and_errors_scrubbed(
     await log.append(MessagesSnapshotEvent(messages=[]))
     await log.append(RunErrorEvent(message="provider said sk-secret", code="APIError"))
     got = [(e.type, e.payload) for e in await replay(sm, run.id, 0)]
-    assert got == [("RUN_ERROR", {"type": "RUN_ERROR", "message": "The run failed.", "code": "APIError"})]
+    assert got == [
+        ("RUN_ERROR", {"type": "RUN_ERROR", "message": "The run failed.", "code": "APIError", "timestamp": ANY})
+    ]
 
 
 async def test_a_raw_event_piggy_backed_on_another_event_is_not_persisted(sm):
@@ -95,7 +99,19 @@ async def test_a_raw_event_piggy_backed_on_another_event_is_not_persisted(sm):
     log = RunEventLog(sm, RunHub(), run.id)
     await log.append(StepStartedEvent(step_name="plan", raw_event={"provider": "secret"}))
     [row] = await replay(sm, run.id, 0)
-    assert row.payload == {"type": "STEP_STARTED", "stepName": "plan"}
+    assert row.payload == {"type": "STEP_STARTED", "stepName": "plan", "timestamp": ANY}
+
+
+async def test_every_row_carries_the_time_it_was_logged(sm):
+    # a replay arrives in one burst: the browser times the run tree from these, not from arrival
+    run = await seed_run(sm)
+    log = RunEventLog(sm, RunHub(), run.id)
+    before = int(time.time() * 1000)
+    await log.append(step("plan"))
+    await log.append(StepStartedEvent(step_name="model", timestamp=5))
+    first, second = await replay(sm, run.id, 0)
+    assert before <= first.payload["timestamp"] <= int(time.time() * 1000)
+    assert second.payload["timestamp"] == 5  # an event's own time is kept
 
 
 async def test_subagent_events_are_attributed_by_name(sm):
