@@ -83,16 +83,17 @@ async def get_thread(thread_id: uuid.UUID, runs: Manager) -> ThreadDetail:
     thread = await get_or_404(runs, Thread, thread_id)
     stmt = select(Message).where(Message.thread_id == thread_id).order_by(Message.created_at, Message.id)
     async with runs.sessions() as session:
+        # the run before the messages: a run that ends in between is then followed and replayed, not lost
+        # a created run has no start time yet and is the newest of all
+        newest = (
+            select(Run.id, Run.status).where(Run.thread_id == thread_id).order_by(Run.started_at.desc().nulls_first())
+        )
+        latest = (await session.execute(newest.limit(1))).first()
         messages = [
             MessageOut(
                 id=m.id, role=m.role, text=str(m.content.get("text", "")), run_id=m.run_id, created_at=m.created_at
             )
             for m in await session.scalars(stmt)
         ]
-        # a created run has no start time yet and is the newest of all
-        newest = (
-            select(Run.id, Run.status).where(Run.thread_id == thread_id).order_by(Run.started_at.desc().nulls_first())
-        )
-        latest = (await session.execute(newest.limit(1))).first()
     live = latest.id if latest is not None and latest.status not in TERMINAL else None
     return ThreadDetail(**ThreadOut.model_validate(thread).model_dump(), messages=messages, live_run_id=live)
