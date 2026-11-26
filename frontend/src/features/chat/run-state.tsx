@@ -82,9 +82,7 @@ function finish<T extends AgentNode>(nodes: T[], id: string, at: number): T[] {
 
 function closeAll<T extends AgentNode>(nodes: T[], at: number): T[] {
   return nodes.map((n) =>
-    n.status === "running"
-      ? { ...n, status: "done" as const, endedAt: at }
-      : n
+    n.status === "running" ? { ...n, status: "done" as const, endedAt: at } : n
   )
 }
 
@@ -154,7 +152,10 @@ function apply(state: RunState, event: AgUiEvent, at: number): RunState {
       if (state.agents.some((a) => a.id === id)) return state
       return {
         ...state,
-        agents: [...withLead(state.agents, at), started(id, String(event.name), at)],
+        agents: [
+          ...withLead(state.agents, at),
+          started(id, String(event.name), at),
+        ],
       }
     }
     case "SUBAGENT_FINISHED":
@@ -177,7 +178,10 @@ function apply(state: RunState, event: AgUiEvent, at: number): RunState {
       }
     }
     case "TOOL_CALL_RESULT": // not TOOL_CALL_END, which only closes the streamed arguments
-      return { ...state, tools: finish(state.tools, String(event.toolCallId), at) }
+      return {
+        ...state,
+        tools: finish(state.tools, String(event.toolCallId), at),
+      }
     case "STATE_SNAPSHOT":
       return {
         ...state,

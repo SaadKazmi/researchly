@@ -147,8 +147,17 @@ test("a paused run leaves its tool running, to resume the same tree", () => {
 test("a node is timed from the logged event times, so a replay burst keeps its durations", () => {
   const at = (ms: number) => ({ timestamp: ms })
   let state = reduce(EMPTY, { type: "RUN_STARTED", ...at(1_000) })
-  state = reduce(state, { type: "TOOL_CALL_START", toolCallId: "c1", toolCallName: "search_papers", ...at(2_000) })
-  state = reduce(state, { type: "TOOL_CALL_RESULT", toolCallId: "c1", ...at(32_000) })
+  state = reduce(state, {
+    type: "TOOL_CALL_START",
+    toolCallId: "c1",
+    toolCallName: "search_papers",
+    ...at(2_000),
+  })
+  state = reduce(state, {
+    type: "TOOL_CALL_RESULT",
+    toolCallId: "c1",
+    ...at(32_000),
+  })
   expect(state.tools[0]).toMatchObject({ startedAt: 2_000, endedAt: 32_000 })
   expect(state.agents[0]).toMatchObject({ startedAt: 1_000, status: "running" })
   expect(state.now).toBe(32_000) // a running lead is timed to the last logged event
